@@ -22,7 +22,7 @@ public class ProducerBootstrapHandler extends NettyHeartbeatHandler {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Message message = new Message();
-        message.setOpt(MessageOPT.PRODUCER_CONNECT);
+        message.setOpt(MessageOPT.CLIENT_CONNECT);
         message.setValue(ProducerConfig.PRODUCER_CLIENT_ID);
 
         ctx.writeAndFlush(message);

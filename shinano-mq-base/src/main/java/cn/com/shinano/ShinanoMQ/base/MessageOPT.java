@@ -13,9 +13,10 @@ public class MessageOPT {
     public static final Integer BROKER_PONG = -2;
 
     /**
-     * 生产者链接broker
+     * client链接broker
      */
-    public static final Integer PRODUCER_CONNECT = 1;
+    public static final Integer CLIENT_CONNECT = 1;
+
 
     /**
      * 生产者发消息
@@ -26,6 +27,8 @@ public class MessageOPT {
      */
     public static final Integer PRODUCER_MESSAGE_ACK = 3;
 
+
+
     /**
      * 查询broker的信息
      */
@@ -34,6 +37,9 @@ public class MessageOPT {
      * 查询broker的信息返回的结果
      */
     public static final Integer BROKER_INFO_QUERY_RESULT = 5;
+
+
+
 
     /**
      * 查询topic-queue offset处往后的消息

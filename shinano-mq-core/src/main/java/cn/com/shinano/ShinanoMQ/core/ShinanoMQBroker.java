@@ -64,5 +64,4 @@ public class ShinanoMQBroker implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         this.init();
     }
-
 }

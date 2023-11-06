@@ -86,7 +86,7 @@ class TestStarterTest {
         message.setOpt(MessageOPT.TOPIC_QUEUE_OFFSET_MESSAGE_QUERY);
         message.setTopic("test-topic");
         message.setQueue("test-queue");
-        message.setValue("83");
+        message.setValue("0");
         shinanoProducerClient.sendMsg(message);
         TimeUnit.SECONDS.sleep(500);
     }

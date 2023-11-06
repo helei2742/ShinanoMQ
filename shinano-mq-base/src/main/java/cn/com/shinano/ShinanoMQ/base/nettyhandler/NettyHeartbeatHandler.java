@@ -7,7 +7,7 @@ import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.util.AttributeKey;
+
 
 /**
  * 处理broker与client之间的心跳

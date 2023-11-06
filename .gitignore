@@ -13,3 +13,5 @@ config.ini
 **/target/
 
 /.idea/
+
+**/datalog/**

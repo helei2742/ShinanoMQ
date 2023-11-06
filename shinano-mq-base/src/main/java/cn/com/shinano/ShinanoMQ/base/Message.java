@@ -7,5 +7,5 @@ public class Message {
     private Integer opt;
     private String topic;
     private String queue;
-    private String value;
+    private Object value;
 }

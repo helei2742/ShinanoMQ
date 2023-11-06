@@ -32,6 +32,6 @@ public class MessageUtil {
      */
     //TODO 暂时这样
     public static String getClientId(Message message) {
-        return message.getValue();
+        return (String) message.getValue();
     }
 }

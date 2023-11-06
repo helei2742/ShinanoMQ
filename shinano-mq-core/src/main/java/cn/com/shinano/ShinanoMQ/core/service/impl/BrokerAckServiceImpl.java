@@ -1,8 +1,10 @@
 package cn.com.shinano.ShinanoMQ.core.service.impl;
 
+import cn.com.shinano.ShinanoMQ.base.Message;
+import cn.com.shinano.ShinanoMQ.base.MessageOPT;
 import cn.com.shinano.ShinanoMQ.core.config.ShinanoMQConfig;
+import cn.com.shinano.ShinanoMQ.core.service.AbstractBrokerService;
 import cn.com.shinano.ShinanoMQ.core.service.BrokerAckService;
-import cn.com.shinano.ShinanoMQ.core.service.BrokerSender;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +25,8 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-public class BrokerAckServiceImpl implements BrokerAckService {
+public class BrokerAckServiceImpl extends AbstractBrokerService implements BrokerAckService {
+
     private final Map<Long, Integer> isPersistentMap = new ConcurrentHashMap<>();
     private final Map<Long, Channel> ackChannelMap = new ConcurrentHashMap<>();
 
@@ -33,9 +36,6 @@ public class BrokerAckServiceImpl implements BrokerAckService {
 
     @Autowired
     private ShinanoMQConfig shinanoMQConfig;
-
-    @Autowired
-    private BrokerSender brokerSender;
 
 
     @Override
@@ -47,7 +47,7 @@ public class BrokerAckServiceImpl implements BrokerAckService {
 
     @Override
     public void producerCommitAckSync(Long id, AckStatus ack) {
-        brokerSender.sendProducerCommitAck(id,
+        sendProducerCommitAck(id,
                 ack.getValue(),
                 ackChannelMap.get(id));
     }
@@ -61,6 +61,19 @@ public class BrokerAckServiceImpl implements BrokerAckService {
         if(waitAckToProducerCount.incrementAndGet() >= shinanoMQConfig.getProducerCommitAckBatchSize()) {
             resolveAck();
         }
+    }
+
+    /**
+     * 发送ack
+     * @param id broker收到消息后为其生成的唯一id
+     * @param ack   响应 ack
+     * @param channel 链接的channel
+     */
+    private void sendProducerCommitAck(Long id, int ack, Channel channel) {
+        Message message = new Message();
+        message.setOpt(MessageOPT.PRODUCER_MESSAGE_ACK);
+        message.setValue(ack);
+        sendMessage(message, channel);
     }
 
 
@@ -85,7 +98,7 @@ public class BrokerAckServiceImpl implements BrokerAckService {
 
             for (Long messageId : keySet) {
                 //发送
-                brokerSender.sendProducerCommitAck(messageId,
+                sendProducerCommitAck(messageId,
                         isPersistentMap.get(messageId),
                         ackChannelMap.get(messageId));
 

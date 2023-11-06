@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.service.impl;
 
+import cn.com.shinano.ShinanoMQ.core.service.AbstractBrokerService;
 import cn.com.shinano.ShinanoMQ.core.service.OffsetManager;
 import cn.com.shinano.ShinanoMQ.core.service.PersistentService;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;

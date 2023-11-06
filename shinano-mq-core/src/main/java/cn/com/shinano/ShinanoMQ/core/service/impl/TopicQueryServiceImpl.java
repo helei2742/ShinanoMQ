@@ -1,12 +1,18 @@
 package cn.com.shinano.ShinanoMQ.core.service.impl;
 
 import cn.com.shinano.ShinanoMQ.base.Message;
+import cn.com.shinano.ShinanoMQ.base.MessageOPT;
 import cn.com.shinano.ShinanoMQ.core.dto.IndexNode;
+import cn.com.shinano.ShinanoMQ.core.service.AbstractBrokerService;
+import cn.com.shinano.ShinanoMQ.core.service.OffsetManager;
 import cn.com.shinano.ShinanoMQ.core.service.TopicQueryService;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 import cn.hutool.core.lang.Pair;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 
@@ -22,7 +28,42 @@ import java.util.*;
 
 @Slf4j
 @Service
-public class TopicQueryServiceImpl implements TopicQueryService {
+public class TopicQueryServiceImpl extends AbstractBrokerService implements TopicQueryService {
+
+    @Autowired
+    private OffsetManager offsetManager;
+
+    @Override
+    public void queryTopicQueueOffset(Message message, Channel channel) {
+        long l = offsetManager.queryTopicQueueOffset(message.getTopic(), message.getQueue());
+        message.setValue(String.valueOf(l));
+        message.setOpt(MessageOPT.BROKER_INFO_QUERY_RESULT);
+
+        sendMessage(message, channel);
+    }
+
+
+    @Override
+    public void queryTopicQueueOffsetMsg(Message message, Channel channel) {
+
+        try {
+            Pair<List<Message>, Long> listLongPair = queryTopicQueueAfterOffsetMsg(
+                    message.getTopic(),
+                    message.getQueue(),
+                    Long.parseLong((String) message.getValue()));
+
+            if(listLongPair == null)
+                message.setOpt(MessageOPT.TOPIC_QUEUE_OFFSET_MESSAGE_QUERY_404);
+            else
+                message.setOpt(MessageOPT.TOPIC_QUEUE_OFFSET_MESSAGE_QUERY_RESULT);
+            message.setValue(JSON.toJSONString(listLongPair));
+        } catch (IOException e) {
+            log.error("query message[{}] get error", message, e);
+        }
+
+        sendMessage(message, channel);
+    }
+
 
     /**
      * 查询topic queue 中 在offset之后的消息, 最多只会返回一个数据文件大小的内容。

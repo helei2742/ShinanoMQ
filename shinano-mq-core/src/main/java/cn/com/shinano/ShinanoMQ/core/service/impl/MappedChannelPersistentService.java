@@ -3,10 +3,7 @@ package cn.com.shinano.ShinanoMQ.core.service.impl;
 import cn.com.shinano.ShinanoMQ.base.MessageUtil;
 import cn.com.shinano.ShinanoMQ.core.datalog.MappedFile;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
-import cn.com.shinano.ShinanoMQ.core.service.BrokerAckService;
-import cn.com.shinano.ShinanoMQ.core.service.DispatchMessageService;
-import cn.com.shinano.ShinanoMQ.core.service.OffsetManager;
-import cn.com.shinano.ShinanoMQ.core.service.PersistentService;
+import cn.com.shinano.ShinanoMQ.core.service.*;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +20,7 @@ import java.util.concurrent.*;
  */
 @Slf4j
 @Component
-public class MappedChannelPersistentService implements PersistentService {
+public class MappedChannelPersistentService extends AbstractBrokerService implements PersistentService {
     /**
      * topic-key: 持久化任务
      */
