@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
 @Slf4j
+@Deprecated
 public class SendExecutor {
     private static final ExecutorService executorService = Executors.newFixedThreadPool(1);
     private static final LinkedBlockingQueue<Object> msgQueue = new LinkedBlockingQueue<>();

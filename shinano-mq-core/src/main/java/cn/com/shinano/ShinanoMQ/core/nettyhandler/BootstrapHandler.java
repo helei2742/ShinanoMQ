@@ -3,6 +3,8 @@ package cn.com.shinano.ShinanoMQ.core.nettyhandler;
 import cn.com.shinano.ShinanoMQ.base.Message;
 import cn.com.shinano.ShinanoMQ.base.MessageOPT;
 import cn.com.shinano.ShinanoMQ.base.MessageUtil;
+import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
+import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyHeartbeatHandler;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
 import cn.com.shinano.ShinanoMQ.core.service.BrokerAckService;
 import cn.com.shinano.ShinanoMQ.core.service.BrokerQueryService;
@@ -12,8 +14,6 @@ import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.AttributeKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -26,8 +26,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @ChannelHandler.Sharable
-public class BootstrapHandler extends SimpleChannelInboundHandler<Message> {
-
+public class BootstrapHandler extends NettyHeartbeatHandler {
 
     @Autowired
     private DispatchMessageService dispatchMessageService;
@@ -43,11 +42,16 @@ public class BootstrapHandler extends SimpleChannelInboundHandler<Message> {
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-        log.info("有新的连接：[{}]", ctx.channel().id().asLongText());
+        log.info("client on line, channel id：[{}]", ctx.channel().id().asLongText());
     }
 
+    /**
+     * 得到message后处理
+     * @param ctx
+     * @param message
+     */
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message message) throws Exception {
+    protected void handlerMessage(ChannelHandlerContext ctx, Message message) {
 
         Channel channel = ctx.channel();
 
@@ -64,7 +68,8 @@ public class BootstrapHandler extends SimpleChannelInboundHandler<Message> {
 
             //设置该消息的响应ACK状态
             brokerAckService.setAckFlag(messageId, channel);
-            //发送
+
+            //交给下游处理
             dispatchMessageService.addMessageIntoQueue(brokerMessage);
         }else if(message.getOpt().equals(MessageOPT.BROKER_INFO_QUERY)) { //查询broker的状态信息
             brokerQueryService.queryTopicQueueOffset(message, channel);
@@ -75,15 +80,32 @@ public class BootstrapHandler extends SimpleChannelInboundHandler<Message> {
 
 
     /**
+     * channel超过设置时间没有可读消息时触发
+     * @param ctx
+     */
+    @Override
+    protected void handleReaderIdle(ChannelHandlerContext ctx) {
+        super.handleReaderIdle(ctx);
+        log.info("---client [{}] [{}] long time have no msg timeout, close it---",
+                ctx.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY), ctx.channel().remoteAddress().toString());
+        ctx.close();
+    }
+
+
+    /**
      * 设备下线处理
-     *
      * @param ctx
      */
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) {
-        log.info("设备下线了:{}", ctx.channel().id().asLongText());
-        // map中移除channel
-        removeId(ctx);
+        log.info("client:{}, [{}] off line",
+                ctx.channel().id().asLongText(),
+                ctx.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY));
+
+        // 获取channel中id
+        String id = ctx.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get();
+        // map移除channel
+        connectManager.remove(id);
     }
 
     /**
@@ -94,18 +116,15 @@ public class BootstrapHandler extends SimpleChannelInboundHandler<Message> {
      */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.info("异常：{}", cause.getMessage(), cause);
-        // map中移除channel
-        removeId(ctx);
-        // 关闭连接
-        ctx.close();
+        // 获取channel中id
+        String id = ctx.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get();
+
+        log.info("client:{}, request message{} got an exception", id, cause.getMessage(), cause);
     }
 
-    private void removeId(ChannelHandlerContext ctx) {
-        AttributeKey<String> key = AttributeKey.valueOf("id");
-        // 获取channel中id
-        String id = ctx.channel().attr(key).get();
-        // map移除channel
-        connectManager.remove(id);
+
+    @Override
+    public void printLog(String logStr) {
+        log.info(logStr);
     }
 }

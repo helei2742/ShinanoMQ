@@ -3,6 +3,16 @@ package cn.com.shinano.ShinanoMQ.base;
 public class MessageOPT {
 
     /**
+     * broker ping
+     */
+    public static final Integer BROKER_PING = -1;
+
+    /**
+     * broker pong
+     */
+    public static final Integer BROKER_PONG = -2;
+
+    /**
      * 生产者链接broker
      */
     public static final Integer PRODUCER_CONNECT = 1;
@@ -37,4 +47,6 @@ public class MessageOPT {
      * 查询topic-queue offset处往后的消息,没这个topic queue
      */
     public static final Integer TOPIC_QUEUE_OFFSET_MESSAGE_QUERY_404 = 8;
+
+
 }

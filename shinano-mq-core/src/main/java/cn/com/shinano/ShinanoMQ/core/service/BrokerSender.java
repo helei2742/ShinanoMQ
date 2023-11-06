@@ -2,17 +2,15 @@ package cn.com.shinano.ShinanoMQ.core.service;
 
 import cn.com.shinano.ShinanoMQ.base.Message;
 import cn.com.shinano.ShinanoMQ.base.MessageOPT;
+import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.core.service.impl.BrokerAckServiceImpl;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
 public class BrokerSender {
-    @Autowired
-    private ConnectManager connectManager;
 
     /**
      * 向channel中发送生产者提交消息的ACK
@@ -41,6 +39,7 @@ public class BrokerSender {
      */
     public void sendQueryBrokerResult(Message response, Channel channel) {
         channel.writeAndFlush(response);
-        log.info("client [{}], query broker info [{}]", channel.id().asLongText(), response);
+        log.info("client [{}], query broker info [{}]",
+                channel.attr(ShinanoMQConstants.ATTRIBUTE_KEY).get(), response);
     }
 }
