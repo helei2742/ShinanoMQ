@@ -9,14 +9,14 @@ public interface BrokerAckService {
      * 初始化设置ACK状态
      * @param id message的唯一id
      */
-    public void setAckFlag(Long id, Channel channel);
+    public void setAckFlag(String id, Channel channel);
 
     /**
      * 同步提交ACK,直接写channel
      * @param id message的唯一id
      * @param ack ack状态
      */
-    public void producerCommitAckSync(Long id, BrokerAckServiceImpl.AckStatus ack);
+    public void producerCommitAckSync(String id, BrokerAckServiceImpl.AckStatus ack);
 
     /**
      * 异步提交ack，分批写channel
@@ -24,5 +24,5 @@ public interface BrokerAckService {
      * @param ack ack状态
      */
     @Deprecated
-    public void producerCommitAckASync(Long id, BrokerAckServiceImpl.AckStatus ack);
+    public void producerCommitAckASync(String id, BrokerAckServiceImpl.AckStatus ack);
 }

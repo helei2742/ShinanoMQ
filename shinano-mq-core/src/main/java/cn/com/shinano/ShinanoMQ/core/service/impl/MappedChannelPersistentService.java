@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.service.impl;
 
 import cn.com.shinano.ShinanoMQ.base.MessageUtil;
+import cn.com.shinano.ShinanoMQ.base.SaveMessage;
 import cn.com.shinano.ShinanoMQ.core.datalog.MappedFile;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
 import cn.com.shinano.ShinanoMQ.core.service.*;
@@ -43,13 +44,14 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
     private OffsetManager offsetManager;
 
     /**
-     * 持久化消息，以topic-queue 为标识创建任务加入到线程池中执行
+     * 持久化消息，以topic-queue 为标识创建任务加入到线程池中执行。
+     * 消息从dispatchMessageService.getTopicMessageBlockingQueue(topic)的阻塞队列里获取
      * @param id 由服务器生成的消息id
      * @param topic 消息的topic
      * @param queue 消息的queue
      */
     @Override
-    public void persistentMessage(long id, String topic, String queue) {
+    public void persistentMessage(String id, String topic, String queue) {
         LinkedBlockingQueue<BrokerMessage> bq = dispatchMessageService.getTopicMessageBlockingQueue(topic);
 
         String persistentTaskMapKey = BrokerUtil.makeTopicQueueKey(topic, queue);
@@ -118,8 +120,7 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
                     if(mappedFile == null) {
                         mappedFile = MappedFile.getMappedFile(topic, queue);
                     }
-
-                    byte[] bytes = MessageUtil.messageTurnBrokerSaveBytes(msg.getMessage());
+                    byte[] bytes = BrokerUtil.messageTurnBrokerSaveBytes(msg.getMessage());
 
                     //追加写入
                     this.offset = mappedFile.append(bytes);

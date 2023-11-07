@@ -29,8 +29,10 @@ public class ProducerMessageHandler implements MessageHandler {
     @Override
     public void handlerMessage(ChannelHandlerContext ctx, Message message, Channel channel) {
         log.debug("服务端收到消息\n {}", message);
+
         //生成一个唯一的messageId
-        long messageId = BrokerUtil.getBrokerMessageId();
+        String messageId = BrokerUtil.getTransactionId(message.getTransactionId());
+        message.setTransactionId(messageId);
         BrokerMessage brokerMessage = new BrokerMessage(messageId, message);
 
         //设置该消息的响应ACK状态

@@ -1,17 +1,23 @@
 package cn.com.shinano.ShinanoMQ.core.utils;
 
+import cn.com.shinano.ShinanoMQ.base.Message;
+import cn.com.shinano.ShinanoMQ.base.SaveMessage;
 import cn.com.shinano.ShinanoMQ.core.config.SystemConfig;
+import cn.hutool.core.util.RandomUtil;
+import com.alibaba.fastjson.JSONObject;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class BrokerUtil {
-    public static long getBrokerMessageId() {
-        return UUID.randomUUID().getLeastSignificantBits();
-    }
 
     public static String makeTopicQueueKey(String topic, String queue) {
         return topic + "-" + queue;
@@ -25,6 +31,12 @@ public class BrokerUtil {
         return String.format("%020d", startOffset);
     }
 
+    /**
+     * 获取topic下queue的offset
+     * @param topic
+     * @param queue
+     * @return
+     */
     public static long getOffsetFromFile(String topic, String queue) {
         File dirFile = new File(SystemConfig.PERSISTENT_FILE_LOCATION + File.separator + topic + File.separator + queue);
         if (!dirFile.exists()) return -1;//没有topic-queue，-1表示没有初始化
@@ -57,4 +69,34 @@ public class BrokerUtil {
         //通过offset最大的文件计算当前offset大小
         return sorted.get(0);
     }
+
+    public static String getTransactionId(String transactionId) {
+        if(transactionId == null) {
+            transactionId = RandomUtil.randomString(8);
+        }
+        return UUID.nameUUIDFromBytes(transactionId.getBytes(StandardCharsets.UTF_8)).toString();
+    }
+
+
+    /**
+     * 消息转换为存储的字节
+     * @param message
+     * @return
+     */
+    public static byte[] messageTurnBrokerSaveBytes(Message message) {
+        SaveMessage saveMessage = new SaveMessage();
+        saveMessage.setTransactionId(message.getTransactionId());
+        saveMessage.setBody(message.getBody());
+        saveMessage.setReconsumeTimes(0);
+        saveMessage.setTimestamp(System.currentTimeMillis());
+        saveMessage.setStoreHost(SystemConfig.BROKER_HOST);
+
+        byte[] bytes = JSONObject.toJSONBytes(saveMessage);
+        byte[] length = ByteBuffer.allocate(8).putInt(bytes.length).array();
+        byte[] res = new byte[bytes.length + length.length];
+        System.arraycopy(length, 0, res, 0, length.length);
+        System.arraycopy(bytes, 0, res, length.length, bytes.length);
+        return res;
+    }
+
 }

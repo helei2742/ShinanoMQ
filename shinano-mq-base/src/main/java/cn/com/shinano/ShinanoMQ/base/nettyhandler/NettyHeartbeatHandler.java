@@ -8,6 +8,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 
+import java.nio.charset.StandardCharsets;
+
 
 /**
  * 处理broker与client之间的心跳
@@ -17,14 +19,13 @@ public abstract class NettyHeartbeatHandler extends SimpleChannelInboundHandler<
 
     @Override
     protected void channelRead0(ChannelHandlerContext context, Message msg) throws Exception {
-        Integer opt = msg.getOpt();
+        Integer opt = msg.getFlag();
         if(opt.equals(MessageOPT.BROKER_PING)) {
             sendPongMsg(context);
         } else if (opt.equals(MessageOPT.BROKER_PONG)){
-            printLog(String.format("client [%s] get pong msg from broker[%s], hear beat count [%s]",
+            printLog(String.format("get pong msg from [%s][%s] ",
                     context.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get(),
-                    context.channel().remoteAddress(),
-                    msg.getValue()));
+                    context.channel().remoteAddress()));
         }else {
             handlerMessage(context, msg);
         }
@@ -77,24 +78,22 @@ public abstract class NettyHeartbeatHandler extends SimpleChannelInboundHandler<
     protected void sendPingMsg(ChannelHandlerContext context) {
 
         Message message = new Message();
-        message.setOpt(MessageOPT.BROKER_PONG);
-        message.setValue(String.valueOf(++heartbeatCount));
+        message.setFlag(MessageOPT.BROKER_PONG);
+//        message.setBody(String.valueOf(++heartbeatCount).getBytes(StandardCharsets.UTF_8));
         sendMsg(context, message);
 
-        printLog(String.format("client [%s] send ping msg to broker[%s], hear beat count [%d]",
-                context.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get(),
+        printLog(String.format("send ping msg to [%s], hear beat count [%d]",
                 context.channel().remoteAddress(), heartbeatCount));
     }
 
     protected void sendPongMsg(ChannelHandlerContext context) {
         Message message = new Message();
-        message.setOpt(MessageOPT.BROKER_PONG);
-        message.setValue(String.valueOf(++heartbeatCount));
+        message.setFlag(MessageOPT.BROKER_PONG);
+//        message.setBody(String.valueOf(++heartbeatCount).getBytes(StandardCharsets.UTF_8));
         sendMsg(context, message);
 
 
-        printLog(String.format("client [%s] send pong msg to broker[%s], hear beat count [%d]",
-                context.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get(),
+        printLog(String.format("send pong msg to [%s], hear beat count [%d]",
                 context.channel().remoteAddress(), heartbeatCount));
     }
 

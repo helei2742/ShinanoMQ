@@ -36,10 +36,8 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
     @Override
     public void queryTopicQueueOffset(Message message, Channel channel) {
         long l = offsetManager.queryTopicQueueOffset(message.getTopic(), message.getQueue());
-        message.setValue(String.valueOf(l));
-        message.setOpt(MessageOPT.BROKER_INFO_QUERY_RESULT);
 
-        sendMessage(message, channel);
+        sendMessage(MessageOPT.BROKER_INFO_QUERY_RESULT, String.valueOf(l), channel);
     }
 
 
@@ -50,13 +48,14 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
             Pair<List<Message>, Long> listLongPair = queryTopicQueueAfterOffsetMsg(
                     message.getTopic(),
                     message.getQueue(),
-                    Long.parseLong((String) message.getValue()));
+                    Long.parseLong(new String(message.getBody(),StandardCharsets.UTF_8)));
 
             if(listLongPair == null)
-                message.setOpt(MessageOPT.TOPIC_QUEUE_OFFSET_MESSAGE_QUERY_404);
+                message.setFlag(MessageOPT.TOPIC_QUEUE_OFFSET_MESSAGE_QUERY_404);
             else
-                message.setOpt(MessageOPT.TOPIC_QUEUE_OFFSET_MESSAGE_QUERY_RESULT);
-            message.setValue(JSON.toJSONString(listLongPair));
+                message.setFlag(MessageOPT.TOPIC_QUEUE_OFFSET_MESSAGE_QUERY_RESULT);
+            message.setBody(JSON.toJSONString(listLongPair).getBytes(StandardCharsets.UTF_8));
+
         } catch (IOException e) {
             log.error("query message[{}] get error", message, e);
         }

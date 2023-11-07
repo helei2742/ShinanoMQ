@@ -8,6 +8,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * 处理生产者收到的消息
  */
@@ -22,15 +24,17 @@ public class ProducerBootstrapHandler extends NettyHeartbeatHandler {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Message message = new Message();
-        message.setOpt(MessageOPT.CLIENT_CONNECT);
-        message.setValue(ProducerConfig.PRODUCER_CLIENT_ID);
+        message.setFlag(MessageOPT.CLIENT_CONNECT);
+        message.setBody(ProducerConfig.PRODUCER_CLIENT_ID.getBytes(StandardCharsets.UTF_8));
 
         ctx.writeAndFlush(message);
     }
 
     @Override
     protected void handlerMessage(ChannelHandlerContext context, Message msg) {
+
         log.debug("get msg [{}]", msg);
+
     }
 
     @Override

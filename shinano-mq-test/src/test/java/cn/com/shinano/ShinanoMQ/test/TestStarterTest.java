@@ -3,12 +3,15 @@ package cn.com.shinano.ShinanoMQ.test;
 import cn.com.shinano.ShinanoMQ.base.Message;
 import cn.com.shinano.ShinanoMQ.base.MessageOPT;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
+import cn.hutool.core.util.RandomUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.sql.Time;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -42,13 +45,14 @@ class TestStarterTest {
                 String finalLine = line;
                 int finalI = i;
                 new Thread(()->{
-                    for (int j = 0; j < 20; j++) {
+                    for (int j = 0; j < 10; j++) {
                         Message message = new Message();
-                        message.setOpt(MessageOPT.PRODUCER_MESSAGE);
+                        message.setFlag(MessageOPT.PRODUCER_MESSAGE);
                         message.setTopic("test-topic");
                         message.setQueue("test-queue");
 //                        message.setValue("test-line-" + finalLine + "-" + atomicInteger.incrementAndGet());
-                        message.setValue("test-line-" + atomicInteger.incrementAndGet());
+                        message.setBody(("test-line-" + atomicInteger.incrementAndGet()).getBytes(StandardCharsets.UTF_8));
+                        message.setTransactionId(UUID.randomUUID().toString());
                         shinanoProducerClient.sendMsg(message);
                         try {
                             TimeUnit.MILLISECONDS.sleep(10);
@@ -69,10 +73,10 @@ class TestStarterTest {
                 = new ShinanoProducerClient("localhost", 10021);
         shinanoProducerClient.run();
         Message message = new Message();
-        message.setOpt(MessageOPT.BROKER_INFO_QUERY);
+        message.setFlag(MessageOPT.BROKER_INFO_QUERY);
         message.setTopic("test-topic");
         message.setQueue("test-queue");
-        message.setValue("123-client");
+        message.setBody("123-client".getBytes(StandardCharsets.UTF_8));
         shinanoProducerClient.sendMsg(message);
         TimeUnit.SECONDS.sleep(100);
     }
@@ -83,10 +87,10 @@ class TestStarterTest {
                 = new ShinanoProducerClient("localhost", 10022);
         shinanoProducerClient.run();
         Message message = new Message();
-        message.setOpt(MessageOPT.TOPIC_QUEUE_OFFSET_MESSAGE_QUERY);
+        message.setFlag(MessageOPT.TOPIC_QUEUE_OFFSET_MESSAGE_QUERY);
         message.setTopic("test-topic");
         message.setQueue("test-queue");
-        message.setValue("0");
+        message.setBody("0".getBytes(StandardCharsets.UTF_8));
         shinanoProducerClient.sendMsg(message);
         TimeUnit.SECONDS.sleep(500);
     }

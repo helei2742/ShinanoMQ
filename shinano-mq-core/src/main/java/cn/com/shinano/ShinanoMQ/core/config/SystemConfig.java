@@ -1,11 +1,12 @@
 package cn.com.shinano.ShinanoMQ.core.config;
 
-import sun.misc.Unsafe;
-
-import java.lang.reflect.Field;
 
 public class SystemConfig {
 
+    /**
+     * 本broker的host
+     */
+    public static String BROKER_HOST = "localhost:10022";
 
     /**
      * 处理BoostrapHandler的线程数
@@ -35,18 +36,18 @@ public class SystemConfig {
     /**
      * 判断客户端下线的时长，单位秒
      */
-    public static final Integer CLIENT_OFF_LINE_INTERVAL = 10;
+    public static final Integer CLIENT_OFF_LINE_INTERVAL = 30;
 
 
-    static {
-        try {
-            Field f = Unsafe.class.getDeclaredField("theUnsafe");
-            f.setAccessible(true);
-            Unsafe unsafe = null;
-            unsafe = (Unsafe)f.get(null);
-            OS_PAGE_SIZE = unsafe.pageSize();
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            OS_PAGE_SIZE = 1024 * 1024 * 16;
-        }
-    }
+//    static {
+//        try {
+//            Field f = Unsafe.class.getDeclaredField("theUnsafe");
+//            f.setAccessible(true);
+//            Unsafe unsafe = null;
+//            unsafe = (Unsafe)f.get(null);
+//            OS_PAGE_SIZE = unsafe.pageSize();
+//        } catch (IllegalAccessException | NoSuchFieldException e) {
+//            OS_PAGE_SIZE = 1024 * 1024 * 16;
+//        }
+//    }
 }

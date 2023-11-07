@@ -46,7 +46,7 @@ public class BootstrapHandler extends NettyHeartbeatHandler  {
         Channel channel = ctx.channel();
 
         //根据消息的类型从map中取出对应的handler处理
-        MessageHandler messageHandler = messageHandlerMap.get(message.getOpt());
+        MessageHandler messageHandler = messageHandlerMap.get(message.getFlag());
         if(messageHandler != null) {
             messageHandler.handlerMessage(ctx, message, channel);
         }

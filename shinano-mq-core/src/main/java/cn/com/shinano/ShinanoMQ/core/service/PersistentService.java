@@ -7,7 +7,7 @@ public interface PersistentService {
      * @param topic 消息的topic
      * @param queue 消息的queue
      */
-    void persistentMessage(long id, String topic, String queue);
+    void persistentMessage(String id, String topic, String queue);
 
     /**
      * 尝试更新topic下queue的offset

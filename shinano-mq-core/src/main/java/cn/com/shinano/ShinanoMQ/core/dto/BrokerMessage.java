@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BrokerMessage {
-    private Long id;
+    private String id;
     private Message message;
 }

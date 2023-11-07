@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,8 +28,8 @@ import java.util.stream.Collectors;
 @Service
 public class BrokerAckServiceImpl extends AbstractBrokerService implements BrokerAckService {
 
-    private final Map<Long, Integer> isPersistentMap = new ConcurrentHashMap<>();
-    private final Map<Long, Channel> ackChannelMap = new ConcurrentHashMap<>();
+    private final Map<String, Integer> isPersistentMap = new ConcurrentHashMap<>();
+    private final Map<String, Channel> ackChannelMap = new ConcurrentHashMap<>();
 
     private final ReentrantLock lock = new ReentrantLock();
     private final AtomicInteger waitAckToProducerCount = new AtomicInteger(0);
@@ -39,21 +40,21 @@ public class BrokerAckServiceImpl extends AbstractBrokerService implements Broke
 
 
     @Override
-    public void setAckFlag(Long id, Channel channel) {
+    public void setAckFlag(String id, Channel channel) {
         isPersistentMap.putIfAbsent(id, AckStatus.WAITE.getValue());
         ackChannelMap.putIfAbsent(id, channel);
     }
 
 
     @Override
-    public void producerCommitAckSync(Long id, AckStatus ack) {
+    public void producerCommitAckSync(String id, AckStatus ack) {
         sendProducerCommitAck(id,
                 ack.getValue(),
                 ackChannelMap.get(id));
     }
 
     @Override
-    public void producerCommitAckASync(Long id, AckStatus ack) {
+    public void producerCommitAckASync(String id, AckStatus ack) {
         isPersistentMap.computeIfPresent(id, (k,v)->ack.getValue());
         getNewAck.set(true);
 
@@ -69,10 +70,13 @@ public class BrokerAckServiceImpl extends AbstractBrokerService implements Broke
      * @param ack   响应 ack
      * @param channel 链接的channel
      */
-    private void sendProducerCommitAck(Long id, int ack, Channel channel) {
+    private void sendProducerCommitAck(String id, int ack, Channel channel) {
         Message message = new Message();
-        message.setOpt(MessageOPT.PRODUCER_MESSAGE_ACK);
-        message.setValue(ack);
+
+        message.setTransactionId(id);
+        message.setFlag(MessageOPT.PRODUCER_MESSAGE_ACK);
+        message.setBody(ByteBuffer.allocate(4).putInt(ack).array());
+
         sendMessage(message, channel);
     }
 
@@ -93,18 +97,20 @@ public class BrokerAckServiceImpl extends AbstractBrokerService implements Broke
             boolean b = lock.tryLock(50, TimeUnit.MILLISECONDS);
             if(!b) return;
 
-            List<Long> keySet = isPersistentMap.keySet().stream()
-                    .filter(v->v!=0).collect(Collectors.toList());//过滤掉等待状态的ack
+            List<String> keySet = isPersistentMap.entrySet().stream()
+                    .filter(e->e.getValue()!=0)
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toList());//过滤掉等待状态的ack
 
-            for (Long messageId : keySet) {
+            for (String tsId : keySet) {
                 //发送
-                sendProducerCommitAck(messageId,
-                        isPersistentMap.get(messageId),
-                        ackChannelMap.get(messageId));
+                sendProducerCommitAck(tsId,
+                        isPersistentMap.get(tsId),
+                        ackChannelMap.get(tsId));
 
                 //移除map
-                isPersistentMap.remove(messageId);
-                ackChannelMap.remove(messageId);
+                isPersistentMap.remove(tsId);
+                ackChannelMap.remove(tsId);
             }
         } catch (InterruptedException e) {
             log.info("commit producer commit Ack got a error", e);
