@@ -70,7 +70,8 @@ public class BrokerAckServiceImpl extends AbstractBrokerService implements Broke
      * @param ack   响应 ack
      * @param channel 链接的channel
      */
-    private void sendProducerCommitAck(String id, int ack, Channel channel) {
+    @Override
+    public void sendProducerCommitAck(String id, int ack, Channel channel) {
         Message message = new Message();
 
         message.setTransactionId(id);

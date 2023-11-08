@@ -1,5 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.service;
 
+import cn.com.shinano.ShinanoMQ.core.service.impl.MappedChannelPersistentService;
+
 public interface PersistentService {
     /**
      * 持久化消息
@@ -10,10 +12,10 @@ public interface PersistentService {
     void persistentMessage(String id, String topic, String queue);
 
     /**
-     * 尝试更新topic下queue的offset
+     * 通过topic与queue组成的key查找执行持久化的任务
      * @param topic 消息的topic
      * @param queue 消息的queue
      * @return
      */
-    Long tryQueryOffset(String topic, String queue);
+    MappedChannelPersistentService.PersistentTask getPersistentTask(String topic, String queue);
 }

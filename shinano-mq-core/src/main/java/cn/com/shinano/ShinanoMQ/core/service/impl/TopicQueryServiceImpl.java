@@ -33,14 +33,22 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
     @Autowired
     private OffsetManager offsetManager;
 
+    /**
+     * 查询topic下queue中消息当前的offset
+     * @param message 请求体
+     * @param channel 数据返回的channel
+     */
     @Override
     public void queryTopicQueueOffset(Message message, Channel channel) {
         long l = offsetManager.queryTopicQueueOffset(message.getTopic(), message.getQueue());
-
-        sendMessage(MessageOPT.BROKER_INFO_QUERY_RESULT, String.valueOf(l), channel);
+        sendMessage(MessageOPT.TOPIC_INFO_QUERY_RESULT, String.valueOf(l), channel);
     }
 
-
+    /**
+     * 查询topic下queue中 offset 位置后的消息
+     * @param message 请求体
+     * @param channel 数据返回的channel
+     */
     @Override
     public void queryTopicQueueOffsetMsg(Message message, Channel channel) {
 
@@ -50,10 +58,8 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
                     message.getQueue(),
                     Long.parseLong(new String(message.getBody(),StandardCharsets.UTF_8)));
 
-            if(listLongPair == null)
-                message.setFlag(MessageOPT.TOPIC_QUEUE_OFFSET_MESSAGE_QUERY_404);
-            else
-                message.setFlag(MessageOPT.TOPIC_QUEUE_OFFSET_MESSAGE_QUERY_RESULT);
+            message.setFlag(MessageOPT.TOPIC_INFO_QUERY_RESULT);
+
             message.setBody(JSON.toJSONString(listLongPair).getBytes(StandardCharsets.UTF_8));
 
         } catch (IOException e) {

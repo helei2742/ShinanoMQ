@@ -64,29 +64,17 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
         });
     }
 
-    /**
-     * 获取queue当前的offset，当没有这个queue时返回-1，存在则返回具体的offset。
-     * 这个操作会在内存中没有topic-queue标识的offset时通过持久化的文件查询
-     * 获取到的offset可能不是最新的
-     * @param topic 消息的topic
-     * @param queue 消息的queue
-     * @return
-     */
     @Override
-    public Long tryQueryOffset(String topic, String queue) {
+    public PersistentTask getPersistentTask(String topic, String queue) {
         String key = BrokerUtil.makeTopicQueueKey(topic, queue);
-        PersistentTask persistentTask = persistentTaskMap.get(key);
-        if(persistentTask == null) { //没有,从文件里查查
-            return BrokerUtil.getOffsetFromFile(topic, queue);
-        }
-        return persistentTask.offset;
+        return persistentTaskMap.get(key);
     }
 
 
     /**
      * 持久化任务，每个持久化任务负责一个topic的一个key内的消息的持久化
      */
-    static class PersistentTask implements Runnable {
+    public static class PersistentTask implements Runnable {
         private final LinkedBlockingQueue<BrokerMessage> bq;
         private final String topic;
         private final String queue;
@@ -124,6 +112,8 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
 
                     //追加写入
                     this.offset = mappedFile.append(bytes);
+
+                    //更新offset
                     offsetManager.updateTopicQueueOffset(topic, queue, this.offset);
                     log.debug("async write message done, {}, offset {}", msg, this.offset);
 
@@ -137,6 +127,11 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
                     }
                 }
             }
+        }
+
+
+        public Long getOffset() {
+            return offset;
         }
     }
 }

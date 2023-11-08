@@ -5,6 +5,8 @@ import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
 import cn.com.shinano.ShinanoMQ.core.nettyhandler.MessageHandler;
 import cn.com.shinano.ShinanoMQ.core.service.BrokerAckService;
 import cn.com.shinano.ShinanoMQ.core.service.DispatchMessageService;
+import cn.com.shinano.ShinanoMQ.core.service.TopicManager;
+import cn.com.shinano.ShinanoMQ.core.service.impl.BrokerAckServiceImpl;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -17,18 +19,28 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ProducerMessageHandler implements MessageHandler {
 
-    public ProducerMessageHandler(DispatchMessageService dispatchMessageService, BrokerAckService brokerAckService) {
-        this.dispatchMessageService = dispatchMessageService;
-        this.brokerAckService = brokerAckService;
-    }
+    private final TopicManager topicManager;
 
     private final DispatchMessageService dispatchMessageService;
 
     private final BrokerAckService brokerAckService;
 
+    public ProducerMessageHandler(TopicManager topicManager, DispatchMessageService dispatchMessageService, BrokerAckService brokerAckService) {
+        this.topicManager = topicManager;
+        this.dispatchMessageService = dispatchMessageService;
+        this.brokerAckService = brokerAckService;
+    }
+
     @Override
     public void handlerMessage(ChannelHandlerContext ctx, Message message, Channel channel) {
         log.debug("服务端收到消息\n {}", message);
+
+        if (!topicManager.isTopicExist(message.getTopic(), message.getQueue())) {
+            brokerAckService.sendProducerCommitAck(message.getTransactionId(),
+                    BrokerAckServiceImpl.AckStatus.FAIL.getValue(),
+                    channel);
+            return;
+        }
 
         //生成一个唯一的messageId
         String messageId = BrokerUtil.getTransactionId(message.getTransactionId());

@@ -25,4 +25,6 @@ public interface BrokerAckService {
      */
     @Deprecated
     public void producerCommitAckASync(String id, BrokerAckServiceImpl.AckStatus ack);
+
+    public void sendProducerCommitAck(String id, int ack, Channel channel);
 }

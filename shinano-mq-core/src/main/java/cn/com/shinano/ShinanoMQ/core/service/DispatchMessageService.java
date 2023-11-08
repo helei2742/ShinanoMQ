@@ -19,6 +19,9 @@ public class DispatchMessageService {
     @Autowired
     private PersistentService persistentService;
 
+    @Autowired
+    private TopicManager topicManager;
+
     /**
      * 添加message到对应topic的阻塞队列
      * @param message 服务器收到的消息，加上为其生成的唯一id

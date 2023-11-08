@@ -40,19 +40,12 @@ public class MessageOPT {
 
 
 
-
     /**
-     * 查询topic-queue offset处往后的消息
+     * 查询topic内相关的信息
      */
-    public static final Integer TOPIC_QUEUE_OFFSET_MESSAGE_QUERY = 6;
+    public static final Integer TOPIC_INFO_QUERY = 6;
     /**
-     * 查询topic-queue offset处往后的消息的结果
+     *  查询topic内相关的信息返回的结果
      */
-    public static final Integer TOPIC_QUEUE_OFFSET_MESSAGE_QUERY_RESULT = 7;
-    /**
-     * 查询topic-queue offset处往后的消息,没这个topic queue
-     */
-    public static final Integer TOPIC_QUEUE_OFFSET_MESSAGE_QUERY_404 = 8;
-
-
+    public static final Integer TOPIC_INFO_QUERY_RESULT = 7;
 }

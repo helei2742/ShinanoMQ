@@ -2,6 +2,7 @@ package cn.com.shinano.ShinanoMQ.test;
 
 import cn.com.shinano.ShinanoMQ.base.Message;
 import cn.com.shinano.ShinanoMQ.base.MessageOPT;
+import cn.com.shinano.ShinanoMQ.base.TopicQueryOPT;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
 import cn.hutool.core.util.RandomUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -11,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.sql.Time;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,8 +51,8 @@ class TestStarterTest {
                     for (int j = 0; j < 10; j++) {
                         Message message = new Message();
                         message.setFlag(MessageOPT.PRODUCER_MESSAGE);
-                        message.setTopic("test-topic");
-                        message.setQueue("test-queue");
+                        message.setTopic("test-create1");
+                        message.setQueue("queue1");
 //                        message.setValue("test-line-" + finalLine + "-" + atomicInteger.incrementAndGet());
                         message.setBody(("test-line-" + atomicInteger.incrementAndGet()).getBytes(StandardCharsets.UTF_8));
                         message.setTransactionId(UUID.randomUUID().toString());
@@ -70,12 +73,15 @@ class TestStarterTest {
     @Test
     public void testQueryOffset() throws InterruptedException {
         ShinanoProducerClient shinanoProducerClient
-                = new ShinanoProducerClient("localhost", 10021);
+                = new ShinanoProducerClient("localhost", 10022);
         shinanoProducerClient.run();
         Message message = new Message();
-        message.setFlag(MessageOPT.BROKER_INFO_QUERY);
-        message.setTopic("test-topic");
-        message.setQueue("test-queue");
+        message.setFlag(MessageOPT.TOPIC_INFO_QUERY);
+        Map<String, String> prop = new HashMap<>();
+        prop.put(TopicQueryOPT.TOPIC_QUERY_OPT_KEY, TopicQueryOPT.QUERY_TOPIC_QUEUE_OFFSET);
+        message.setProperties(prop);
+        message.setTopic("test-create1");
+        message.setQueue("queue1");
         message.setBody("123-client".getBytes(StandardCharsets.UTF_8));
         shinanoProducerClient.sendMsg(message);
         TimeUnit.SECONDS.sleep(100);
@@ -87,10 +93,13 @@ class TestStarterTest {
                 = new ShinanoProducerClient("localhost", 10022);
         shinanoProducerClient.run();
         Message message = new Message();
-        message.setFlag(MessageOPT.TOPIC_QUEUE_OFFSET_MESSAGE_QUERY);
-        message.setTopic("test-topic");
-        message.setQueue("test-queue");
-        message.setBody("0".getBytes(StandardCharsets.UTF_8));
+        message.setFlag(MessageOPT.TOPIC_INFO_QUERY);
+        Map<String, String> prop = new HashMap<>();
+        prop.put(TopicQueryOPT.TOPIC_QUERY_OPT_KEY, TopicQueryOPT.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE);
+        message.setProperties(prop);
+        message.setTopic("test-create1");
+        message.setQueue("queue1");
+        message.setBody("300".getBytes(StandardCharsets.UTF_8));
         shinanoProducerClient.sendMsg(message);
         TimeUnit.SECONDS.sleep(500);
     }
