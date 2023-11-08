@@ -1,8 +1,7 @@
 TODO
 
-
 -2 服务端添加http接口，生产者、消费者的操作
--1 目前发送以及返回都用的Message对象，需要进行拆分。
+
 0 生产者添加维护offset的功能，更改broker逻辑，发送时没有topic对应的queue则给producer返回失败。消费进度以json文件的形式
 持久化，类似于RocketMQ的ComsumerOffset.json
 
@@ -16,6 +15,7 @@ TODO
 
 6 查询操作添加多线程处理
 
+7 broker topic info 的更改可能会有线程安全问题，需要排查
 
 *** consumer 客户端的编写
 设计：
@@ -30,3 +30,4 @@ TODO
 
 已解决
 6 broker区分消息时，不采用if、else的方式，而是使用一个map<State, Handler>的方式做，提高扩展信以及简洁性
+目前发送以及返回都用的Message对象，需要进行拆分。

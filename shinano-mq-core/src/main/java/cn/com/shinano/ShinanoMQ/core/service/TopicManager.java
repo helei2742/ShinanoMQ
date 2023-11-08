@@ -39,4 +39,33 @@ public interface TopicManager {
      * @return
      */
     Map<String, Object> getTopicInfo(String topic);
+
+    /**
+     * 关闭topic
+     * @param topic
+     * @return
+     */
+    boolean closeTopic(String topic);
+
+    /**
+     * 删除topic 下的queue
+     * @param topic
+     * @param queues
+     * @return
+     */
+    List<String> deleteQueues(String topic, List<String> queues);
+
+    /**
+     * 删除topic
+     * @param topic
+     * @return
+     */
+    boolean deleteTopic(String topic);
+
+    /**
+     * 恢复topic
+     * @param topic
+     * @return
+     */
+    boolean recoverTopic(String topic);
 }

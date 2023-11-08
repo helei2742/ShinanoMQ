@@ -10,6 +10,8 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -99,4 +101,13 @@ public class BrokerUtil {
         return res;
     }
 
+    /**
+     * 移动topic的数据文件，
+     * @param topic
+     */
+    public static void moveTopicData(String topic) {
+        String dir = SystemConfig.PERSISTENT_FILE_LOCATION + File.separator + topic;
+        new File(dir)
+                .renameTo(new File(dir +"_deleted_" + RandomUtil.randomNumbers(8)));
+    }
 }

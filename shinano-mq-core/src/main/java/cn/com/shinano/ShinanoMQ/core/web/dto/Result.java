@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,6 +39,9 @@ public class Result {
         SUCCESS(200),
         PARAMS_ERROR(501),
         TOPIC_CREATE_ERROR(502),
+        TOPIC_CLOSE_ERROR(503),
+        TOPIC_DELETE_ERROR(504),
+        TOPIC_RECOVER_ERROR(505)
         ;
 
         static Map<ResultCode, String> msgMap;
@@ -49,6 +51,9 @@ public class Result {
             msgMap.put(SUCCESS, "请求成功");
             msgMap.put(PARAMS_ERROR, "参数错误");
             msgMap.put(TOPIC_CREATE_ERROR, "创建topic失败");
+            msgMap.put(TOPIC_CLOSE_ERROR, "关闭topic失败");
+            msgMap.put(TOPIC_DELETE_ERROR, "删除topic失败");
+            msgMap.put(TOPIC_RECOVER_ERROR, "恢复topic失败");
         }
 
         ResultCode(Integer value) {

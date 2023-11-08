@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.dto;
 
+import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,6 +23,7 @@ public class BrokerTopicInfo {
 
     private ConcurrentMap<String, TopicInfo> activeTopicsMap = new ConcurrentHashMap<>();
 
+    private ConcurrentMap<String, TopicInfo> closedTopicsMap = new ConcurrentHashMap<>();
 
     public boolean isTopicExist(String topic) {
         return activeTopicsMap.containsKey(topic);
@@ -58,15 +60,10 @@ public class BrokerTopicInfo {
         return map;
     }
 
-    /**
-     * 更新时，不能保证顺序，所以有可能会产生offset错误的情况
-     * @param topic
-     * @param queue
-     * @param offset
-     */
     public void updateOffset(String topic, String queue, long offset) {
         TopicInfo topicInfo = activeTopicsMap.get(topic);
         if(topicInfo != null) {
+            //FIXME 更新时，不能保证顺序，所以有可能会产生offset错误的情况
             topicInfo.setOffset(queue, offset);
         }
     }
@@ -77,19 +74,76 @@ public class BrokerTopicInfo {
         return topicInfo.getOffset(queue);
     }
 
+
+    public boolean closeTopic(String topic) {
+        if(!activeTopicsMap.containsKey(topic) || closedTopicsMap.containsKey(topic)) return false;
+
+        synchronized (activeTopicsMap.get(topic)) {
+            if(!activeTopicsMap.containsKey(topic) || closedTopicsMap.containsKey(topic)) return false;
+
+            TopicInfo topicInfo = activeTopicsMap.get(topic);
+            closedTopicsMap.put(topic, topicInfo);
+            activeTopicsMap.remove(topic);
+            return true;
+        }
+    }
+
+    public List<String>  deleteQueues(String topic, List<String> queues) {
+        if(!activeTopicsMap.containsKey(topic)) return null;
+
+        return activeTopicsMap.get(topic).removeQueues(queues);
+    }
+
+    public boolean deleteTopic(String topic) {
+        if(activeTopicsMap.containsKey(topic) && !closedTopicsMap.containsKey(topic)) return false;
+
+        synchronized (closedTopicsMap.get(topic)) {
+            TopicInfo remove = closedTopicsMap.remove(topic);
+            if(remove != null) {
+                BrokerUtil.moveTopicData(topic);
+            }
+            return true;
+        }
+    }
+
+    public boolean recoverTopic(String topic) {
+        if(activeTopicsMap.containsKey(topic) ||!closedTopicsMap.containsKey(topic)) return false;
+
+        synchronized (closedTopicsMap.get(topic)) {
+            if(activeTopicsMap.containsKey(topic) ||!closedTopicsMap.containsKey(topic)) return false;
+
+            TopicInfo topicInfo = closedTopicsMap.remove(topic);
+            activeTopicsMap.put(topic, topicInfo);
+            closedTopicsMap.remove(topic);
+            return true;
+        }
+    }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TopicInfo {
         private String topic;
         private ConcurrentMap<String, Long> queueInfo;
+
         public Long getOffset(String queue) {
             return queueInfo.getOrDefault(queue, -1L);
         }
+
         public void setOffset(String queue, long offset) {
             queueInfo.computeIfPresent(queue, (k,v)->{
                 return Math.max(v, offset);
             });
+        }
+
+        public List<String>  removeQueues(List<String> queues) {
+            List<String> res = new ArrayList<>();
+            for (String queue : queues) {
+                if (queueInfo.remove(queue)!=null) {
+                    res.add(queue);
+                }
+            }
+            return res;
         }
     }
 }

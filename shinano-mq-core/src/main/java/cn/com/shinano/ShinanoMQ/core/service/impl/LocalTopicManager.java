@@ -55,4 +55,25 @@ public class LocalTopicManager implements TopicManager {
     public Map<String, Object> getTopicInfo(String topic) {
         return brokerTopicInfo.getTopicInfo(topic);
     }
+
+    @Override
+    public boolean closeTopic(String topic) {
+        return brokerTopicInfo.closeTopic(topic);
+    }
+
+    @Override
+    public List<String> deleteQueues(String topic, List<String> queues) {
+
+        return brokerTopicInfo.deleteQueues(topic, queues);
+    }
+
+    @Override
+    public boolean deleteTopic(String topic) {
+        return brokerTopicInfo.deleteTopic(topic);
+    }
+
+    @Override
+    public boolean recoverTopic(String topic) {
+        return brokerTopicInfo.recoverTopic(topic);
+    }
 }

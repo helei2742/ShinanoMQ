@@ -35,6 +35,7 @@ public class ProducerMessageHandler implements MessageHandler {
     public void handlerMessage(ChannelHandlerContext ctx, Message message, Channel channel) {
         log.debug("服务端收到消息\n {}", message);
 
+        //topic不存在，返回失败
         if (!topicManager.isTopicExist(message.getTopic(), message.getQueue())) {
             brokerAckService.sendProducerCommitAck(message.getTransactionId(),
                     BrokerAckServiceImpl.AckStatus.FAIL.getValue(),
