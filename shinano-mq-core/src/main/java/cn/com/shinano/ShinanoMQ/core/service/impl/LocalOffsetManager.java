@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentMap;
 public class LocalOffsetManager implements OffsetManager {
 
     private static final ConcurrentMap<String, Long> offsetMap = new ConcurrentHashMap<>();
+
     @Autowired
     private BrokerTopicInfo brokerTopicInfo;
 

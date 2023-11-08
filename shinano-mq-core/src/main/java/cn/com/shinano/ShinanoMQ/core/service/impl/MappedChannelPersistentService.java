@@ -1,9 +1,8 @@
 package cn.com.shinano.ShinanoMQ.core.service.impl;
 
-import cn.com.shinano.ShinanoMQ.base.MessageUtil;
-import cn.com.shinano.ShinanoMQ.base.SaveMessage;
 import cn.com.shinano.ShinanoMQ.core.datalog.MappedFile;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
+import cn.com.shinano.ShinanoMQ.core.dto.BrokerTopicInfo;
 import cn.com.shinano.ShinanoMQ.core.service.*;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +42,9 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
     @Lazy
     private OffsetManager offsetManager;
 
+    @Autowired
+    private BrokerTopicInfo brokerTopicInfo;
+
     /**
      * 持久化消息，以topic-queue 为标识创建任务加入到线程池中执行。
      * 消息从dispatchMessageService.getTopicMessageBlockingQueue(topic)的阻塞队列里获取
@@ -58,7 +60,8 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
 
         //当前没有该topic 下 queue 的持久化任务
         persistentTaskMap.computeIfAbsent(persistentTaskMapKey, k -> {
-            PersistentTask task = new PersistentTask(bq, topic, queue, brokerAckService, offsetManager);
+            Long startOffset = brokerTopicInfo.queryTopicQueueOffset(topic, queue);
+            PersistentTask task = new PersistentTask(bq, topic, queue, startOffset, brokerAckService, offsetManager);
             executor.execute(task);
             return task;
         });
@@ -81,19 +84,20 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
         private final BrokerAckService ackService;
         private final OffsetManager offsetManager;
 
-        private Long offset;
+        private long offset;
 
         private MappedFile mappedFile;
 
         PersistentTask(LinkedBlockingQueue<BrokerMessage> bq,
                        String topic,
                        String queue,
+                       long startOffset,
                        BrokerAckService ackService,
                        OffsetManager offsetManager) {
             this.bq = bq;
             this.topic = topic;
             this.queue = queue;
-            this.offset = 0L;
+            this.offset = startOffset;
             this.ackService = ackService;
             this.offsetManager = offsetManager;
         }
@@ -106,8 +110,9 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
                     msg = bq.take();
 
                     if(mappedFile == null) {
-                        mappedFile = MappedFile.getMappedFile(topic, queue);
+                        mappedFile = MappedFile.getMappedFile(topic, queue, offset);
                     }
+
                     byte[] bytes = BrokerUtil.messageTurnBrokerSaveBytes(msg.getMessage());
 
                     //追加写入
@@ -115,7 +120,7 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
 
                     //更新offset
                     offsetManager.updateTopicQueueOffset(topic, queue, this.offset);
-                    log.debug("async write message done, {}, offset {}", msg, this.offset);
+                    log.info("async write message done, {}, offset {}", msg, this.offset);
 
                     //发ACK
                     ackService.producerCommitAckSync(msg.getId(), BrokerAckServiceImpl.AckStatus.SUCCESS);
@@ -127,11 +132,6 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
                     }
                 }
             }
-        }
-
-
-        public Long getOffset() {
-            return offset;
         }
     }
 }

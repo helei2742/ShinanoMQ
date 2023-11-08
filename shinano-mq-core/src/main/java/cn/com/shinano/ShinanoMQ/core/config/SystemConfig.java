@@ -16,8 +16,8 @@ public class SystemConfig {
     /**
      * 持久化文件目录
      */
-//    public static final String PERSISTENT_FILE_LOCATION = "/Users/helei/develop/ideaworkspace/ShinanoMQ/shinano-mq-core/datalog";
-    public static final String PERSISTENT_FILE_LOCATION = "D:\\develop\\git\\data\\ShinanoMQ\\shinano-mq-core\\datalog";
+    public static final String PERSISTENT_FILE_LOCATION = "/Users/helei/develop/ideaworkspace/ShinanoMQ/shinano-mq-core/datalog";
+//    public static final String PERSISTENT_FILE_LOCATION = "D:\\develop\\git\\data\\ShinanoMQ\\shinano-mq-core\\datalog";
 
     /**
      * 单个数据文件大小，单位byte

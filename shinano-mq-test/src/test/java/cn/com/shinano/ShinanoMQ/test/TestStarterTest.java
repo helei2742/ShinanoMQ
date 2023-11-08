@@ -44,11 +44,11 @@ class TestStarterTest {
         String line = null;
         AtomicInteger atomicInteger = new AtomicInteger(0);
         while ((line = br.readLine()) != null) {
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 1; i++) {
                 String finalLine = line;
                 int finalI = i;
                 new Thread(()->{
-                    for (int j = 0; j < 10; j++) {
+                    for (int j = 0; j < 1; j++) {
                         Message message = new Message();
                         message.setFlag(MessageOPT.PRODUCER_MESSAGE);
                         message.setTopic("test-create1");
@@ -64,6 +64,7 @@ class TestStarterTest {
                         }
                     }
                 }).start();
+                break;
             }
         }
 

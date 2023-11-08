@@ -17,6 +17,8 @@ TODO
 
 7 broker topic info 的更改可能会有线程安全问题，需要排查
 
+!!8 MappedFile 添加定时任务，清理长期没消息的; 重要，mappedbytebuffer 的刷盘
+
 *** consumer 客户端的编写
 设计：
 1. 与producer一样基于netty，设置CREATE_JUST  RUNNING  START_FAILED  SHUTDOWN_ALREADY. 确保服务一次性只能启动一次

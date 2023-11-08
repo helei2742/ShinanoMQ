@@ -34,7 +34,7 @@ public class MappedFile {
      * 创建MappedFile对象
      * @param writePosition 映射文件逻辑写的位置
      * @param filePosition 文件实际写的位置
-     * @param fileLimit 文件运行写的大小
+     * @param fileLimit 文件允许写的大小
      * @param file 传入文件时，在该文件里写；传入文件夹时新建writePosition名字的文件
      * @throws IOException
      */
@@ -53,7 +53,7 @@ public class MappedFile {
         this.fileSize = SystemConfig.PERSISTENT_FILE_SIZE;
         this.writePosition = writePosition;
         this.filePosition = filePosition;
-        this.index = new MappedFileIndex(fileDir, BrokerUtil.getSaveFileName(writePosition));
+        this.index = new MappedFileIndex(fileDir, file.getName().replace(".dat",""));
 
         init(filePosition, fileLimit);
     }
@@ -77,6 +77,7 @@ public class MappedFile {
         }
         this.mappedByteBuffer.put(bytes);
 
+        this.mappedByteBuffer.force();
         this.writePosition += bytes.length;
         this.filePosition += bytes.length;
 
@@ -123,7 +124,7 @@ public class MappedFile {
      * @return
      * @throws IOException
      */
-    public static MappedFile getMappedFile(String topic, String queue) throws IOException {
+    public static MappedFile getMappedFile(String topic, String queue, long logicOffset) throws IOException {
         String mappedFileKey = BrokerUtil.makeTopicQueueKey(topic, queue);
 
         if(!existMappedFileMap.containsKey(mappedFileKey)) {
@@ -142,14 +143,14 @@ public class MappedFile {
                         File newest = BrokerUtil.getNewestPersistentFile(dataLogs);
 
                         long fileLogicStart = Long.parseLong(newest.getName().split("\\.")[0]);
-                        long fileLength = newest.length();
-                        long startOffset = fileLogicStart + fileLength;
 
-                        if (fileLength >= SystemConfig.PERSISTENT_FILE_SIZE) { //文件已经写满
-                            res = new MappedFile(startOffset, 0, SystemConfig.PERSISTENT_FILE_SIZE, dirFile);
+                        long fileUsedLength = logicOffset - fileLogicStart;
+
+                        if (fileUsedLength >= SystemConfig.PERSISTENT_FILE_SIZE) { //文件已经写满
+                            res = new MappedFile(logicOffset, 0, SystemConfig.PERSISTENT_FILE_SIZE, dirFile);
                         } else {
-                            res = new MappedFile(startOffset, fileLength,
-                                    SystemConfig.PERSISTENT_FILE_SIZE - fileLength, newest);
+                            res = new MappedFile(logicOffset, fileUsedLength,
+                                    SystemConfig.PERSISTENT_FILE_SIZE-fileUsedLength, newest);
                         }
                     }
                     existMappedFileMap.put(mappedFileKey, res);
