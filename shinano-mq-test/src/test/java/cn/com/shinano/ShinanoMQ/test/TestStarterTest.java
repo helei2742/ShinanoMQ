@@ -99,7 +99,7 @@ class TestStarterTest {
         message.setProperties(prop);
         message.setTopic("test-create1");
         message.setQueue("queue1");
-        message.setBody("300".getBytes(StandardCharsets.UTF_8));
+        message.setBody("3630".getBytes(StandardCharsets.UTF_8));
         shinanoProducerClient.sendMsg(message);
         TimeUnit.SECONDS.sleep(500);
     }

@@ -1,2 +1,32 @@
-//TODO
-1 查询操作添加多线程处理
+TODO
+
+
+-2 服务端添加http接口，生产者、消费者的操作
+-1 目前发送以及返回都用的Message对象，需要进行拆分。
+0 生产者添加维护offset的功能，更改broker逻辑，发送时没有topic对应的queue则给producer返回失败。消费进度以json文件的形式
+持久化，类似于RocketMQ的ComsumerOffset.json
+
+1 broker同步刷盘逻辑，需要重构原本的持久化类，抽象出抽象类给同步与异步刷盘类继承
+2 拉取消息添加数量控制的功能（原来是拉一次就拉完那一个持久化文件），还要添加跨文件获取消息的功能。！！！
+
+
+3 ProducerClient类优化，将netty的部分抽象出去，只负责netty相关的部分。让ProducerClient完全屏蔽掉netty相关的方法
+4 ProducerClient,改为工厂创建，还要为其设置状态，CREATE_JUST  RUNNING  START_FAILED  SHUTDOWN_ALREADY. 确保服务一次性只能启动一次
+5 ProducerClient发送消息，1.提供阻塞的方法，等broker返回数据。2.提供异步发送方法，回调函数处理返回后的逻辑
+
+6 查询操作添加多线程处理
+
+
+*** consumer 客户端的编写
+设计：
+1. 与producer一样基于netty，设置CREATE_JUST  RUNNING  START_FAILED  SHUTDOWN_ALREADY. 确保服务一次性只能启动一次
+2 netty channel active后，向服务端发送消息，表明自己是消费者。broker收到，查询消费者是否存在，若存在查询消费进度。返回给consumer；
+3 consumer拿到消息进度后，持久化并维护这个消费进度，下次启动时若存在消费进度，则不向服务端请求消费进度
+
+
+重要但不急的事项
+1 消息的传输存储仍然采用对象的方式，已做好消息转换与传输的解耦，只需设计响应的消息格式用字节数组的形式传输与持久化。目前设计可能缺少字段
+
+
+已解决
+6 broker区分消息时，不采用if、else的方式，而是使用一个map<State, Handler>的方式做，提高扩展信以及简洁性

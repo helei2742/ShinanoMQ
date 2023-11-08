@@ -2,6 +2,7 @@ package cn.com.shinano.ShinanoMQ.core.service.impl;
 
 import cn.com.shinano.ShinanoMQ.base.Message;
 import cn.com.shinano.ShinanoMQ.base.MessageOPT;
+import cn.com.shinano.ShinanoMQ.base.SaveMessage;
 import cn.com.shinano.ShinanoMQ.core.dto.IndexNode;
 import cn.com.shinano.ShinanoMQ.core.service.AbstractBrokerService;
 import cn.com.shinano.ShinanoMQ.core.service.OffsetManager;
@@ -53,7 +54,7 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
     public void queryTopicQueueOffsetMsg(Message message, Channel channel) {
 
         try {
-            Pair<List<Message>, Long> listLongPair = queryTopicQueueAfterOffsetMsg(
+            Pair<List<SaveMessage>, Long> listLongPair = queryTopicQueueAfterOffsetMsg(
                     message.getTopic(),
                     message.getQueue(),
                     Long.parseLong(new String(message.getBody(),StandardCharsets.UTF_8)));
@@ -78,7 +79,7 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
      * @return
      */
     @Override
-    public Pair<List<Message>, Long> queryTopicQueueAfterOffsetMsg(String topic, String queue, Long logicOffset) throws IOException {
+    public Pair<List<SaveMessage>, Long> queryTopicQueueAfterOffsetMsg(String topic, String queue, Long logicOffset) throws IOException {
         Path path = Paths.get(BrokerUtil.getTopicQueueSaveDir(topic, queue));
         if(!Files.exists(path)) return null;
 
@@ -88,13 +89,14 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
         Path indexPath = Paths.get(path.toAbsolutePath().toString(),filename+".idx");
         Path dataPath = Paths.get(path.toAbsolutePath().toString(),filename+".dat");
 
-        List<Message> list = null;
+        List<SaveMessage> list = null;
         long startOffset = Long.parseLong(filename);
         if(!Files.exists(indexPath)) { //没有索引文件,直接读数据文件
 
-            list = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset);
+            list = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, 10);
         } else { //有索引
 
+            //读取索引文件
             List<IndexNode> indexList = new ArrayList<>();
             try (BufferedReader br = new BufferedReader(new FileReader(indexPath.toFile()))) {
                 String line = null;
@@ -103,16 +105,19 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
                 }
             }
 
-            //二分找在index只的位置
+            //二分找在index的位置
             if (indexList.size() == 0) throw new IllegalArgumentException("index file context is empty");
             int i = Collections.binarySearch(indexList, new IndexNode(logicOffset, 0L));
             if (i < 0) {
                 i = Math.abs(i) - 2;
-                i = Math.max(0, i);
             }
-            Long fileOffset = indexList.get(i).getFileOffset();
 
-            list = readDataFileAfterOffset(dataPath.toFile(), fileOffset, logicOffset - startOffset);
+            if(i < 0) { // 没有比当前小offset的索引
+                list = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, 10);
+            }else {
+                Long fileOffset = indexList.get(i).getFileOffset();
+                list = readDataFileAfterOffset(dataPath.toFile(), fileOffset, logicOffset - startOffset, 10);
+            }
         }
 
         long next = Long.parseLong(filename) + dataPath.toFile().length();
@@ -128,14 +133,14 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
      * @return  数据文件的消息列表
      * @throws IOException
      */
-    private List<Message> readDataFileAfterOffset(File file, long fileOffset, long targetOffset) throws IOException {
+    private List<SaveMessage> readDataFileAfterOffset(File file, long fileOffset, long targetOffset, int count) throws IOException {
         FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
         MappedByteBuffer map = channel.map(FileChannel.MapMode.READ_ONLY, fileOffset, file.length()-fileOffset);
 
         byte[] lengthBytes = new byte[8];
 
 
-        List<Message> messages = new ArrayList<>();
+        List<SaveMessage> messages = new ArrayList<>();
 
         while (map.position() < map.capacity()) {
             map.get(lengthBytes);
@@ -145,10 +150,11 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
 
             byte[] msgBytes = new byte[length];
             map.get(msgBytes);
-            if(map.position()+fileOffset>=targetOffset-8-length) {
-
+            if(map.position()-8-length + fileOffset >= targetOffset) {
                 String json = new String(msgBytes, StandardCharsets.UTF_8);
-                messages.add(JSONObject.parseObject(json, Message.class));
+                messages.add(JSONObject.parseObject(json, SaveMessage.class));
+
+                if(messages.size() >= count) break;
             }
         }
         return messages;

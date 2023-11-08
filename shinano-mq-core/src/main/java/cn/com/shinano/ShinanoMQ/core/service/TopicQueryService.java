@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.service;
 
 import cn.com.shinano.ShinanoMQ.base.Message;
+import cn.com.shinano.ShinanoMQ.base.SaveMessage;
 import cn.hutool.core.lang.Pair;
 import io.netty.channel.Channel;
 
@@ -31,5 +32,5 @@ public interface TopicQueryService {
      * @param offset offset
      * @return
      */
-    Pair<List<Message>, Long> queryTopicQueueAfterOffsetMsg(String topic, String queue, Long offset) throws IOException;
+    Pair<List<SaveMessage>, Long> queryTopicQueueAfterOffsetMsg(String topic, String queue, Long offset) throws IOException;
 }
