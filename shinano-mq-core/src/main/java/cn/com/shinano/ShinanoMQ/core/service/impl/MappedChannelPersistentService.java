@@ -25,6 +25,7 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
     /**
      * topic-key: 持久化任务
      */
+    @Deprecated
     private final Map<String, PersistentTask> persistentTaskMap = new ConcurrentHashMap<>();
 
     /**
@@ -77,6 +78,9 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
         return persistentTaskMap.get(key);
     }
 
+    public Map<String, MappedFile> getMappedFileMap() {
+        return mappedFileMap;
+    }
 
     @Override
     public void saveMessageImmediately(Message message) {

@@ -1,6 +1,8 @@
 package cn.com.shinano.ShinanoMQ.base.dto;
 
-public class MessageOPT {
+public class SystemConstants {
+
+    public static final String REQUEST_ERROR = "request_error";
 
     /**
      * broker ping

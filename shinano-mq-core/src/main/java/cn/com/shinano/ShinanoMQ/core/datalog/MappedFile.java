@@ -10,25 +10,37 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 public class MappedFile {
 
     private static final ConcurrentMap<String,MappedFile> existMappedFileMap = new ConcurrentHashMap<>();
 
+    protected static final AtomicLongFieldUpdater<MappedFile> WRITE_POSITION_UPDATER;
+    protected static final AtomicLongFieldUpdater<MappedFile> FILE_POSITION_UPDATER;
+
+
     private File file;
     private FileChannel fileChannel;
     private MappedByteBuffer mappedByteBuffer;
 
-    private Long writePosition; //逻辑上写的位置
-    private Long filePosition; //物理上写的位置
+    private volatile long writePosition; //逻辑上写的位置
+    private volatile long filePosition; //物理上写的位置
 
     private final Long fileSize;
     private final String fileDir;
 
+    private long lastFlushTime = -1L;
     /**
      * 当前MappedFile文件的索引
      */
     private MappedFileIndex index;
+
+    static {
+        WRITE_POSITION_UPDATER = AtomicLongFieldUpdater.newUpdater(MappedFile.class, "writePosition");
+        FILE_POSITION_UPDATER = AtomicLongFieldUpdater.newUpdater(MappedFile.class, "filePosition");
+    }
 
     /**
      * 创建MappedFile对象
@@ -71,38 +83,42 @@ public class MappedFile {
      * @throws IOException
      */
     public long append(byte[] bytes) throws IOException {
-        if(mappedByteBuffer.position() + bytes.length > mappedByteBuffer.capacity()) {
+        long currentPos = WRITE_POSITION_UPDATER.get(this);
+        long filePos = FILE_POSITION_UPDATER.get(this);
+
+        if(currentPos + bytes.length > mappedByteBuffer.capacity()) {
             //装不下了，重新map一块装
-            getNewMappedByteBuffer();
+            synchronized (this) {
+                currentPos = WRITE_POSITION_UPDATER.get(this);
+
+                if(currentPos + bytes.length > mappedByteBuffer.capacity()) {
+                    //原来的先刷盘
+                    mappedByteBuffer.force();
+
+                    //保存索引文件
+                    index.save(BrokerUtil.getSaveFileName(writePosition));
+
+                    //新搞一个
+                    this.file = newFile(writePosition);
+                    this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
+
+                    FILE_POSITION_UPDATER.set(this, 0);
+                    this.mappedByteBuffer = this.fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, this.fileSize);
+                }
+            }
         }
+
         this.mappedByteBuffer.put(bytes);
 
-        this.writePosition += bytes.length;
-        this.filePosition += bytes.length;
 
         //更新内存中的索引
-        index.updateIndex(writePosition, filePosition);
+        index.updateIndex(currentPos, filePos);
 
-        return writePosition;
+        FILE_POSITION_UPDATER.addAndGet(this, bytes.length);
+
+        return WRITE_POSITION_UPDATER.addAndGet(this, bytes.length);
     }
 
-    /**
-     * 当前的写满了，映射到下一个文件
-     * @throws IOException
-     */
-    private void getNewMappedByteBuffer() throws IOException {
-        //原来的先刷盘
-        mappedByteBuffer.force();
-
-        //保存索引文件
-        index.save(BrokerUtil.getSaveFileName(writePosition));
-
-        //新搞一个
-        this.file = newFile(writePosition);
-        this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
-        this.filePosition = 0L;
-        this.mappedByteBuffer = this.fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, this.fileSize);
-    }
 
     /**
      * 新创建一个File对象
@@ -157,5 +173,20 @@ public class MappedFile {
             }
         }
         return existMappedFileMap.get(mappedFileKey);
+    }
+
+    public void flush() throws IOException {
+        //原来的先刷盘
+        mappedByteBuffer.force();
+
+        //保存索引文件
+        index.flush();
+
+        this.lastFlushTime = System.currentTimeMillis();
+    }
+
+
+    public long getLastFlushTime() {
+        return this.lastFlushTime;
     }
 }

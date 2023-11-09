@@ -2,7 +2,7 @@ package cn.com.shinano.ShinanoMQ.test;
 
 import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.MessageOPT;
+import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.TopicQueryConstants;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -30,13 +31,18 @@ public class ReadMessageTest {
 
 //        long l = queryOffset(client);
 //        System.out.println(l);
+        CountDownLatch latch = new CountDownLatch(1);
+        MessageListVO x = queryMessage(client, 1076, latch,12);
 
-        System.out.println(queryMessage(client, 0, 12));
+        System.out.println(x);
     }
 
-    private MessageListVO queryMessage(ShinanoProducerClient shinanoProducerClient, long offset, int count) throws InterruptedException {
+    private MessageListVO queryMessage(ShinanoProducerClient shinanoProducerClient,
+                                       long offset,
+                                       CountDownLatch latch,
+                                       int count) throws InterruptedException {
         Message message = new Message();
-        message.setFlag(MessageOPT.TOPIC_INFO_QUERY);
+        message.setFlag(SystemConstants.TOPIC_INFO_QUERY);
 
         Map<String, String> prop = new HashMap<>();
         prop.put(TopicQueryConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE);
@@ -48,15 +54,14 @@ public class ReadMessageTest {
         message.setBody(String.valueOf(offset).getBytes(StandardCharsets.UTF_8));
         message.setTransactionId(UUID.randomUUID().toString());
 
-        CountDownLatch latch = new CountDownLatch(1);
-        final MessageListVO[] res = {null};
+
+        final MessageListVO[] res = new MessageListVO[1];
 
         shinanoProducerClient.sendMsg(message, msg->{
             byte[] array = ByteBuffer.wrap(msg.getBody()).array();
             res[0] = ProtostuffUtils.deserialize(array, MessageListVO.class);
             latch.countDown();
         });
-
         latch.await();
         return res[0];
     }
@@ -64,7 +69,7 @@ public class ReadMessageTest {
 
     private long queryOffset(ShinanoProducerClient shinanoProducerClient) throws InterruptedException {
         Message message = new Message();
-        message.setFlag(MessageOPT.TOPIC_INFO_QUERY);
+        message.setFlag(SystemConstants.TOPIC_INFO_QUERY);
         Map<String, String> prop = new HashMap<>();
         prop.put(TopicQueryConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET);
         message.setProperties(prop);

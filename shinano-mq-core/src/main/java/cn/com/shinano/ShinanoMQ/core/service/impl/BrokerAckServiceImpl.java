@@ -2,7 +2,7 @@ package cn.com.shinano.ShinanoMQ.core.service.impl;
 
 import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.MessageOPT;
+import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
 import cn.com.shinano.ShinanoMQ.core.config.ShinanoMQConfig;
 import cn.com.shinano.ShinanoMQ.core.service.AbstractBrokerService;
 import cn.com.shinano.ShinanoMQ.core.service.BrokerAckService;
@@ -76,7 +76,7 @@ public class BrokerAckServiceImpl extends AbstractBrokerService implements Broke
         Message message = new Message();
 
         message.setTransactionId(id);
-        message.setFlag(MessageOPT.PRODUCER_MESSAGE_ACK);
+        message.setFlag(SystemConstants.PRODUCER_MESSAGE_ACK);
         message.setBody(ByteBuffer.allocate(4).putInt(ack).array());
 
         sendMessage(message, channel);

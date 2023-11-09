@@ -1,7 +1,7 @@
 package cn.com.shinano.ShinanoMQ.producer.nettyhandler;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.MessageOPT;
+import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyHeartbeatHandler;
 import cn.com.shinano.ShinanoMQ.producer.config.ProducerConfig;
 import cn.com.shinano.ShinanoMQ.producer.service.ResultCallBackInvoker;
@@ -29,7 +29,7 @@ public class ProducerBootstrapHandler extends NettyHeartbeatHandler {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Message message = new Message();
-        message.setFlag(MessageOPT.CLIENT_CONNECT);
+        message.setFlag(SystemConstants.CLIENT_CONNECT);
 //        message.setBody((ProducerConfig.PRODUCER_CLIENT_ID.getBytes(StandardCharsets.UTF_8));
         message.setBody((ProducerConfig.PRODUCER_CLIENT_ID+ new Random().nextInt(100)).getBytes(StandardCharsets.UTF_8));
 
@@ -40,8 +40,8 @@ public class ProducerBootstrapHandler extends NettyHeartbeatHandler {
     protected void handlerMessage(ChannelHandlerContext context, Message msg) {
         log.debug("client get a message [{}]", msg);
         switch (msg.getFlag()) {
-            case MessageOPT.PRODUCER_MESSAGE_ACK:
-            case MessageOPT.TOPIC_INFO_QUERY:
+            case SystemConstants.PRODUCER_MESSAGE_ACK:
+            case SystemConstants.TOPIC_INFO_QUERY_RESULT:
                 resultCallBackInvoker.invokeCallBack(msg.getTransactionId(), msg);
                 break;
         }

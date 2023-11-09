@@ -1,10 +1,9 @@
 package cn.com.shinano.ShinanoMQ.producer.service;
 
-import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
@@ -51,11 +50,13 @@ public class ResultCallBackInvoker {
      * @param msg broker返回的消息
      */
     public void invokeCallBack(String transactionId, Message msg) {
-        int flag = ByteBuffer.wrap(msg.getBody()).getInt();
+        boolean flag = msg.getProperties() != null && msg.getProperties().containsKey(SystemConstants.REQUEST_ERROR);
+
 //        log.debug("get ack of message transactionId[{}], ack[{}], msg[{}]", transactionId, flag, msg);
+
         Consumer<Message> success = successCallbackMap.remove(transactionId);
         Consumer<Message> fail = failCallbackMap.remove(transactionId);
-        if(flag == AckStatus.SUCCESS.getValue()) {
+        if(!flag) {
             if (success != null) {
                 success.accept(msg);
             }

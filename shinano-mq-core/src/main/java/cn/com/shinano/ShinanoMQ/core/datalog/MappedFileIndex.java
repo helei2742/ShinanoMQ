@@ -40,18 +40,30 @@ public class MappedFileIndex {
         }
     }
 
+
+    public void save(String newIndexFileName) throws IOException {
+
+        flush();
+
+        this.indexFileName = newIndexFileName;
+    }
+
     /**
      * 持久化索引文件
      */
-    public void save(String newIndexFileName) throws IOException {
+    public void flush() throws IOException {
         Path path = Paths.get(this.dir + File.separator + this.indexFileName + ".idx");
 
         if(!Files.exists(path))
             Files.createFile(path);
 
-        AsynchronousFileChannel fileChannel =
-                null;
-        fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
+        AsynchronousFileChannel fileChannel = null;
+
+        try {
+            fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
+        } catch (IOException e) {
+            return;
+        }
 
         long position = 0;
         while (!indexQueue.isEmpty()) {
@@ -63,8 +75,6 @@ public class MappedFileIndex {
             Future<Integer> result = fileChannel.write(buffer, position);
             position += bytes.length;
         }
-
-        this.indexFileName = newIndexFileName;
     }
 
     private static boolean isAddIndex(int n) {

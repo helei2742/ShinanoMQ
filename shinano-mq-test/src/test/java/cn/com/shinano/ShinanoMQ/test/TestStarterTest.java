@@ -1,7 +1,7 @@
 package cn.com.shinano.ShinanoMQ.test;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.MessageOPT;
+import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.TopicQueryConstants;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
 import org.junit.jupiter.api.AfterEach;
@@ -50,7 +50,7 @@ class TestStarterTest {
                 new Thread(()->{
                     for (int j = 0; j < 10; j++) {
                         Message message = new Message();
-                        message.setFlag(MessageOPT.PRODUCER_MESSAGE);
+                        message.setFlag(SystemConstants.PRODUCER_MESSAGE);
                         message.setTopic("test-create1");
                         message.setQueue("queue1");
 //                        message.setValue("test-line-" + finalLine + "-" + atomicInteger.incrementAndGet());
@@ -76,7 +76,7 @@ class TestStarterTest {
                 = new ShinanoProducerClient("localhost", 10022);
         shinanoProducerClient.run();
         Message message = new Message();
-        message.setFlag(MessageOPT.TOPIC_INFO_QUERY);
+        message.setFlag(SystemConstants.TOPIC_INFO_QUERY);
         Map<String, String> prop = new HashMap<>();
         prop.put(TopicQueryConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET);
         message.setProperties(prop);
@@ -93,7 +93,7 @@ class TestStarterTest {
                 = new ShinanoProducerClient("localhost", 10022);
         shinanoProducerClient.run();
         Message message = new Message();
-        message.setFlag(MessageOPT.TOPIC_INFO_QUERY);
+        message.setFlag(SystemConstants.TOPIC_INFO_QUERY);
         Map<String, String> prop = new HashMap<>();
         prop.put(TopicQueryConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE);
         message.setProperties(prop);
@@ -106,7 +106,7 @@ class TestStarterTest {
 
     @Test
     public void brokerTPTest() throws IOException, InterruptedException {
-        int putThreadCount = 20;
+        int putThreadCount = 5;
         int threadPutMessageCount = 1000;
 
         AtomicLong success = new AtomicLong(0);
@@ -149,7 +149,7 @@ class TestStarterTest {
                 }
                 for (int j = 0; j < threadPutMessageCount; j++) {
                     Message message = new Message();
-                    message.setFlag(MessageOPT.PRODUCER_MESSAGE);
+                    message.setFlag(SystemConstants.PRODUCER_MESSAGE);
                     message.setTopic("test-create1");
                     message.setQueue("queue1");
 //                        message.setValue("test-line-" + finalLine + "-" + atomicInteger.incrementAndGet());

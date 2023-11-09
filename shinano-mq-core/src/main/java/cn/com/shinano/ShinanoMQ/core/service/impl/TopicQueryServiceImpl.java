@@ -2,18 +2,14 @@ package cn.com.shinano.ShinanoMQ.core.service.impl;
 
 import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.MessageOPT;
+import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
-import cn.com.shinano.ShinanoMQ.base.dto.TopicQueryConstants;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.dto.IndexNode;
 import cn.com.shinano.ShinanoMQ.core.service.AbstractBrokerService;
 import cn.com.shinano.ShinanoMQ.core.service.OffsetManager;
 import cn.com.shinano.ShinanoMQ.core.service.TopicQueryService;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
-import cn.hutool.core.lang.Pair;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +41,7 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
     @Override
     public void queryTopicQueueOffset(Message message, Channel channel) {
         long l = offsetManager.queryTopicQueueOffset(message.getTopic(), message.getQueue());
-        sendMessage(MessageOPT.TOPIC_INFO_QUERY_RESULT, String.valueOf(l), channel);
+        sendMessage(SystemConstants.TOPIC_INFO_QUERY_RESULT, String.valueOf(l), channel);
     }
 
     /**
@@ -64,7 +60,7 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
                     Long.parseLong(new String(message.getBody(),StandardCharsets.UTF_8)),
                     count);
 
-            message.setFlag(MessageOPT.TOPIC_INFO_QUERY_RESULT);
+            message.setFlag(SystemConstants.TOPIC_INFO_QUERY_RESULT);
             HashMap<String, String> map = new HashMap<>();
 
             message.setProperties(map);
@@ -98,11 +94,11 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
         Path indexPath = Paths.get(path.toAbsolutePath().toString(),filename+".idx");
         Path dataPath = Paths.get(path.toAbsolutePath().toString(),filename+".dat");
 
-        List<SaveMessage> list = null;
+        MessageListVO res = null;
         long startOffset = Long.parseLong(filename);
         if(!Files.exists(indexPath)) { //没有索引文件,直接读数据文件
 
-            list = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, count);
+            res = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, count);
         } else { //有索引
 
             //读取索引文件
@@ -122,15 +118,14 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
             }
 
             if(i < 0) { // 没有比当前小offset的索引
-                list = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, count);
+                res = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, count);
             }else {
                 Long fileOffset = indexList.get(i).getFileOffset();
-                list = readDataFileAfterOffset(dataPath.toFile(), fileOffset, logicOffset - startOffset, count);
+                res = readDataFileAfterOffset(dataPath.toFile(), fileOffset, logicOffset - startOffset, count);
             }
         }
 
-        long next = Long.parseLong(filename) + dataPath.toFile().length();
-        return new MessageListVO(list, next);
+        return res;
     }
 
 
@@ -142,7 +137,9 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
      * @return  数据文件的消息列表
      * @throws IOException
      */
-    private List<SaveMessage> readDataFileAfterOffset(File file, long fileOffset, long targetOffset, int count) throws IOException {
+    private MessageListVO readDataFileAfterOffset(File file, long fileOffset, long targetOffset, int count) throws IOException {
+
+
         FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
         MappedByteBuffer map = channel.map(FileChannel.MapMode.READ_ONLY, fileOffset, file.length()-fileOffset);
 
@@ -166,7 +163,11 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
                 if(messages.size() >= count) break;
             }
         }
-        return messages;
+
+        MessageListVO vo = new MessageListVO();
+        vo.setMessages(messages);
+        vo.setNextOffset(map.position());
+        return vo;
     }
 
     /**
