@@ -13,5 +13,5 @@ public class ShinanoMQConstants {
      */
     public static final Integer MAX_FRAME_LENGTH = 1024*1024;
 
-    public static final int MESSAGE_SIZE_LENGTH = 8;
+    public static final int MESSAGE_SIZE_LENGTH = 4;
 }

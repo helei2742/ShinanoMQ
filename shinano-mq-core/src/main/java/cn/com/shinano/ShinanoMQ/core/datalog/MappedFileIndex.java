@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.datalog;
 
-import cn.com.shinano.ShinanoMQ.core.config.SystemConfig;
+import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.dto.IndexNode;
 ;
 
@@ -35,7 +35,7 @@ public class MappedFileIndex {
      * @param filePosition  物理文件上写的位置
      */
     public void updateIndex(Long writePosition, Long filePosition) {
-        if(isAddIndex(SystemConfig.PERSISTENT_INDEX_LEVEL)) {
+        if(isAddIndex(BrokerConfig.PERSISTENT_INDEX_LEVEL)) {
             indexQueue.add(new IndexNode(writePosition, filePosition));
         }
     }

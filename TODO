@@ -1,5 +1,7 @@
 TODO
 
+-1 ByteBuf池，减少对象创建， 统一使用ByteBuf
+
 -2 服务端添加http接口，生产者、消费者的操作
 
 0 生产者添加维护offset的功能，更改broker逻辑，发送时没有topic对应的queue则给producer返回失败。消费进度以json文件的形式

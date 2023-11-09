@@ -1,7 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.config;
 
 
-public class SystemConfig {
+public class BrokerConfig {
 
     /**
      * 本broker的host
@@ -27,7 +27,7 @@ public class SystemConfig {
     /**
      * 持久化时生成的索引文件等级， 4代表写入一条数据时1/2^3次方概率生成索引
      */
-    public static final Integer PERSISTENT_INDEX_LEVEL = 4;
+    public static final Integer PERSISTENT_INDEX_LEVEL = 5;
 
     /**
      * 操作系统一页的大小
