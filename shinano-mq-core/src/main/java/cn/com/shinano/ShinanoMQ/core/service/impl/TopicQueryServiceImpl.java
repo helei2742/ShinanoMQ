@@ -1,8 +1,11 @@
 package cn.com.shinano.ShinanoMQ.core.service.impl;
 
-import cn.com.shinano.ShinanoMQ.base.Message;
-import cn.com.shinano.ShinanoMQ.base.MessageOPT;
-import cn.com.shinano.ShinanoMQ.base.SaveMessage;
+import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.MessageOPT;
+import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
+import cn.com.shinano.ShinanoMQ.base.dto.TopicQueryConstants;
+import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.dto.IndexNode;
 import cn.com.shinano.ShinanoMQ.core.service.AbstractBrokerService;
 import cn.com.shinano.ShinanoMQ.core.service.OffsetManager;
@@ -51,18 +54,21 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
      * @param channel 数据返回的channel
      */
     @Override
-    public void queryTopicQueueOffsetMsg(Message message, Channel channel) {
+    public void queryTopicQueueOffsetMsg(Message message, int count, Channel channel) {
 
         try {
-            Pair<List<SaveMessage>, Long> listLongPair = queryTopicQueueAfterOffsetMsg(
+
+            MessageListVO vo = queryTopicQueueAfterOffsetMsg(
                     message.getTopic(),
                     message.getQueue(),
-                    Long.parseLong(new String(message.getBody(),StandardCharsets.UTF_8)));
+                    Long.parseLong(new String(message.getBody(),StandardCharsets.UTF_8)),
+                    count);
 
             message.setFlag(MessageOPT.TOPIC_INFO_QUERY_RESULT);
+            HashMap<String, String> map = new HashMap<>();
 
-            message.setBody(JSON.toJSONString(listLongPair).getBytes(StandardCharsets.UTF_8));
-
+            message.setProperties(map);
+            message.setBody(ProtostuffUtils.serialize(vo));
         } catch (IOException e) {
             log.error("query message[{}] get error", message, e);
         }
@@ -76,10 +82,13 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
      * @param topic topic name
      * @param queue queue name
      * @param logicOffset logicOffset
+     * @param count 从logicOffset开始查几条
      * @return
      */
-    @Override
-    public Pair<List<SaveMessage>, Long> queryTopicQueueAfterOffsetMsg(String topic, String queue, Long logicOffset) throws IOException {
+    public MessageListVO queryTopicQueueAfterOffsetMsg(String topic,
+                                                       String queue,
+                                                       Long logicOffset,
+                                                       int count) throws IOException {
         Path path = Paths.get(BrokerUtil.getTopicQueueSaveDir(topic, queue));
         if(!Files.exists(path)) return null;
 
@@ -93,7 +102,7 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
         long startOffset = Long.parseLong(filename);
         if(!Files.exists(indexPath)) { //没有索引文件,直接读数据文件
 
-            list = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, 10);
+            list = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, count);
         } else { //有索引
 
             //读取索引文件
@@ -113,15 +122,15 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
             }
 
             if(i < 0) { // 没有比当前小offset的索引
-                list = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, 10);
+                list = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, count);
             }else {
                 Long fileOffset = indexList.get(i).getFileOffset();
-                list = readDataFileAfterOffset(dataPath.toFile(), fileOffset, logicOffset - startOffset, 10);
+                list = readDataFileAfterOffset(dataPath.toFile(), fileOffset, logicOffset - startOffset, count);
             }
         }
 
         long next = Long.parseLong(filename) + dataPath.toFile().length();
-        return new Pair<>(list, next);
+        return new MessageListVO(list, next);
     }
 
 
@@ -151,9 +160,9 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
             byte[] msgBytes = new byte[length];
             map.get(msgBytes);
             if(map.position()-8-length + fileOffset >= targetOffset) {
-                String json = new String(msgBytes, StandardCharsets.UTF_8);
-                messages.add(JSONObject.parseObject(json, SaveMessage.class));
-
+//                String json = new String(msgBytes, StandardCharsets.UTF_8);
+//                messages.add(JSONObject.parseObject(json, SaveMessage.class));
+                messages.add(BrokerUtil.brokerSaveBytesTurnMessage(msgBytes));
                 if(messages.size() >= count) break;
             }
         }

@@ -1,19 +1,16 @@
 package cn.com.shinano.ShinanoMQ.core.utils;
 
-import cn.com.shinano.ShinanoMQ.base.Message;
-import cn.com.shinano.ShinanoMQ.base.SaveMessage;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
+import cn.com.shinano.ShinanoMQ.base.util.MessageUtil;
+import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.config.SystemConfig;
 import cn.hutool.core.util.RandomUtil;
 import com.alibaba.fastjson.JSONObject;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -93,13 +90,19 @@ public class BrokerUtil {
         saveMessage.setTimestamp(System.currentTimeMillis());
         saveMessage.setStoreHost(SystemConfig.BROKER_HOST);
 
-        byte[] bytes = JSONObject.toJSONBytes(saveMessage);
+//        byte[] bytes = JSONObject.toJSONBytes(saveMessage);
+        byte[] bytes = ProtostuffUtils.serialize(saveMessage);
         byte[] length = ByteBuffer.allocate(8).putInt(bytes.length).array();
         byte[] res = new byte[bytes.length + length.length];
         System.arraycopy(length, 0, res, 0, length.length);
         System.arraycopy(bytes, 0, res, length.length, bytes.length);
         return res;
     }
+
+    public static SaveMessage brokerSaveBytesTurnMessage(byte[] msgBytes) {
+        return ProtostuffUtils.deserialize(msgBytes, SaveMessage.class);
+    }
+
 
     /**
      * 移动topic的数据文件，

@@ -1,7 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.service.impl;
 
-import cn.com.shinano.ShinanoMQ.base.MessageUtil;
-import cn.com.shinano.ShinanoMQ.base.SaveMessage;
+import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.core.datalog.MappedFile;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
 import cn.com.shinano.ShinanoMQ.core.service.*;
@@ -28,6 +28,11 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
     private final Map<String, PersistentTask> persistentTaskMap = new ConcurrentHashMap<>();
 
     /**
+     * topic-key: MappedFile
+     */
+    private final Map<String, MappedFile> mappedFileMap = new ConcurrentHashMap<>();
+
+    /**
      * 执行持久化任务的线程池
      */
     private final ExecutorService executor = Executors.newFixedThreadPool(5);
@@ -51,6 +56,7 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
      * @param queue 消息的queue
      */
     @Override
+    @Deprecated
     public void persistentMessage(String id, String topic, String queue) {
         LinkedBlockingQueue<BrokerMessage> bq = dispatchMessageService.getTopicMessageBlockingQueue(topic);
 
@@ -65,15 +71,47 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
     }
 
     @Override
+    @Deprecated
     public PersistentTask getPersistentTask(String topic, String queue) {
         String key = BrokerUtil.makeTopicQueueKey(topic, queue);
         return persistentTaskMap.get(key);
     }
 
 
+    @Override
+    public void saveMessageImmediately(Message message) {
+        executor.execute(()->{
+            String topic = message.getTopic();
+            String queue = message.getQueue();
+
+            String key = BrokerUtil.makeTopicQueueKey(topic, queue);
+            try {
+                mappedFileMap.putIfAbsent(key, MappedFile.getMappedFile(topic, queue));
+
+                MappedFile mappedFile = mappedFileMap.get(key);
+
+                byte[] bytes = BrokerUtil.messageTurnBrokerSaveBytes(message);
+
+                //追加写入
+                long offset = mappedFile.append(bytes);
+
+                //更新offset
+                offsetManager.updateTopicQueueOffset(topic, queue, offset);
+
+                //发ACK
+                brokerAckService.producerCommitAckSync(message.getTransactionId(), AckStatus.SUCCESS);
+            } catch (IOException e) {
+                log.error("save message got an error", e);
+                brokerAckService.producerCommitAckSync(message.getTransactionId(),AckStatus.FAIL);
+            }
+        });
+    }
+
+
     /**
      * 持久化任务，每个持久化任务负责一个topic的一个key内的消息的持久化
      */
+    @Deprecated
     public static class PersistentTask implements Runnable {
         private final LinkedBlockingQueue<BrokerMessage> bq;
         private final String topic;
@@ -118,18 +156,16 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
                     log.debug("async write message done, {}, offset {}", msg, this.offset);
 
                     //发ACK
-                    ackService.producerCommitAckSync(msg.getId(), BrokerAckServiceImpl.AckStatus.SUCCESS);
+                    ackService.producerCommitAckSync(msg.getId(), AckStatus.SUCCESS);
                     this.offset += bytes.length;
                 } catch (InterruptedException | IOException e) {
                     log.error("persistent task get a error, ", e);
                     if(msg != null) {
-                        ackService.producerCommitAckSync(msg.getId(), BrokerAckServiceImpl.AckStatus.FAIL);
+                        ackService.producerCommitAckSync(msg.getId(),AckStatus.FAIL);
                     }
                 }
             }
         }
-
-
         public Long getOffset() {
             return offset;
         }

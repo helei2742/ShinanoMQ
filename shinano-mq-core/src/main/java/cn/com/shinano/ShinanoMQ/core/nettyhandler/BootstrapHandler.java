@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.nettyhandler;
 
-import cn.com.shinano.ShinanoMQ.base.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyHeartbeatHandler;
 import cn.com.shinano.ShinanoMQ.core.service.ConnectManager;
@@ -10,7 +10,6 @@ import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -44,7 +43,7 @@ public class BootstrapHandler extends NettyHeartbeatHandler  {
     @Override
     protected void handlerMessage(ChannelHandlerContext ctx, Message message) {
         Channel channel = ctx.channel();
-
+        log.info("get an message [{}]", message);
         //根据消息的类型从map中取出对应的handler处理
         MessageHandler messageHandler = messageHandlerMap.get(message.getFlag());
         if(messageHandler != null) {

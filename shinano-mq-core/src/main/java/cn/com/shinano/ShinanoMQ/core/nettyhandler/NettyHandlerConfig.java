@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.nettyhandler;
 
-import cn.com.shinano.ShinanoMQ.base.MessageOPT;
+import cn.com.shinano.ShinanoMQ.base.dto.MessageOPT;
 import cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler.BrokerInfoQueryHandler;
 import cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler.ClientConnectHandler;
 import cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler.ProducerMessageHandler;

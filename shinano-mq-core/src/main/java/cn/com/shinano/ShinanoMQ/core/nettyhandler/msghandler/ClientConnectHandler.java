@@ -1,7 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler;
 
-import cn.com.shinano.ShinanoMQ.base.Message;
-import cn.com.shinano.ShinanoMQ.base.MessageUtil;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.util.MessageUtil;
 import cn.com.shinano.ShinanoMQ.core.nettyhandler.MessageHandler;
 import cn.com.shinano.ShinanoMQ.core.service.ConnectManager;
 import io.netty.channel.Channel;

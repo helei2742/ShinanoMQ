@@ -1,14 +1,12 @@
 package cn.com.shinano.ShinanoMQ.base.nettyhandler;
 
 
-import cn.com.shinano.ShinanoMQ.base.Message;
-import cn.com.shinano.ShinanoMQ.base.MessageOPT;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.MessageOPT;
 import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
-
-import java.nio.charset.StandardCharsets;
 
 
 /**

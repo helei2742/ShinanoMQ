@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<property name="LOG_HOME" value="logs" />
+
+<!--	<property name="logPatternConsoleLog" value="%date{yyyy-MM-dd HH:mm:ss} | %highlight(%-5.5p) | %boldYellow(%-80.80c) | %boldGreen(%-8.8)"-->
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>[ %-5level] [%date] [%t] %logger{10} -%msg%n</pattern>
+			<charset>UTF-8</charset>
+		</encoder>
+	</appender>
+	<appender name="INFO_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<File>${LOG_HOME}/info.log</File>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<FileNamePattern>${LOG_HOME}/info.log.%d{yyyy-MM-dd}.%i</FileNamePattern>
+			<MaxFileSize>200MB</MaxFileSize>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>8GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>[ %-5level] [%date] [%t] %logger{10} -%msg%n</pattern>
+			<charset>UTF-8</charset>
+		</encoder>
+	</appender>
+
+	<appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>ERROR</level>
+		</filter>
+		<File>${LOG_HOME}/error.log</File>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<FileNamePattern>${LOG_HOME}/error.log.%d{yyyy-MM-dd}.%i</FileNamePattern>
+			<MaxFileSize>200MB</MaxFileSize>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>4GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>[ %-5level] [%date] [%t] %logger{10} -%msg%n</pattern>
+			<charset>UTF-8</charset>
+		</encoder>
+	</appender>
+
+	<appender name="WARN_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>WARN</level>
+		</filter>
+		<File>${LOG_HOME}/warn.log</File>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<FileNamePattern>${LOG_HOME}/warn.log.%d{yyyy-MM-dd}.%i</FileNamePattern>
+			<MaxFileSize>200MB</MaxFileSize>
+			<maxHistory>30</maxHistory>
+			<totalSizeCap>4GB</totalSizeCap>
+		</rollingPolicy>
+		<encoder>
+			<pattern>[ %-5level] [%date] [%t] %logger{10} -%msg%n</pattern>
+			<charset>UTF-8</charset>
+		</encoder>
+	</appender>
+
+	<root level="INFO">
+		<appender-ref ref="STDOUT" />
+		<appender-ref ref="INFO_FILE" />
+		<appender-ref ref="WARN_FILE" />
+		<appender-ref ref="ERROR_FILE" />
+	</root>
+
+</configuration>

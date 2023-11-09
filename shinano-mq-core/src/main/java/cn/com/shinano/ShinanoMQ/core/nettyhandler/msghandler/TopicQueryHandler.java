@@ -1,7 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler;
 
-import cn.com.shinano.ShinanoMQ.base.Message;
-import cn.com.shinano.ShinanoMQ.base.TopicQueryOPT;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.TopicQueryConstants;
 import cn.com.shinano.ShinanoMQ.core.nettyhandler.MessageHandler;
 import cn.com.shinano.ShinanoMQ.core.service.TopicQueryService;
 import io.netty.channel.Channel;
@@ -24,14 +24,19 @@ public class TopicQueryHandler implements MessageHandler {
     public void handlerMessage(ChannelHandlerContext ctx, Message message, Channel channel) {
         Map<String, String> properties = message.getProperties();
 
-        if(properties == null || !properties.containsKey(TopicQueryOPT.TOPIC_QUERY_OPT_KEY)) return;
+        if(properties == null || !properties.containsKey(TopicQueryConstants.TOPIC_QUERY_OPT_KEY)) return;
 
-        switch (properties.get(TopicQueryOPT.TOPIC_QUERY_OPT_KEY)) {
-            case TopicQueryOPT.QUERY_TOPIC_QUEUE_OFFSET://查询offset
+        switch (properties.get(TopicQueryConstants.TOPIC_QUERY_OPT_KEY)) {
+            case TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET://查询offset
                 topicQueryService.queryTopicQueueOffset(message, channel);
                 break;
-            case TopicQueryOPT.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE://根据offset查消息
-                topicQueryService.queryTopicQueueOffsetMsg(message, channel);
+            case TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE://根据offset查消息
+                int count = Integer.parseInt(properties.get(TopicQueryConstants.QUERY_TOPIC_MESSAGE_COUNT_KEY));
+
+                if(count == 0) count = TopicQueryConstants.QUERY_TOPIC_MESSAGE_COUNT_LIMIT;
+                else count = Math.min(count, TopicQueryConstants.QUERY_TOPIC_MESSAGE_COUNT_LIMIT);
+
+                topicQueryService.queryTopicQueueOffsetMsg(message, count, channel);
                 break;
         }
     }

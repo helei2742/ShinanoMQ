@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.service;
 
-import cn.com.shinano.ShinanoMQ.core.service.impl.BrokerAckServiceImpl;
+import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
 import io.netty.channel.Channel;
 
 public interface BrokerAckService {
@@ -16,7 +16,7 @@ public interface BrokerAckService {
      * @param id message的唯一id
      * @param ack ack状态
      */
-    public void producerCommitAckSync(String id, BrokerAckServiceImpl.AckStatus ack);
+    public void producerCommitAckSync(String id, AckStatus ack);
 
     /**
      * 异步提交ack，分批写channel
@@ -24,7 +24,7 @@ public interface BrokerAckService {
      * @param ack ack状态
      */
     @Deprecated
-    public void producerCommitAckASync(String id, BrokerAckServiceImpl.AckStatus ack);
+    public void producerCommitAckASync(String id, AckStatus ack);
 
     public void sendProducerCommitAck(String id, int ack, Channel channel);
 }
