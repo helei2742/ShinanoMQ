@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.base.nettyhandler;
 
-import cn.com.shinano.ShinanoMQ.base.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import io.netty.channel.ChannelHandlerContext;
 
 /**

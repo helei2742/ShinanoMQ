@@ -1,22 +1,21 @@
 package cn.com.shinano.ShinanoMQ.producer;
 
-import cn.com.shinano.ShinanoMQ.base.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.MessageDecoder;
 import cn.com.shinano.ShinanoMQ.base.MessageEncoder;
-import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.producer.config.ProducerConfig;
-import cn.com.shinano.ShinanoMQ.producer.executor.SendExecutor;
 import cn.com.shinano.ShinanoMQ.producer.nettyhandler.ProducerBootstrapHandler;
+import cn.com.shinano.ShinanoMQ.producer.service.ResultCallBackInvoker;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.util.UUID;
+import java.util.function.Consumer;
 
 @Slf4j
 public class ShinanoProducerClient {
@@ -26,15 +25,18 @@ public class ShinanoProducerClient {
 
     private ProducerBootstrapHandler producerBootstrapHandler;
 
-    private SendExecutor sendExecutor;
+
+    private ResultCallBackInvoker resultCallBackInvoker;
 
     public ShinanoProducerClient(String host, int port) {
         this.host = host;
         this.port = port;
+        this.resultCallBackInvoker = new ResultCallBackInvoker();
+
     }
 
     public void run() throws InterruptedException {
-        NioEventLoopGroup group = new NioEventLoopGroup();
+        NioEventLoopGroup group = new NioEventLoopGroup(4);
 
 
         this.producerBootstrapHandler = new ProducerBootstrapHandler();
@@ -46,18 +48,12 @@ public class ShinanoProducerClient {
                     protected void initChannel(NioSocketChannel ch) throws Exception {
                         ch.pipeline().addLast(new IdleStateHandler(0, 0, ProducerConfig.IDLE_TIME_SECONDS));
 
-                        ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(ShinanoMQConstants.MAX_FRAME_LENGTH,0,2,0,2));
-                        ch.pipeline().addLast(new LengthFieldPrepender(2));
-
                         ch.pipeline().addLast(new MessageEncoder());
                         ch.pipeline().addLast(new MessageDecoder());
-
 
                         ch.pipeline().addLast(producerBootstrapHandler);
                     }
                 })
-                //1、链接到服务器，
-                //异步非阻塞，main发起调用，真正执行connect是nio线程
                 .connect(new InetSocketAddress(host, port));
 
         channel = channelFuture.sync().channel();
@@ -73,14 +69,25 @@ public class ShinanoProducerClient {
             }
         });
 
-        producerBootstrapHandler.init(channel);
+        this.resultCallBackInvoker.init();
+        this.producerBootstrapHandler.init(channel, this.resultCallBackInvoker);
 
         log.debug("channel init success");
-//        sendExecutor = new SendExecutor(channel);
     }
 
     public void sendMsg(Message msg) {
-//        sendExecutor.sendMessage(msg);
+        producerBootstrapHandler.sendMsg(msg);
+    }
+
+    public void sendMsg(Message msg, Consumer<Message> success) {
+        msg.setTransactionId(UUID.randomUUID().toString());
+        resultCallBackInvoker.addAckListener(msg.getTransactionId(), success);
+        producerBootstrapHandler.sendMsg(msg);
+    }
+
+    public void sendMsg(Message msg, Consumer<Message> success, Consumer<Message> fail) {
+        msg.setTransactionId(UUID.randomUUID().toString());
+        resultCallBackInvoker.addAckListener(msg.getTransactionId(), success, fail);
         producerBootstrapHandler.sendMsg(msg);
     }
 }

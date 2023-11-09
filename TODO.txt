@@ -1,5 +1,7 @@
 TODO
 
+-1 ByteBuf池，减少对象创建， 统一使用ByteBuf
+
 -2 服务端添加http接口，生产者、消费者的操作
 
 0 生产者添加维护offset的功能，更改broker逻辑，发送时没有topic对应的queue则给producer返回失败。消费进度以json文件的形式
@@ -17,6 +19,8 @@ TODO
 
 7 broker topic info 的更改可能会有线程安全问题，需要排查
 
+8 读取数据逻辑，添加，如果需要的数据有MappedFile，从其中读取。MappedFile还会有线程安全问题，需要该
+
 !!8 MappedFile 添加定时任务，清理长期没消息的; 重要，mappedbytebuffer 的刷盘
 
 *** consumer 客户端的编写
@@ -29,6 +33,9 @@ TODO
 重要但不急的事项
 1 消息的传输存储仍然采用对象的方式，已做好消息转换与传输的解耦，只需设计响应的消息格式用字节数组的形式传输与持久化。目前设计可能缺少字段
 
+存疑
+9 需要提速，producer 20000并发发完就要15s，推测：broker将消息按topic和queue分组放入阻塞队列中，导致变慢
+（查出来是netty的瓶颈）
 
 已解决
 6 broker区分消息时，不采用if、else的方式，而是使用一个map<State, Handler>的方式做，提高扩展信以及简洁性

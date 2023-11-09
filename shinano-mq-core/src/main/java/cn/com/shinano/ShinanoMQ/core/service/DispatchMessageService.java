@@ -26,6 +26,7 @@ public class DispatchMessageService {
      * 添加message到对应topic的阻塞队列
      * @param message 服务器收到的消息，加上为其生成的唯一id
      */
+    @Deprecated
     public void addMessageIntoQueue(BrokerMessage message) {
         String topic = message.getMessage().getTopic();
         String queue = message.getMessage().getQueue();
@@ -36,6 +37,15 @@ public class DispatchMessageService {
 
         //持久化
         persistentService.persistentMessage(message.getId(), topic, queue);
+    }
+
+    /**
+     * 直接保存
+     * @param message
+     */
+    public void saveMessageImmediately(BrokerMessage message) {
+        //持久化
+        persistentService.saveMessageImmediately(message.getMessage());
     }
 
     /**

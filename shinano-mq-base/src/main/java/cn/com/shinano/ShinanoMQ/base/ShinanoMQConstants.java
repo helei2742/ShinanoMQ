@@ -12,4 +12,6 @@ public class ShinanoMQConstants {
      * netty frame 的最大长度
      */
     public static final Integer MAX_FRAME_LENGTH = 1024*1024;
+
+    public static final int MESSAGE_SIZE_LENGTH = 4;
 }

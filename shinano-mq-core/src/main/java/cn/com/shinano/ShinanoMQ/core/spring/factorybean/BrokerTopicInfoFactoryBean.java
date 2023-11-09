@@ -1,10 +1,8 @@
 package cn.com.shinano.ShinanoMQ.core.spring.factorybean;
 
-import cn.com.shinano.ShinanoMQ.core.config.SystemConfig;
 import cn.com.shinano.ShinanoMQ.core.config.TopicConfig;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerTopicInfo;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.stereotype.Component;
@@ -14,7 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**

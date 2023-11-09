@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.service;
 
-import cn.com.shinano.ShinanoMQ.base.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import io.netty.channel.Channel;
 
 import java.nio.charset.StandardCharsets;
@@ -16,6 +16,12 @@ public abstract class AbstractBrokerService {
         channel.writeAndFlush(msg);
     }
 
+    /**
+     * 向channel中发送查询到的broker信息
+     * @param flag 消息类型
+     * @param body   消息体
+     * @param channel  发送消息的通道
+     */
     protected void sendMessage(Integer flag, String body, Channel channel) {
         Message message = new Message();
         message.setFlag(flag);

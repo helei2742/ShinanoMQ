@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.service;
 
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.core.service.impl.MappedChannelPersistentService;
 
 public interface PersistentService {
@@ -18,4 +19,6 @@ public interface PersistentService {
      * @return
      */
     MappedChannelPersistentService.PersistentTask getPersistentTask(String topic, String queue);
+
+    void saveMessageImmediately(Message message);
 }

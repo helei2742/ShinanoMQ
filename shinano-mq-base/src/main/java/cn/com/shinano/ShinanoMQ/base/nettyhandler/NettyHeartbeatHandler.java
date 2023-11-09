@@ -1,14 +1,12 @@
 package cn.com.shinano.ShinanoMQ.base.nettyhandler;
 
 
-import cn.com.shinano.ShinanoMQ.base.Message;
-import cn.com.shinano.ShinanoMQ.base.MessageOPT;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
 import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
-
-import java.nio.charset.StandardCharsets;
 
 
 /**
@@ -20,9 +18,9 @@ public abstract class NettyHeartbeatHandler extends SimpleChannelInboundHandler<
     @Override
     protected void channelRead0(ChannelHandlerContext context, Message msg) throws Exception {
         Integer opt = msg.getFlag();
-        if(opt.equals(MessageOPT.BROKER_PING)) {
+        if(opt.equals(SystemConstants.BROKER_PING)) {
             sendPongMsg(context);
-        } else if (opt.equals(MessageOPT.BROKER_PONG)){
+        } else if (opt.equals(SystemConstants.BROKER_PONG)){
             printLog(String.format("get pong msg from [%s][%s] ",
                     context.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get(),
                     context.channel().remoteAddress()));
@@ -78,7 +76,7 @@ public abstract class NettyHeartbeatHandler extends SimpleChannelInboundHandler<
     protected void sendPingMsg(ChannelHandlerContext context) {
 
         Message message = new Message();
-        message.setFlag(MessageOPT.BROKER_PONG);
+        message.setFlag(SystemConstants.BROKER_PONG);
 //        message.setBody(String.valueOf(++heartbeatCount).getBytes(StandardCharsets.UTF_8));
         sendMsg(context, message);
 
@@ -88,7 +86,7 @@ public abstract class NettyHeartbeatHandler extends SimpleChannelInboundHandler<
 
     protected void sendPongMsg(ChannelHandlerContext context) {
         Message message = new Message();
-        message.setFlag(MessageOPT.BROKER_PONG);
+        message.setFlag(SystemConstants.BROKER_PONG);
 //        message.setBody(String.valueOf(++heartbeatCount).getBytes(StandardCharsets.UTF_8));
         sendMsg(context, message);
 

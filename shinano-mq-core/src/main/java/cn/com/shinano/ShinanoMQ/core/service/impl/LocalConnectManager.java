@@ -22,6 +22,7 @@ public class LocalConnectManager implements ConnectManager {
 
     @Override
     public boolean remove(String clientId) {
+        if(clientId == null) return false;
         return channelMap.remove(clientId) == null;
     }
 

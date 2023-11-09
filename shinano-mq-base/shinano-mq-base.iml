@@ -44,5 +44,9 @@
     <orderEntry type="library" scope="RUNTIME" name="Maven: io.netty:netty-resolver-dns-native-macos:osx-x86_64:4.1.82.Final" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="Maven: io.netty:netty-resolver-dns-native-macos:osx-aarch_64:4.1.82.Final" level="project" />
     <orderEntry type="library" name="Maven: org.projectlombok:lombok:1.18.24" level="project" />
+    <orderEntry type="library" name="Maven: io.protostuff:protostuff-core:1.7.2" level="project" />
+    <orderEntry type="library" name="Maven: io.protostuff:protostuff-api:1.7.2" level="project" />
+    <orderEntry type="library" name="Maven: io.protostuff:protostuff-runtime:1.7.2" level="project" />
+    <orderEntry type="library" name="Maven: io.protostuff:protostuff-collectionschema:1.7.2" level="project" />
   </component>
 </module>
