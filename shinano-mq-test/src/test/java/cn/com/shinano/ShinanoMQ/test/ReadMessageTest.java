@@ -2,6 +2,7 @@ package cn.com.shinano.ShinanoMQ.test;
 
 import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.TopicQueryConstants;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
@@ -26,20 +27,37 @@ public class ReadMessageTest {
     public void getMessageTest() throws InterruptedException {
         ShinanoProducerClient client
                 = new ShinanoProducerClient("127.0.0.1", 10022);
-
         client.run();
 
-//        long l = queryOffset(client);
-//        System.out.println(l);
-        CountDownLatch latch = new CountDownLatch(1);
-        MessageListVO x = queryMessage(client, 1076, latch,12);
+        long p = 0;
+        int total = 0;
+        long start = System.currentTimeMillis();
+        int sleep = 0;
+        Set<String> set = new HashSet<>();
+        while (true) {
 
-        System.out.println(x);
+            System.out.println("");
+            MessageListVO x = queryMessage(client, p, 20);
+            List<SaveMessage> messages = x.getMessages();
+            if(messages == null || messages.size() == 0) break;
+            p = x.getNextOffset();
+            total += messages.size();
+            sleep++;
+
+            for (SaveMessage message : messages) {
+                if(set.contains(message.getTransactionId())) System.out.println("---!!!!---"+message.getTransactionId());
+                set.add(message.getTransactionId());
+            }
+            System.out.println("total is "+total + ", cost time " + (System.currentTimeMillis() - start));
+            System.out.println("next" + x.getNextOffset());
+            System.out.println("tsId count " + set.size());
+            TimeUnit.SECONDS.sleep(1);
+//            break;
+        }
     }
 
     private MessageListVO queryMessage(ShinanoProducerClient shinanoProducerClient,
                                        long offset,
-                                       CountDownLatch latch,
                                        int count) throws InterruptedException {
         Message message = new Message();
         message.setFlag(SystemConstants.TOPIC_INFO_QUERY);
@@ -57,11 +75,16 @@ public class ReadMessageTest {
 
         final MessageListVO[] res = new MessageListVO[1];
 
+        CountDownLatch latch = new CountDownLatch(1);
+
+
         shinanoProducerClient.sendMsg(message, msg->{
             byte[] array = ByteBuffer.wrap(msg.getBody()).array();
             res[0] = ProtostuffUtils.deserialize(array, MessageListVO.class);
+            System.out.println("-------------");
             latch.countDown();
         });
+
         latch.await();
         return res[0];
     }

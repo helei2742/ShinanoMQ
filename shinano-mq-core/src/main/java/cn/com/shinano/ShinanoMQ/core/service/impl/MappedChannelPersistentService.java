@@ -4,6 +4,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.core.datalog.MappedFile;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
+import cn.com.shinano.ShinanoMQ.core.dto.BrokerTopicInfo;
 import cn.com.shinano.ShinanoMQ.core.service.*;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
     /**
      * topic-key: MappedFile
      */
+    @Deprecated
     private final Map<String, MappedFile> mappedFileMap = new ConcurrentHashMap<>();
 
     /**
@@ -75,11 +77,9 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
         });
     }
 
-    @Override
     @Deprecated
-    public PersistentTask getPersistentTask(String topic, String queue) {
-        String key = BrokerUtil.makeTopicQueueKey(topic, queue);
-        return persistentTaskMap.get(key);
+    public Map<String, PersistentTask> getPersistentTask() {
+        return persistentTaskMap;
     }
 
     public Map<String, MappedFile> getMappedFileMap() {
@@ -87,6 +87,7 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
     }
 
     @Override
+    @Deprecated
     public void saveMessageImmediately(Message message) {
         executor.execute(()->{
             String topic = message.getTopic();
@@ -94,7 +95,8 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
 
             String key = BrokerUtil.makeTopicQueueKey(topic, queue);
             try {
-                mappedFileMap.putIfAbsent(key, MappedFile.getMappedFile(topic, queue));
+                Long startOffset = brokerTopicInfo.queryTopicQueueOffset(topic, queue);
+                mappedFileMap.putIfAbsent(key, MappedFile.getMappedFile(topic, queue, startOffset));
 
                 MappedFile mappedFile = mappedFileMap.get(key);
 
@@ -166,20 +168,19 @@ public class MappedChannelPersistentService extends AbstractBrokerService implem
                     log.info("async write message done, {}, offset {}", msg, this.offset);
 
                     //发ACK
-                    ackService.producerCommitAckSync(msg.getId(), BrokerAckServiceImpl.AckStatus.SUCCESS);
+                    ackService.producerCommitAckSync(msg.getId(), AckStatus.SUCCESS);
                     this.offset += bytes.length;
                 } catch (InterruptedException | IOException e) {
                     log.error("persistent task get a error, ", e);
                     if(msg != null) {
-                        ackService.producerCommitAckSync(msg.getId(), BrokerAckServiceImpl.AckStatus.FAIL);
+                        ackService.producerCommitAckSync(msg.getId(), AckStatus.FAIL);
                     }
                 }
             }
         }
 
-
-        public Long getOffset() {
-            return offset;
+        public MappedFile getMappedFile() {
+            return mappedFile;
         }
     }
 }

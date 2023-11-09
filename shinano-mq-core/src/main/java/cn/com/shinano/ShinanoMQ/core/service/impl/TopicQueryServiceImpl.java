@@ -98,7 +98,7 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
         long startOffset = Long.parseLong(filename);
         if(!Files.exists(indexPath)) { //没有索引文件,直接读数据文件
 
-            res = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, count);
+            res = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, startOffset, count);
         } else { //有索引
 
             //读取索引文件
@@ -118,10 +118,12 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
             }
 
             if(i < 0) { // 没有比当前小offset的索引
-                res = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, count);
+                res = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, startOffset, count);
             }else {
-                Long fileOffset = indexList.get(i).getFileOffset();
-                res = readDataFileAfterOffset(dataPath.toFile(), fileOffset, logicOffset - startOffset, count);
+                long fileOffset = indexList.get(i).getFileOffset();
+                long targetOffset = logicOffset - startOffset;
+
+                res = readDataFileAfterOffset(dataPath.toFile(), fileOffset, targetOffset, fileOffset , count);
             }
         }
 
@@ -137,7 +139,11 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
      * @return  数据文件的消息列表
      * @throws IOException
      */
-    private MessageListVO readDataFileAfterOffset(File file, long fileOffset, long targetOffset, int count) throws IOException {
+    private MessageListVO readDataFileAfterOffset(File file,
+                                                  long fileOffset,
+                                                  long targetOffset,
+                                                  long startOffset,
+                                                  int count) throws IOException {
 
 
         FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
@@ -156,7 +162,7 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
 
             byte[] msgBytes = new byte[length];
             map.get(msgBytes);
-            if(map.position()-8-length + fileOffset >= targetOffset) {
+            if(map.position()+fileOffset > targetOffset) {
 //                String json = new String(msgBytes, StandardCharsets.UTF_8);
 //                messages.add(JSONObject.parseObject(json, SaveMessage.class));
                 messages.add(BrokerUtil.brokerSaveBytesTurnMessage(msgBytes));
@@ -166,7 +172,7 @@ public class TopicQueryServiceImpl extends AbstractBrokerService implements Topi
 
         MessageListVO vo = new MessageListVO();
         vo.setMessages(messages);
-        vo.setNextOffset(map.position());
+        vo.setNextOffset((map.position() + startOffset));
         return vo;
     }
 

@@ -20,6 +20,6 @@ public class TopicQueryConstants {
 
 
     public final static String QUERY_TOPIC_MESSAGE_COUNT_KEY = "topic_query_message_count";
-    public final static int QUERY_TOPIC_MESSAGE_COUNT_LIMIT = 20;
+    public final static int QUERY_TOPIC_MESSAGE_COUNT_LIMIT = 10000;
 
 }

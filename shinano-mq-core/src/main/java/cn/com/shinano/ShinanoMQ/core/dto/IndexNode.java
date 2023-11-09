@@ -13,8 +13,10 @@ public class IndexNode implements Comparable<IndexNode>{
     private Long logicOffset;
     private Long fileOffset;
     public byte[] toSaveBytes() {
-        String s = "<" + logicOffset + "-" + fileOffset + ">\n";
-        return s.getBytes(StandardCharsets.UTF_8);
+        return toSaveString().getBytes(StandardCharsets.UTF_8);
+    }
+    public String toSaveString() {
+        return "<" + logicOffset + "-" + fileOffset + ">\n";
     }
     public static IndexNode toIndexNode(String line) {
         String[] split = line.replace("<", "").replace(">", "").split("-");

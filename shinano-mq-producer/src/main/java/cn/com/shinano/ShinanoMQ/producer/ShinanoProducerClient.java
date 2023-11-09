@@ -36,7 +36,7 @@ public class ShinanoProducerClient {
     }
 
     public void run() throws InterruptedException {
-        NioEventLoopGroup group = new NioEventLoopGroup(4);
+        NioEventLoopGroup group = new NioEventLoopGroup();
 
 
         this.producerBootstrapHandler = new ProducerBootstrapHandler();

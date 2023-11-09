@@ -36,7 +36,7 @@ public class ShinanoMQBroker implements ApplicationRunner {
         resolveMessageGroup = new DefaultEventLoopGroup(BrokerConfig.BOOTSTRAP_HANDLER_THREAD);
 
         channelFuture = new ServerBootstrap()
-                .group(new NioEventLoopGroup(1), new NioEventLoopGroup())
+                .group(new NioEventLoopGroup(), new NioEventLoopGroup())
                 .channel(NioServerSocketChannel.class)
                 .option(ChannelOption.SO_BACKLOG, 1024)
                 .option(ChannelOption.SO_REUSEADDR, true)

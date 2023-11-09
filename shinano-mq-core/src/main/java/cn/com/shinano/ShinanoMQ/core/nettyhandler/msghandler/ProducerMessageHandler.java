@@ -52,7 +52,7 @@ public class ProducerMessageHandler implements MessageHandler {
         brokerAckService.setAckFlag(messageId, channel);
 
         //交给下游处理
-//        dispatchMessageService.addMessageIntoQueue(brokerMessage);
-        dispatchMessageService.saveMessageImmediately(brokerMessage);
+        dispatchMessageService.addMessageIntoQueue(brokerMessage);
+//        dispatchMessageService.saveMessageImmediately(brokerMessage);
     }
 }

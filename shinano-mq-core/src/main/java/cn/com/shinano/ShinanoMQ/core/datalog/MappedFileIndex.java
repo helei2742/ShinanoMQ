@@ -4,16 +4,14 @@ import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.dto.IndexNode;
 ;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.PriorityQueue;
-import java.util.concurrent.Future;
 
 public class MappedFileIndex {
     private final PriorityQueue<IndexNode> indexQueue;
@@ -56,24 +54,19 @@ public class MappedFileIndex {
 
         if(!Files.exists(path))
             Files.createFile(path);
+        StringBuilder sb = new StringBuilder();
 
-        AsynchronousFileChannel fileChannel = null;
-
-        try {
-            fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.WRITE);
-        } catch (IOException e) {
-            return;
-        }
-
-        long position = 0;
         while (!indexQueue.isEmpty()) {
             IndexNode node = indexQueue.poll();
             // 准备写入的数据
-            byte[] bytes = node.toSaveBytes();
-            ByteBuffer buffer = ByteBuffer.wrap(bytes);
-            // 异步写入文件
-            Future<Integer> result = fileChannel.write(buffer, position);
-            position += bytes.length;
+            sb.append(node.toSaveString());
+        }
+
+        if(sb.length() == 0) return;
+
+        try(BufferedWriter bw = new BufferedWriter(new FileWriter(path.toFile(), true))) {
+            bw.write(sb.toString());
+            bw.flush();
         }
     }
 

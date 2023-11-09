@@ -12,13 +12,6 @@ public interface PersistentService {
      */
     void persistentMessage(String id, String topic, String queue);
 
-    /**
-     * 通过topic与queue组成的key查找执行持久化的任务
-     * @param topic 消息的topic
-     * @param queue 消息的queue
-     * @return
-     */
-    MappedChannelPersistentService.PersistentTask getPersistentTask(String topic, String queue);
 
     void saveMessageImmediately(Message message);
 }

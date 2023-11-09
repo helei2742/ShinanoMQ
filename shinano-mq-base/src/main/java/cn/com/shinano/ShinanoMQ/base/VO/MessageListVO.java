@@ -16,5 +16,5 @@ import java.util.List;
 @NoArgsConstructor
 public class MessageListVO {
     private List<SaveMessage> messages;
-    private Integer nextOffset;
+    private Long nextOffset;
 }

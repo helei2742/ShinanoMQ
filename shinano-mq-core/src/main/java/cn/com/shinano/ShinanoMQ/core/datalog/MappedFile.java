@@ -62,9 +62,10 @@ public class MappedFile {
         }
 
         this.fileSize = BrokerConfig.PERSISTENT_FILE_SIZE;
-        this.writePosition = writePosition;
-        this.filePosition = filePosition;
-        this.index = new MappedFileIndex(fileDir, file.getName().replace(".dat",""));
+        WRITE_POSITION_UPDATER.set(this, writePosition);
+        FILE_POSITION_UPDATER.set(this, filePosition);
+
+        this.index = new MappedFileIndex(fileDir, this.file.getName().replace(".dat",""));
 
         init(filePosition, fileLimit);
     }
@@ -110,12 +111,13 @@ public class MappedFile {
 
         this.mappedByteBuffer.put(bytes);
 
+        currentPos = WRITE_POSITION_UPDATER.addAndGet(this, bytes.length);
+        filePos = FILE_POSITION_UPDATER.addAndGet(this, bytes.length);
+        System.out.println(bytes.length + "---" + currentPos + "---" + filePos);
         //更新内存中的索引
         index.updateIndex(currentPos, filePos);
 
-        FILE_POSITION_UPDATER.addAndGet(this, bytes.length);
-
-        return WRITE_POSITION_UPDATER.addAndGet(this, bytes.length);
+        return currentPos;
     }
 
     /**
@@ -159,11 +161,11 @@ public class MappedFile {
 
                         long fileUsedLength = logicOffset - fileLogicStart;
 
-                        if (fileUsedLength >= SystemConfig.PERSISTENT_FILE_SIZE) { //文件已经写满
-                            res = new MappedFile(logicOffset, 0, SystemConfig.PERSISTENT_FILE_SIZE, dirFile);
+                        if (fileUsedLength >= BrokerConfig.PERSISTENT_FILE_SIZE) { //文件已经写满
+                            res = new MappedFile(logicOffset, 0, BrokerConfig.PERSISTENT_FILE_SIZE, dirFile);
                         } else {
                             res = new MappedFile(logicOffset, fileUsedLength,
-                                    SystemConfig.PERSISTENT_FILE_SIZE-fileUsedLength, newest);
+                                    BrokerConfig.PERSISTENT_FILE_SIZE-fileUsedLength, newest);
                         }
                     }
                     existMappedFileMap.put(mappedFileKey, res);

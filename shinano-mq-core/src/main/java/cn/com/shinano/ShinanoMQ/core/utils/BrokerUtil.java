@@ -59,7 +59,7 @@ public class BrokerUtil {
      * @return files里最新的
      */
     public static File getNewestPersistentFile(File[] files) {
-        List<File> sorted = Arrays.stream(files).sorted((f1, f2) -> {
+        List<File> sorted = Arrays.stream(files).filter(f->f.getName().endsWith(".dat")).sorted((f1, f2) -> {
             return f2.getName().compareTo(f1.getName());
         }).collect(Collectors.toList());
 

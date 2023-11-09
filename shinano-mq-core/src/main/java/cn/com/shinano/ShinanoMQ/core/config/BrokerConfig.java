@@ -11,7 +11,7 @@ public class BrokerConfig {
     /**
      * 处理BoostrapHandler的线程数
      */
-    public static final Integer BOOTSTRAP_HANDLER_THREAD = 4;
+    public static final Integer BOOTSTRAP_HANDLER_THREAD = 1;
 
     /**
      * 持久化文件目录
@@ -22,12 +22,12 @@ public class BrokerConfig {
     /**
      * 单个数据文件大小，单位byte
      */
-    public static final Long PERSISTENT_FILE_SIZE = 1024 * 1024 * 40L;
+    public static final Long PERSISTENT_FILE_SIZE = 1024 * 1024L;
 
     /**
      * 持久化时生成的索引文件等级， 4代表写入一条数据时1/2^3次方概率生成索引
      */
-    public static final Integer PERSISTENT_INDEX_LEVEL = 5;
+    public static final Integer PERSISTENT_INDEX_LEVEL = 3;
 
     /**
      * 操作系统一页的大小
@@ -37,7 +37,7 @@ public class BrokerConfig {
     /**
      * 判断客户端下线的时长，单位秒
      */
-    public static final Integer CLIENT_OFF_LINE_INTERVAL = 30;
+    public static final Integer CLIENT_OFF_LINE_INTERVAL = 3000;
 
 
 //    static {

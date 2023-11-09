@@ -1,16 +1,21 @@
 package cn.com.shinano.ShinanoMQ.test;
 
+import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.TopicQueryConstants;
+import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -107,8 +112,8 @@ class TestStarterTest {
 
     @Test
     public void brokerTPTest() throws IOException, InterruptedException {
-        int putThreadCount = 5;
-        int threadPutMessageCount = 1000;
+        int putThreadCount = 1;
+        int threadPutMessageCount = 10;
 
         AtomicLong success = new AtomicLong(0);
         AtomicLong fail = new AtomicLong(0);

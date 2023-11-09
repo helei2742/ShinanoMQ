@@ -23,13 +23,14 @@ public class FlushMappedFileJob {
 
     @Scheduled(cron = "0/10 * * * * *")
     public void flushMappedFile() {
-        Map<String, MappedFile> map = persistentService.getMappedFileMap();
+        Map<String, MappedChannelPersistentService.PersistentTask> map = persistentService.getPersistentTask();
 
         log.info("start flush mapped file");
         for (String key : map.keySet()) {
-            MappedFile mappedFile = map.get(key);
-            //一分钟刷一次
-            if(System.currentTimeMillis() - mappedFile.getLastFlushTime() >= 60000) {
+            MappedFile mappedFile = map.get(key).getMappedFile();
+            if(mappedFile == null) continue;
+
+            if(System.currentTimeMillis() - mappedFile.getLastFlushTime() >= 10000) {
                 try {
                     mappedFile.flush();
                 } catch (IOException e) {

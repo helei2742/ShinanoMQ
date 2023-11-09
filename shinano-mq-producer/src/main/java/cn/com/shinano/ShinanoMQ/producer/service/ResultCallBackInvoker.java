@@ -52,7 +52,7 @@ public class ResultCallBackInvoker {
     public void invokeCallBack(String transactionId, Message msg) {
         boolean flag = msg.getProperties() != null && msg.getProperties().containsKey(SystemConstants.REQUEST_ERROR);
 
-//        log.debug("get ack of message transactionId[{}], ack[{}], msg[{}]", transactionId, flag, msg);
+        log.debug("get ack of message transactionId[{}], ack[{}], msg[{}]", transactionId, flag, msg);
 
         Consumer<Message> success = successCallbackMap.remove(transactionId);
         Consumer<Message> fail = failCallbackMap.remove(transactionId);
