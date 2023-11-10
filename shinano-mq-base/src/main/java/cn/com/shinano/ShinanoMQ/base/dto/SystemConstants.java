@@ -24,12 +24,16 @@ public class SystemConstants {
      * 生产者发消息
      */
     public static final int PRODUCER_MESSAGE = 2;
+
     /**
-     * 生产者发消息的ACK
+     * broker发送给客户端的ack
      */
-    public static final int PRODUCER_MESSAGE_ACK = 3;
+    public static final int BROKER_MESSAGE_ACK = 3;
 
-
+    /**
+     * broker发送给client的批量ack
+     */
+    public static final int BROKER_MESSAGE_BATCH_ACK = -3;
 
     /**
      * 查询broker的信息
@@ -50,4 +54,6 @@ public class SystemConstants {
      *  查询topic内相关的信息返回的结果
      */
     public static final int TOPIC_INFO_QUERY_RESULT = 7;
+
+
 }

@@ -1,21 +1,21 @@
 package cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.core.nettyhandler.MessageHandler;
-import cn.com.shinano.ShinanoMQ.core.service.BrokerQueryService;
+import cn.com.shinano.ShinanoMQ.core.nettyhandler.RequestHandler;
+import cn.com.shinano.ShinanoMQ.core.manager.BrokerQueryManager;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
  * 处理查询Broker状态消息的指令消息
  */
-public class BrokerInfoQueryHandler implements MessageHandler {
+public class BrokerInfoQueryHandler implements RequestHandler {
 
-    public BrokerInfoQueryHandler(BrokerQueryService brokerQueryService) {
-        this.brokerQueryService = brokerQueryService;
+    public BrokerInfoQueryHandler(BrokerQueryManager brokerQueryManager) {
+        this.brokerQueryManager = brokerQueryManager;
     }
 
-    private final BrokerQueryService brokerQueryService;
+    private final BrokerQueryManager brokerQueryManager;
 
 
     @Override

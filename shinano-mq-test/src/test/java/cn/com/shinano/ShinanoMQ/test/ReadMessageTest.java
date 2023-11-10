@@ -35,9 +35,7 @@ public class ReadMessageTest {
         int sleep = 0;
         Set<String> set = new HashSet<>();
         while (true) {
-
-            System.out.println("");
-            MessageListVO x = queryMessage(client, p, 20);
+            MessageListVO x = queryMessage(client, p, 400);
             List<SaveMessage> messages = x.getMessages();
             if(messages == null || messages.size() == 0) break;
             p = x.getNextOffset();
@@ -51,7 +49,7 @@ public class ReadMessageTest {
             System.out.println("total is "+total + ", cost time " + (System.currentTimeMillis() - start));
             System.out.println("next" + x.getNextOffset());
             System.out.println("tsId count " + set.size());
-            TimeUnit.SECONDS.sleep(1);
+            TimeUnit.MILLISECONDS.sleep(10);
 //            break;
         }
     }

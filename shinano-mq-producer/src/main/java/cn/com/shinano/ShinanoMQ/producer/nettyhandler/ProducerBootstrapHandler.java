@@ -4,7 +4,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyHeartbeatHandler;
 import cn.com.shinano.ShinanoMQ.producer.config.ProducerConfig;
-import cn.com.shinano.ShinanoMQ.producer.service.ResultCallBackInvoker;
+import cn.com.shinano.ShinanoMQ.producer.nettyhandler.msghandler.ReceiveMessageHandler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
@@ -19,11 +19,11 @@ import java.util.Random;
 public class ProducerBootstrapHandler extends NettyHeartbeatHandler {
     protected Channel channel;
 
-    private ResultCallBackInvoker resultCallBackInvoker;
+    private ReceiveMessageHandler receiveMessageHandler;
 
-    public void init(Channel channel, ResultCallBackInvoker resultCallBackInvoker) {
+    public void init(Channel channel, ReceiveMessageHandler receiveMessageHandler) {
         this.channel = channel;
-        this.resultCallBackInvoker = resultCallBackInvoker;
+        this.receiveMessageHandler = receiveMessageHandler;
     }
 
     @Override
@@ -38,11 +38,14 @@ public class ProducerBootstrapHandler extends NettyHeartbeatHandler {
 
     @Override
     protected void handlerMessage(ChannelHandlerContext context, Message msg) {
-        log.debug("client get a message [{}]", msg);
+//        log.debug("client get a message [{}]", msg);
         switch (msg.getFlag()) {
-            case SystemConstants.PRODUCER_MESSAGE_ACK:
             case SystemConstants.TOPIC_INFO_QUERY_RESULT:
-                resultCallBackInvoker.invokeCallBack(msg.getTransactionId(), msg);
+            case SystemConstants.BROKER_MESSAGE_ACK:
+                receiveMessageHandler.invokeCallBack(msg.getTransactionId(), msg);
+                break;
+            case SystemConstants.BROKER_MESSAGE_BATCH_ACK:
+                receiveMessageHandler.resolveBatchACK(msg);
                 break;
         }
     }

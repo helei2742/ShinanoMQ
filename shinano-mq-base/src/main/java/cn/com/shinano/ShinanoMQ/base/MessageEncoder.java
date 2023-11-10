@@ -13,7 +13,7 @@ import java.nio.ByteBuffer;
 
 public class MessageEncoder extends MessageToByteEncoder<Message> {
 
-    @Override
+   /* @Override
     protected void encode(ChannelHandlerContext ctx, Message msg, ByteBuf out)throws Exception{
         byte[] bytes = MessageUtil.messageTurnBytes(msg);
         if(bytes.length > ShinanoMQConstants.MAX_FRAME_LENGTH) {
@@ -22,5 +22,10 @@ public class MessageEncoder extends MessageToByteEncoder<Message> {
         byte[] length = ByteBuffer.allocate(ShinanoMQConstants.MESSAGE_SIZE_LENGTH).putInt(bytes.length).array();
         ByteBuf byteBuf = Unpooled.buffer().writeBytes(length).writeBytes(bytes);
         out.writeBytes(byteBuf);
+    }*/
+
+    @Override
+    protected void encode(ChannelHandlerContext ctx, Message msg, ByteBuf out)throws Exception{
+        out.writeBytes(MessageUtil.messageTurnBytes(msg));
     }
 }

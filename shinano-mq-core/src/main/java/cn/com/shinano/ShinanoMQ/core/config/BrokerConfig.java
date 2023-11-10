@@ -16,13 +16,13 @@ public class BrokerConfig {
     /**
      * 持久化文件目录
      */
-    public static final String PERSISTENT_FILE_LOCATION = "/Users/helei/develop/ideaworkspace/ShinanoMQ/shinano-mq-core/datalog";
-//    public static final String PERSISTENT_FILE_LOCATION = "D:\\develop\\git\\data\\ShinanoMQ\\shinano-mq-core\\datalog";
+//    public static final String PERSISTENT_FILE_LOCATION = "/Users/helei/develop/ideaworkspace/ShinanoMQ/shinano-mq-core/datalog";
+    public static final String PERSISTENT_FILE_LOCATION = "D:\\develop\\git\\data\\ShinanoMQ\\shinano-mq-core\\datalog";
 
     /**
      * 单个数据文件大小，单位byte
      */
-    public static final Long PERSISTENT_FILE_SIZE = 1024 * 1024L;
+    public static final Long PERSISTENT_FILE_SIZE = 1024 * 1024 * 40L;
 
     /**
      * 持久化时生成的索引文件等级， 4代表写入一条数据时1/2^3次方概率生成索引

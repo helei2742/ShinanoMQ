@@ -10,7 +10,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.List;
 
 public class MessageDecoder extends ByteToMessageDecoder {
-
+/*
     // 用来临时保留没有处理过的请求报文
     ByteBuf tempMsg = ByteBufPool.getByteBuf();
 
@@ -37,7 +37,7 @@ public class MessageDecoder extends ByteToMessageDecoder {
             int length = message.readInt();
             if(message.readableBytes() < length) { //剩下的拼不成一个消息
                 break;
-            }else {
+            }else if(length > 0){
                 byte[] array = new byte[length];
                 message.readBytes(array);
                 out.add(MessageUtil.bytesTurnMessage(array));
@@ -51,15 +51,13 @@ public class MessageDecoder extends ByteToMessageDecoder {
             tempMsg.clear();
             tempMsg.writeBytes(message.readBytes(size));
         }
-    }
-/*
+    }*/
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         if(in.readableBytes() >= 0) {
             byte[] bytes = new byte[in.readableBytes()];
             in.readBytes(bytes);
-
             out.add(MessageUtil.bytesTurnMessage(bytes));
         }
-    }*/
+    }
 }

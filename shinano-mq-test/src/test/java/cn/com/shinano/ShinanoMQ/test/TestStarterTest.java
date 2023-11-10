@@ -110,28 +110,32 @@ class TestStarterTest {
         TimeUnit.SECONDS.sleep(500);
     }
 
+    AtomicLong lastGetTime = new AtomicLong(0);
+
     @Test
     public void brokerTPTest() throws IOException, InterruptedException {
-        int putThreadCount = 1;
-        int threadPutMessageCount = 10;
+        int putThreadCount = 10;
+        int threadPutMessageCount = 5000;
 
         AtomicLong success = new AtomicLong(0);
         AtomicLong fail = new AtomicLong(0);
 
         long start = System.currentTimeMillis();
-
+        lastGetTime.set(start);
         sendMessage(
                 putThreadCount,
                 threadPutMessageCount,
                 success,
                 fail).await();
 
-        System.out.println("send end cost " + (System.currentTimeMillis() - start));
+        long sendCost = System.currentTimeMillis() - start;
 
-        TimeUnit.SECONDS.sleep(10);
+        TimeUnit.SECONDS.sleep(5);
 
         System.out.println(String.format("send msg over, total send [%d], success[%d], fail[%d]",
                 putThreadCount*threadPutMessageCount, success.get(), fail.get()));
+
+        System.out.println("send end cost " + sendCost + " total cost " + (lastGetTime.get()-start));
     }
 
 
@@ -163,13 +167,17 @@ class TestStarterTest {
                     message.setTransactionId(UUID.randomUUID().toString());
 
                     client.sendMsg(message, msg->{
+                        lastGetTime.set(System.currentTimeMillis());
                         successCounter.incrementAndGet();
-                    }, msg->failCounter.incrementAndGet());
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    }, msg-> {
+                        lastGetTime.set(System.currentTimeMillis());
+                        failCounter.incrementAndGet();
+                    });
+//                    try {
+//                        TimeUnit.MILLISECONDS.sleep(10);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
                 }
                 latch.countDown();
             }, "thread-" + finalI).start();

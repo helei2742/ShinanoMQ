@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.web.service.impl;
 
-import cn.com.shinano.ShinanoMQ.core.service.TopicManager;
+import cn.com.shinano.ShinanoMQ.core.manager.TopicManager;
 import cn.com.shinano.ShinanoMQ.core.web.dto.Result;
 import cn.com.shinano.ShinanoMQ.core.web.dto.TopicRequestDTO;
 import cn.com.shinano.ShinanoMQ.core.web.service.TopicManagerService;

@@ -1,7 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.job;
 
-import cn.com.shinano.ShinanoMQ.core.datalog.MappedFile;
-import cn.com.shinano.ShinanoMQ.core.service.impl.MappedChannelPersistentService;
+import cn.com.shinano.ShinanoMQ.core.datafile.MappedFile;
+import cn.com.shinano.ShinanoMQ.core.manager.impl.MappedChannelPersistentManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,11 +19,11 @@ import java.util.Map;
 public class FlushMappedFileJob {
 
     @Autowired
-    private MappedChannelPersistentService persistentService;
+    private MappedChannelPersistentManager persistentService;
 
     @Scheduled(cron = "0/10 * * * * *")
     public void flushMappedFile() {
-        Map<String, MappedChannelPersistentService.PersistentTask> map = persistentService.getPersistentTask();
+        Map<String, MappedChannelPersistentManager.PersistentTask> map = persistentService.getPersistentTask();
 
         log.info("start flush mapped file");
         for (String key : map.keySet()) {

@@ -9,6 +9,8 @@ shinano:
   mq:
     broker:
       port: 10022
+      producer-commit-ack-type: async
       producer-commit-ack-batch-size: 100
-      producer-commit-ack-ttl: 50
+      producer-commit-ack-ttl: 300
+      producer-commit-ack-thread: 3
 
