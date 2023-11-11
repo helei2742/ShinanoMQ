@@ -33,6 +33,7 @@ public class FlushMappedFileJob {
             if(System.currentTimeMillis() - mappedFile.getLastFlushTime() >= 10000) {
                 try {
                     mappedFile.flush();
+                    System.out.println("------total append" + mappedFile.counter.get());
                 } catch (IOException e) {
                     log.error("flush mappedFile get an error", e);
                 }

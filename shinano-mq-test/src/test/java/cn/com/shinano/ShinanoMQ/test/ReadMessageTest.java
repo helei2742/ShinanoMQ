@@ -1,10 +1,7 @@
 package cn.com.shinano.ShinanoMQ.test;
 
 import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
-import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
-import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
-import cn.com.shinano.ShinanoMQ.base.dto.TopicQueryConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.*;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
 import org.junit.jupiter.api.Test;
@@ -58,11 +55,11 @@ public class ReadMessageTest {
                                        long offset,
                                        int count) throws InterruptedException {
         Message message = new Message();
-        message.setFlag(SystemConstants.TOPIC_INFO_QUERY);
+        message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY);
 
         Map<String, String> prop = new HashMap<>();
-        prop.put(TopicQueryConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE);
-        prop.put(TopicQueryConstants.QUERY_TOPIC_MESSAGE_COUNT_KEY, String.valueOf(count));
+        prop.put(MsgPropertiesConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE);
+        prop.put(MsgPropertiesConstants.QUERY_TOPIC_MESSAGE_COUNT_KEY, String.valueOf(count));
         message.setProperties(prop);
 
         message.setTopic("test-create1");
@@ -90,9 +87,9 @@ public class ReadMessageTest {
 
     private long queryOffset(ShinanoProducerClient shinanoProducerClient) throws InterruptedException {
         Message message = new Message();
-        message.setFlag(SystemConstants.TOPIC_INFO_QUERY);
+        message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY);
         Map<String, String> prop = new HashMap<>();
-        prop.put(TopicQueryConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET);
+        prop.put(MsgPropertiesConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET);
         message.setProperties(prop);
         message.setTopic("test-create1");
         message.setQueue("queue1");

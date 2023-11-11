@@ -5,6 +5,7 @@ import lombok.Data;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 
 @Data
 public class Message {
@@ -15,6 +16,18 @@ public class Message {
     private byte[] body;
     private String transactionId;
 
+    public void release(){}
+
+    public void clear() {
+//        if(this.properties != null)
+//            this.properties.clear();
+//        this.flag = null;
+//        this.topic =null;
+//        this.queue = null;
+//        this.transactionId = null;
+//        this.body = null;
+    }
+
     @Override
     public String toString() {
         return "Message{" +
@@ -22,7 +35,7 @@ public class Message {
                 ", queue='" + queue + '\'' +
                 ", flag=" + flag +
                 ", properties=" + properties +
-                ", body=" + new String(body, StandardCharsets.UTF_8) +
+                ", body=" + (body ==null ?"null" :new String(body, StandardCharsets.UTF_8)) +
                 ", transactionId='" + transactionId + '\'' +
                 '}';
     }

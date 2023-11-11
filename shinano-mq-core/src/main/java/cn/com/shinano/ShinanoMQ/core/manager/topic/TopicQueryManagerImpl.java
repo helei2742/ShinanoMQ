@@ -2,7 +2,7 @@ package cn.com.shinano.ShinanoMQ.core.manager.topic;
 
 import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.dto.IndexNode;
@@ -41,7 +41,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
     @Override
     public void queryTopicQueueOffset(Message message, Channel channel) {
         long l = offsetManager.queryTopicQueueOffset(message.getTopic(), message.getQueue());
-        sendMessage(SystemConstants.TOPIC_INFO_QUERY_RESULT, String.valueOf(l), channel);
+        sendMessage(MsgFlagConstants.TOPIC_INFO_QUERY_RESULT, String.valueOf(l), channel);
     }
 
     /**
@@ -60,7 +60,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
                     Long.parseLong(new String(message.getBody(),StandardCharsets.UTF_8)),
                     count);
 
-            message.setFlag(SystemConstants.TOPIC_INFO_QUERY_RESULT);
+            message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY_RESULT);
             HashMap<String, String> map = new HashMap<>();
 
             message.setProperties(map);
@@ -91,8 +91,37 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
         //获取数据文件里offset的插入点文件名
         String filename = getIndexFileNameWithoutFix(path, logicOffset);
 
-        Path indexPath = Paths.get(path.toAbsolutePath().toString(),filename+".idx");
-        Path dataPath = Paths.get(path.toAbsolutePath().toString(),filename+".dat");
+        //跨文件获取
+        MessageListVO res = null;
+        MessageListVO temp = null;
+        int curNeed = count;
+        long curLogicNeed = logicOffset;
+        while (curNeed != 0) {
+            temp = getMessageListVO(curLogicNeed, curNeed, path, filename);
+
+            if(res == null) res = temp;
+            else {
+                res.getMessages().addAll(temp.getMessages());
+                res.setNextOffset(temp.getNextOffset());
+            }
+
+            curNeed -= temp.getMessages().size();
+            curLogicNeed = temp.getNextOffset();
+
+            if(curNeed == 0) break; //获取完
+
+            String nextFileName = getIndexFileNameWithoutFix(path, curLogicNeed);
+            if(nextFileName.equals(filename)) break; //没有下一个数据文件
+
+            filename = nextFileName;
+        }
+
+        return res;
+    }
+
+    private MessageListVO getMessageListVO(Long logicOffset, int count, Path path, String filename) throws IOException {
+        Path indexPath = Paths.get(path.toAbsolutePath().toString(), filename +".idx");
+        Path dataPath = Paths.get(path.toAbsolutePath().toString(), filename +".dat");
 
         MessageListVO res = null;
         long startOffset = Long.parseLong(filename);
@@ -125,11 +154,9 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
                 long targetOffset = logicOffset - startOffset;
 
 
-                res = readDataFileAfterOffset(file, fileOffset, targetOffset, logicOffset , count);
-
+                res = readDataFileAfterOffset(file, fileOffset, targetOffset, logicOffset, count);
             }
         }
-
         return res;
     }
 

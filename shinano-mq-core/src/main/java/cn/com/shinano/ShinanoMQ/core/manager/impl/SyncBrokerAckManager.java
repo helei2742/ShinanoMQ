@@ -2,8 +2,9 @@ package cn.com.shinano.ShinanoMQ.core.manager.impl;
 
 import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
 
+import cn.com.shinano.ShinanoMQ.base.pool.MessagePool;
 import cn.com.shinano.ShinanoMQ.core.manager.AbstractBrokerManager;
 import cn.com.shinano.ShinanoMQ.core.manager.BrokerAckManager;
 import io.netty.channel.Channel;
@@ -42,10 +43,10 @@ public class SyncBrokerAckManager extends AbstractBrokerManager implements Broke
      */
     @Override
     public void sendAck(String id, int ack, Channel channel) {
-        Message message = new Message();
+        Message message = MessagePool.getObject();
 
         message.setTransactionId(id);
-        message.setFlag(SystemConstants.BROKER_MESSAGE_ACK);
+        message.setFlag(MsgFlagConstants.BROKER_MESSAGE_ACK);
         message.setBody(ByteBuffer.allocate(4).putInt(ack).array());
 
         sendMessage(message, channel);

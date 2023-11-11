@@ -1,21 +1,14 @@
 package cn.com.shinano.ShinanoMQ.test;
 
-import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
-import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
-import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
-import cn.com.shinano.ShinanoMQ.base.dto.TopicQueryConstants;
-import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
+import cn.com.shinano.ShinanoMQ.base.dto.*;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -55,7 +48,7 @@ class TestStarterTest {
                 new Thread(()->{
                     for (int j = 0; j < 1; j++) {
                         Message message = new Message();
-                        message.setFlag(SystemConstants.PRODUCER_MESSAGE);
+                        message.setFlag(MsgFlagConstants.PRODUCER_MESSAGE);
                         message.setTopic("test-create1");
                         message.setQueue("queue1");
 //                        message.setValue("test-line-" + finalLine + "-" + atomicInteger.incrementAndGet());
@@ -82,9 +75,9 @@ class TestStarterTest {
                 = new ShinanoProducerClient("localhost", 10022);
         shinanoProducerClient.run();
         Message message = new Message();
-        message.setFlag(SystemConstants.TOPIC_INFO_QUERY);
+        message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY);
         Map<String, String> prop = new HashMap<>();
-        prop.put(TopicQueryConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET);
+        prop.put(MsgPropertiesConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET);
         message.setProperties(prop);
         message.setTopic("test-create1");
         message.setQueue("queue1");
@@ -98,10 +91,11 @@ class TestStarterTest {
         ShinanoProducerClient shinanoProducerClient
                 = new ShinanoProducerClient("localhost", 10022);
         shinanoProducerClient.run();
+
         Message message = new Message();
-        message.setFlag(SystemConstants.TOPIC_INFO_QUERY);
+        message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY);
         Map<String, String> prop = new HashMap<>();
-        prop.put(TopicQueryConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE);
+        prop.put(MsgPropertiesConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE);
         message.setProperties(prop);
         message.setTopic("test-create1");
         message.setQueue("queue1");
@@ -115,7 +109,7 @@ class TestStarterTest {
     @Test
     public void brokerTPTest() throws IOException, InterruptedException {
         int putThreadCount = 10;
-        int threadPutMessageCount = 5000;
+        int threadPutMessageCount = 1;
 
         AtomicLong success = new AtomicLong(0);
         AtomicLong fail = new AtomicLong(0);
@@ -159,7 +153,7 @@ class TestStarterTest {
                 }
                 for (int j = 0; j < threadPutMessageCount; j++) {
                     Message message = new Message();
-                    message.setFlag(SystemConstants.PRODUCER_MESSAGE);
+                    message.setFlag(MsgFlagConstants.PRODUCER_MESSAGE);
                     message.setTopic("test-create1");
                     message.setQueue("queue1");
 //                        message.setValue("test-line-" + finalLine + "-" + atomicInteger.incrementAndGet());

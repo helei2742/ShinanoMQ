@@ -4,9 +4,11 @@ import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.MessageDecoder;
 import cn.com.shinano.ShinanoMQ.base.MessageEncoder;
+import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgHandler;
 import cn.com.shinano.ShinanoMQ.producer.config.ProducerConfig;
 import cn.com.shinano.ShinanoMQ.producer.nettyhandler.ProducerBootstrapHandler;
 import cn.com.shinano.ShinanoMQ.producer.nettyhandler.ResultCallBackInvoker;
+import cn.com.shinano.ShinanoMQ.producer.nettyhandler.msghandler.ProducerClientInitHandler;
 import cn.com.shinano.ShinanoMQ.producer.nettyhandler.msghandler.ReceiveMessageHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -29,20 +31,21 @@ public class ShinanoProducerClient {
 
     private ProducerBootstrapHandler producerBootstrapHandler;
 
+    private final ReceiveMessageHandler receiveMessageHandler;
 
-    private ReceiveMessageHandler receiveMessageHandler;
+    private final ClientInitMsgHandler clientInitMsgHandler;
 
     public ShinanoProducerClient(String host, int port) {
         this.host = host;
         this.port = port;
         this.receiveMessageHandler = new ReceiveMessageHandler();
+        this.clientInitMsgHandler = new ProducerClientInitHandler();
     }
 
     public void run() throws InterruptedException {
         NioEventLoopGroup group = new NioEventLoopGroup();
 
-
-        this.producerBootstrapHandler = new ProducerBootstrapHandler();
+        this.producerBootstrapHandler = new ProducerBootstrapHandler(ProducerConfig.PRODUCER_CLIENT_ID);
         ChannelFuture channelFuture = new Bootstrap()
                 .group(group)
                 .channel(NioSocketChannel.class)
@@ -71,17 +74,23 @@ public class ShinanoProducerClient {
             public void operationComplete(ChannelFuture channelFuture) throws Exception {
                 group.shutdownGracefully();
                 closeFuture.channel().flush();
-                log.debug("connect to broker off");
+                log.info("connect to broker off");
             }
         });
 
         this.receiveMessageHandler.init();
-        this.producerBootstrapHandler.init(channel, this.receiveMessageHandler);
 
-        log.debug("channel init success");
+        this.producerBootstrapHandler.init(
+                channel,
+                this.clientInitMsgHandler,
+                this.receiveMessageHandler);
+
+        log.info("producer channel init success");
     }
 
     public void sendMsg(Message msg) {
+        msg.setTransactionId(UUID.randomUUID().toString());
+
         producerBootstrapHandler.sendMsg(msg);
     }
 

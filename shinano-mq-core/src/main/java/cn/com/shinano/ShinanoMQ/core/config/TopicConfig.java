@@ -7,8 +7,12 @@ package cn.com.shinano.ShinanoMQ.core.config;
 public class TopicConfig {
 
     /**
-     * broker的topic消息持久化的路径
+     * 单条消息的最大长度
      */
-//    public static final String BROKER_TOPIC_INFO_SAVE_PATH = "shinano-mq-core/BrokerTopicInfo.json";
-    public static final String BROKER_TOPIC_INFO_SAVE_PATH = "shinano-mq-core\\BrokerTopicInfo.json";
+    public static final int SINGLE_MESSAGE_LENGTH = 1024 * 1024;
+
+    /**
+     * 单次获取消息的最大数量
+     */
+    public static final int QUERY_MESSAGE_MAX_COUNT = 40;
 }

@@ -5,8 +5,6 @@ package cn.com.shinano.ShinanoMQ.base.dto;
  * @date 2023/11/8
  */
 public class TopicQueryConstants {
-    public final static String TOPIC_QUERY_OPT_KEY = "topic_query_opt";
-
     /**
      * 查询 topic-queue 的 offset
      */
@@ -17,9 +15,8 @@ public class TopicQueryConstants {
      */
     public final static String QUERY_TOPIC_QUEUE_OFFSET_MESSAGE = "2";
 
-
-
-    public final static String QUERY_TOPIC_MESSAGE_COUNT_KEY = "topic_query_message_count";
+    /**
+     * 查询消息头中，查询的数量限制
+     */
     public final static int QUERY_TOPIC_MESSAGE_COUNT_LIMIT = 10000;
-
 }

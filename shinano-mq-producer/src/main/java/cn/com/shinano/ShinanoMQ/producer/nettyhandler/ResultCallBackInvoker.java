@@ -1,7 +1,7 @@
 package cn.com.shinano.ShinanoMQ.producer.nettyhandler;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,7 +50,7 @@ public abstract class ResultCallBackInvoker {
      * @param msg broker返回的消息
      */
     public void invokeCallBack(String transactionId, Message msg) {
-        boolean flag = msg.getProperties() != null && msg.getProperties().containsKey(SystemConstants.REQUEST_ERROR);
+        boolean flag = msg.getProperties() != null && msg.getProperties().containsKey(MsgFlagConstants.REQUEST_ERROR);
 
 //        log.debug("get ack of message transactionId[{}], ack[{}], msg[{}]", transactionId, flag, msg);
 

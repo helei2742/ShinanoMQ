@@ -31,8 +31,11 @@ public class LocalConnectManager implements ConnectManager {
             //给channel添加上标识
             channel.attr(ShinanoMQConstants.ATTRIBUTE_KEY).setIfAbsent(clientId);
             return true;
+        }else {
+            log.warn("client [{}] has bean registry, current registry cancel", clientId);
+            //重复
+            channel.close();
+            return false;
         }
-        log.warn("client [{}] has bean registry, current registry cancel", clientId);
-        return false;
     }
 }

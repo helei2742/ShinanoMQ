@@ -1,7 +1,10 @@
 package cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.MsgPropertiesConstants;
 import cn.com.shinano.ShinanoMQ.base.util.MessageUtil;
+import cn.com.shinano.ShinanoMQ.core.config.TopicConfig;
 import cn.com.shinano.ShinanoMQ.core.nettyhandler.RequestHandler;
 import cn.com.shinano.ShinanoMQ.core.manager.ConnectManager;
 import io.netty.channel.Channel;
@@ -23,8 +26,19 @@ public class ClientConnectHandler implements RequestHandler {
     @Override
     public void handlerMessage(ChannelHandlerContext ctx, Message message, Channel channel) {
         log.info("client {} connect", message);
-        String clientId = MessageUtil.getClientId(message);
+        String clientId = MessageUtil.getPropertiesValue(message, MsgPropertiesConstants.CLIENT_ID_KEY);
 
-        connectManager.add(clientId, channel);
+        if(connectManager.add(clientId, channel)){ //链接成功返回服务的配置信息
+            MessageUtil.setPropertiesValue(message,
+                    MsgPropertiesConstants.SINGLE_MESSAGE_LENGTH_KEY,
+                    String.valueOf(TopicConfig.SINGLE_MESSAGE_LENGTH),
+
+                    MsgPropertiesConstants.QUERY_MESSAGE_MAX_COUNT_KEY,
+                    String.valueOf(TopicConfig.QUERY_MESSAGE_MAX_COUNT));
+
+            message.setFlag(MsgFlagConstants.CLIENT_CONNECT_RESULT);
+
+            channel.writeAndFlush(message);
+        }
     }
 }

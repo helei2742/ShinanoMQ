@@ -2,7 +2,6 @@ package cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler;
 
 import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
 import cn.com.shinano.ShinanoMQ.core.nettyhandler.RequestHandler;
 import cn.com.shinano.ShinanoMQ.core.manager.BrokerAckManager;

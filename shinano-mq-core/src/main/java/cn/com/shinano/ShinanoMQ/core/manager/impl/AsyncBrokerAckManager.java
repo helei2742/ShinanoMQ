@@ -3,7 +3,8 @@ package cn.com.shinano.ShinanoMQ.core.manager.impl;
 import cn.com.shinano.ShinanoMQ.base.VO.BatchAckVO;
 import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.pool.MessagePool;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.manager.AbstractBrokerManager;
 import cn.com.shinano.ShinanoMQ.core.manager.BrokerAckManager;
@@ -89,8 +90,8 @@ public class AsyncBrokerAckManager extends AbstractBrokerManager implements Brok
         executor.execute(()->{
 
             BatchAckVO vo = new BatchAckVO(success, fail);
-            Message message = new Message();
-            message.setFlag(SystemConstants.BROKER_MESSAGE_BATCH_ACK);
+            Message message = MessagePool.getObject();
+            message.setFlag(MsgFlagConstants.BROKER_MESSAGE_BATCH_ACK);
             message.setBody(ProtostuffUtils.serialize(vo));
 
             log.info("send batch ack -- [{}]", message);
@@ -101,10 +102,10 @@ public class AsyncBrokerAckManager extends AbstractBrokerManager implements Brok
 
     @Override
     public void sendAck(String id, int ack, Channel channel) {
-        Message message = new Message();
+        Message message = MessagePool.getObject();
 
         message.setTransactionId(id);
-        message.setFlag(SystemConstants.BROKER_MESSAGE_ACK);
+        message.setFlag(MsgFlagConstants.BROKER_MESSAGE_ACK);
         message.setBody(ByteBuffer.allocate(4).putInt(ack).array());
 
         sendMessage(message, channel);

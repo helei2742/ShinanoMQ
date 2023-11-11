@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.job;
 
+import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.config.TopicConfig;
 import cn.com.shinano.ShinanoMQ.core.manager.topic.BrokerTopicInfo;
 import com.alibaba.fastjson.JSON;
@@ -27,7 +28,7 @@ public class LocalTopicInfoPersistentJob {
     @Scheduled(cron = "0/10 * * * * *")
     public void persistent() {
         log.info("start persistent topic info");
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(TopicConfig.BROKER_TOPIC_INFO_SAVE_PATH))){
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(BrokerConfig.BROKER_TOPIC_INFO_SAVE_PATH))){
             bw.write(JSON.toJSONString(brokerTopicInfo));
             log.info("persistent topic info success");
         } catch (IOException e) {

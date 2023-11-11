@@ -10,6 +10,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <modules>
+        <module>Shinano-AppMonitor</module>
         <module>shinano-mq-core</module>
         <module>shinano-mq-producer</module>
         <module>shinano-mq-test</module>

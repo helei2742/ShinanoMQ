@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.nettyhandler;
 
-import cn.com.shinano.ShinanoMQ.base.dto.SystemConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
 import cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler.BrokerInfoQueryHandler;
 import cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler.ClientConnectHandler;
 import cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler.ProducerRequestHandler;
@@ -38,10 +38,10 @@ public class NettyHandlerConfig {
     public Map<Integer, RequestHandler> messageHandlerMap() {
         Map<Integer, RequestHandler> res = new HashMap<>();
 
-        res.put(SystemConstants.BROKER_INFO_QUERY, new BrokerInfoQueryHandler(brokerQueryManager));
-        res.put(SystemConstants.CLIENT_CONNECT, new ClientConnectHandler(connectManager));
-        res.put(SystemConstants.TOPIC_INFO_QUERY, new TopicQueryHandler(topicQueryManager));
-        res.put(SystemConstants.PRODUCER_MESSAGE, new ProducerRequestHandler(topicManager, dispatchMessageService, brokerAckManager));
+        res.put(MsgFlagConstants.BROKER_INFO_QUERY, new BrokerInfoQueryHandler(brokerQueryManager));
+        res.put(MsgFlagConstants.CLIENT_CONNECT, new ClientConnectHandler(connectManager));
+        res.put(MsgFlagConstants.TOPIC_INFO_QUERY, new TopicQueryHandler(topicQueryManager));
+        res.put(MsgFlagConstants.PRODUCER_MESSAGE, new ProducerRequestHandler(topicManager, dispatchMessageService, brokerAckManager));
         return res;
     }
 }

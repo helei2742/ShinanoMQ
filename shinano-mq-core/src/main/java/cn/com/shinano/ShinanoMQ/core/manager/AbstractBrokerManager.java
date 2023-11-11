@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.manager;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.pool.MessagePool;
 import io.netty.channel.Channel;
 
 import java.nio.charset.StandardCharsets;
@@ -23,7 +24,7 @@ public abstract class AbstractBrokerManager {
      * @param channel  发送消息的通道
      */
     protected void sendMessage(Integer flag, String body, Channel channel) {
-        Message message = new Message();
+        Message message = MessagePool.getObject();
         message.setFlag(flag);
         message.setBody(body.getBytes(StandardCharsets.UTF_8));
 

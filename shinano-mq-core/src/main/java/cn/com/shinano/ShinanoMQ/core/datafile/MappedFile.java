@@ -10,6 +10,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 public class MappedFile {
@@ -34,7 +35,7 @@ public class MappedFile {
     /**
      * 当前MappedFile文件的索引
      */
-    private MappedFileIndex index;
+    private final MappedFileIndex index;
 
     static {
         WRITE_POSITION_UPDATER = AtomicLongFieldUpdater.newUpdater(MappedFile.class, "writePosition");
@@ -76,6 +77,8 @@ public class MappedFile {
         System.out.println("----"+mappedByteBuffer);
     }
 
+    public AtomicLong counter = new AtomicLong();
+
     /**
      * 向文件中追加内容
      * @param bytes
@@ -83,16 +86,17 @@ public class MappedFile {
      * @throws IOException
      */
     public long append(byte[] bytes) throws IOException {
-        long currentPos = WRITE_POSITION_UPDATER.get(this);
+        counter.incrementAndGet();
+
         long filePos = FILE_POSITION_UPDATER.get(this);
 
-        if(currentPos + bytes.length > mappedByteBuffer.capacity()) {
+        if(filePos + bytes.length > mappedByteBuffer.capacity()) {
             //装不下了，重新map一块装
             //TODO file快装满的时候提前
             synchronized (this) {
-                currentPos = WRITE_POSITION_UPDATER.get(this);
+                filePos = FILE_POSITION_UPDATER.get(this);
 
-                if(currentPos + bytes.length > mappedByteBuffer.capacity()) {
+                if(filePos + bytes.length > mappedByteBuffer.capacity()) {
                     //原来的先刷盘
                     mappedByteBuffer.force();
 
@@ -111,9 +115,11 @@ public class MappedFile {
 
         this.mappedByteBuffer.put(bytes);
 
-        currentPos = WRITE_POSITION_UPDATER.addAndGet(this, bytes.length);
+        //获取最新的
+        long currentPos = WRITE_POSITION_UPDATER.addAndGet(this, bytes.length);
         filePos = FILE_POSITION_UPDATER.addAndGet(this, bytes.length);
         System.out.println(bytes.length + "---" + currentPos + "---" + filePos);
+
         //更新内存中的索引
         index.updateIndex(currentPos, filePos);
 
@@ -154,7 +160,7 @@ public class MappedFile {
                     MappedFile res = null;
                     if (dataLogs == null || dataLogs.length == 0) {//新的topic-queue
                         res = new MappedFile(0, 0, BrokerConfig.PERSISTENT_FILE_SIZE, dirFile);
-                    } else { //里面有历史消息
+                    } else { //里面有历史消息数据
                         File newest = BrokerUtil.getNewestPersistentFile(dataLogs);
 
                         long fileLogicStart = Long.parseLong(newest.getName().split("\\.")[0]);

@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.spring.factorybean;
 
+import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.config.TopicConfig;
 import cn.com.shinano.ShinanoMQ.core.manager.topic.BrokerTopicInfo;
 import com.alibaba.fastjson.JSON;
@@ -29,7 +30,7 @@ public class BrokerTopicInfoFactoryBean extends AbstractFactoryBean<BrokerTopicI
 
     @Override
     protected BrokerTopicInfo createInstance() throws Exception {
-        Path path = Paths.get(System.getProperty("user.dir") + File.separator + TopicConfig.BROKER_TOPIC_INFO_SAVE_PATH);
+        Path path = Paths.get(System.getProperty("user.dir") + File.separator + BrokerConfig.BROKER_TOPIC_INFO_SAVE_PATH);
         BrokerTopicInfo bean;
         if(Files.exists(path)) {
             log.info("exist broker topic info json file, start with it");
