@@ -39,7 +39,7 @@ public class MessagePool {
 
 
     public static Message getObject() {
-        /*PooledMessage poll = INSTANCE.pool.poll();
+        PooledMessage poll = INSTANCE.pool.poll();
 
         if(poll == null || poll.isBusy()) {
             poll = new PooledMessage();
@@ -57,9 +57,7 @@ public class MessagePool {
             }
         }
 
-        return poll;*/
-
-        return new Message();
+        return poll;
     }
 
     public static void returnObject(Message message) {
@@ -131,7 +129,7 @@ class PooledMessage extends Message{
 
     public void release() {
 
-//        MessagePool.returnObject(this);
+        MessagePool.returnObject(this);
     }
 
     public void clear() {

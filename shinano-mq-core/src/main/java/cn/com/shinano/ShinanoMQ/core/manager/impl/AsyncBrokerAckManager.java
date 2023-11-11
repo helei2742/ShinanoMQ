@@ -59,6 +59,7 @@ public class AsyncBrokerAckManager extends AbstractBrokerManager implements Brok
 
     @Override
     public void commitAck(String tsId, AckStatus ack) {
+        log.info("commit ack {}, {}", tsId, ack);
         AckStatus ackStatus = isDoneMap.computeIfPresent(tsId, (k, v) -> {
             if (!v.equals(AckStatus.WAITE)) return null;
             return ack;
@@ -77,6 +78,7 @@ public class AsyncBrokerAckManager extends AbstractBrokerManager implements Brok
         info.addAck(tsId, ack);
 
         channelCommitInfoMap.put(channel, info);
+
     }
 
     private void sendBatchAck(ChannelAckInfo ackInfo) {
@@ -91,6 +93,7 @@ public class AsyncBrokerAckManager extends AbstractBrokerManager implements Brok
 
             BatchAckVO vo = new BatchAckVO(success, fail);
             Message message = MessagePool.getObject();
+//            Message message = new Message();
             message.setFlag(MsgFlagConstants.BROKER_MESSAGE_BATCH_ACK);
             message.setBody(ProtostuffUtils.serialize(vo));
 
@@ -103,6 +106,7 @@ public class AsyncBrokerAckManager extends AbstractBrokerManager implements Brok
     @Override
     public void sendAck(String id, int ack, Channel channel) {
         Message message = MessagePool.getObject();
+//        Message message = new Message();
 
         message.setTransactionId(id);
         message.setFlag(MsgFlagConstants.BROKER_MESSAGE_ACK);
@@ -120,11 +124,10 @@ public class AsyncBrokerAckManager extends AbstractBrokerManager implements Brok
                     break;
                 }
                 log.debug("start flush Expire ACK ");
-                Iterator<ChannelAckInfo> iterator = channelCommitInfoMap.values().iterator();
 
-                if (iterator.hasNext()) {
+                for (ChannelAckInfo channelAckInfo : channelCommitInfoMap.values()) {
                     ChannelAckInfo info;
-                    synchronized (info = iterator.next()) {
+                    synchronized (info = channelAckInfo) {
                         if (System.currentTimeMillis() - info.lastUseTime > commitTTL) {
                             sendBatchAck(info);
                         }
@@ -180,8 +183,6 @@ public class AsyncBrokerAckManager extends AbstractBrokerManager implements Brok
         }
 
         public void addAck(String tsId, AckStatus ack) {
-
-
             if(ack.equals(AckStatus.SUCCESS)) success.add(tsId);
             else fail.add(tsId);
 

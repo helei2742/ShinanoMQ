@@ -44,6 +44,7 @@ public class SyncBrokerAckManager extends AbstractBrokerManager implements Broke
     @Override
     public void sendAck(String id, int ack, Channel channel) {
         Message message = MessagePool.getObject();
+//        Message message = new Message();
 
         message.setTransactionId(id);
         message.setFlag(MsgFlagConstants.BROKER_MESSAGE_ACK);

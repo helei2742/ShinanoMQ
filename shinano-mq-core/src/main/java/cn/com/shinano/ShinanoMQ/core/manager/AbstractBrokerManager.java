@@ -25,6 +25,7 @@ public abstract class AbstractBrokerManager {
      */
     protected void sendMessage(Integer flag, String body, Channel channel) {
         Message message = MessagePool.getObject();
+//        Message message = new Message();
         message.setFlag(flag);
         message.setBody(body.getBytes(StandardCharsets.UTF_8));
 

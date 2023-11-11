@@ -1,14 +1,19 @@
 package cn.com.shinano.ShinanoMQ.test;
 
+import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
 import cn.com.shinano.ShinanoMQ.base.dto.*;
+import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -91,7 +96,6 @@ class TestStarterTest {
         ShinanoProducerClient shinanoProducerClient
                 = new ShinanoProducerClient("localhost", 10022);
         shinanoProducerClient.run();
-
         Message message = new Message();
         message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY);
         Map<String, String> prop = new HashMap<>();
@@ -109,10 +113,10 @@ class TestStarterTest {
     @Test
     public void brokerTPTest() throws IOException, InterruptedException {
         int putThreadCount = 10;
-        int threadPutMessageCount = 1;
+        int threadPutMessageCount = 5000;
 
-        AtomicLong success = new AtomicLong(0);
-        AtomicLong fail = new AtomicLong(0);
+        Map<Integer, Integer> success = new HashMap<>();
+        Map<Integer, Integer> fail = new HashMap<>();
 
         long start = System.currentTimeMillis();
         lastGetTime.set(start);
@@ -126,8 +130,16 @@ class TestStarterTest {
 
         TimeUnit.SECONDS.sleep(5);
 
-        System.out.println(String.format("send msg over, total send [%d], success[%d], fail[%d]",
-                putThreadCount*threadPutMessageCount, success.get(), fail.get()));
+        System.out.println(String.format("send msg over, total send [%d]",
+                putThreadCount*threadPutMessageCount));
+
+        System.out.println("success -- ");
+        success.entrySet().forEach(e-> System.out.print(e+" "));
+        System.out.println("-----------");
+
+        System.out.println("fail -- ");
+        fail.entrySet().forEach(e-> System.out.print(e+" "));
+        System.out.println("-----------");
 
         System.out.println("send end cost " + sendCost + " total cost " + (lastGetTime.get()-start));
     }
@@ -135,8 +147,8 @@ class TestStarterTest {
 
     private CountDownLatch sendMessage(int putThreadCount,
                                        int threadPutMessageCount,
-                                       AtomicLong successCounter,
-                                       AtomicLong failCounter){
+                                       Map<Integer, Integer> successCounter,
+                                       Map<Integer, Integer>  failCounter){
 
         CountDownLatch latch = new CountDownLatch(putThreadCount);
 
@@ -162,10 +174,16 @@ class TestStarterTest {
 
                     client.sendMsg(message, msg->{
                         lastGetTime.set(System.currentTimeMillis());
-                        successCounter.incrementAndGet();
+                        successCounter.compute(finalI, (k,v)->{
+                            if(v == null) return 1;
+                            else return v+1;
+                        });
                     }, msg-> {
                         lastGetTime.set(System.currentTimeMillis());
-                        failCounter.incrementAndGet();
+                        failCounter.compute(finalI, (k,v)->{
+                            if(v == null) return 1;
+                            else return v+1;
+                        });
                     });
 //                    try {
 //                        TimeUnit.MILLISECONDS.sleep(10);

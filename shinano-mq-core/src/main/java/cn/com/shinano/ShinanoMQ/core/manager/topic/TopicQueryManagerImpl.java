@@ -185,6 +185,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
         List<SaveMessage> messages = new ArrayList<>();
 
         while (map.position() < map.capacity()) {
+            if(map.remaining() < 8) break;
             map.get(lengthBytes);
 
             int length = ByteBuffer.wrap(lengthBytes).getInt();

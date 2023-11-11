@@ -19,13 +19,28 @@ public class Message {
     public void release(){}
 
     public void clear() {
-//        if(this.properties != null)
-//            this.properties.clear();
-//        this.flag = null;
-//        this.topic =null;
-//        this.queue = null;
-//        this.transactionId = null;
-//        this.body = null;
+        if(this.properties != null)
+            this.properties.clear();
+        this.flag = null;
+        this.topic =null;
+        this.queue = null;
+        this.transactionId = null;
+        this.body = null;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Message)) return false;
+        Message message = (Message) o;
+        return Objects.equals(topic, message.topic) && Objects.equals(queue, message.queue) && Objects.equals(flag, message.flag) && Objects.equals(properties, message.properties) && Arrays.equals(body, message.body) && Objects.equals(transactionId, message.transactionId);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(topic, queue, flag, properties, transactionId);
+        result = 31 * result + Arrays.hashCode(body);
+        return result;
     }
 
     @Override
