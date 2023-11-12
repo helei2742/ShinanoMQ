@@ -40,3 +40,6 @@ TODO
 已解决
 6 broker区分消息时，不采用if、else的方式，而是使用一个map<State, Handler>的方式做，提高扩展信以及简洁性
 目前发送以及返回都用的Message对象，需要进行拆分。
+
+
+postman-collection-transformer convert --input ./ShinanoMQ.postman_collection.json --input-version 1.0.0 --output ./Postman_collection-V2.json --output-version 2.0.0 --pretty --overwrite

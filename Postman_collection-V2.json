@@ -1,0 +1,131 @@
+{
+    "info": {
+        "_postman_id": "740014ac-aff7-8b7c-c43e-9a17a3094a92",
+        "name": "ShinanoMQ",
+        "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "topic管理",
+            "item": [
+                {
+                    "name": "查询topicList",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": []
+                        },
+                        "url": "http://localhost:8888/topic/topicList",
+                        "description": "查询topicList"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "根据topic查询topic的信息",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": []
+                        },
+                        "url": "http://localhost:8888/topic/topicInfo/create-topic1"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "创建topic或添加queue",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n\t\"topic\": \"test-create1\",\n\t\"queues\": [\"queue1\",\"queue2\"]\n}"
+                        },
+                        "url": "http://localhost:8888/topic/create"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "关闭topic",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n\t\"topic\": \"test-create1\",\n\t\"queues\": []"
+                        },
+                        "url": "http://localhost:8888/topic/closeTopic/test-create1"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "删除topic",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n\t\"topic\": \"test-create1\",\n\t\"queues\": []"
+                        },
+                        "url": "http://localhost:8888/topic/closeTopic/test-create1"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "删除topic下的queue",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n\t\"topic\": \"test-create1\",\n\t\"queues\": []"
+                        },
+                        "url": "http://localhost:8888/topic/closeTopic/test-create1"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "恢复被关闭的topic",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n\t\"topic\": \"test-create1\",\n\t\"queues\": []"
+                        },
+                        "url": "http://localhost:8888/topic/closeTopic/test-create1"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

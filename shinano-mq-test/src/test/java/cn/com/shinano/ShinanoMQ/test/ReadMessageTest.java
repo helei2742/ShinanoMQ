@@ -74,7 +74,8 @@ public class ReadMessageTest {
 
 
         shinanoProducerClient.sendMsg(message, msg->{
-            byte[] array = ByteBuffer.wrap(msg.getBody()).array();
+            byte[] body = msg.getBody();
+            byte[] array = ByteBuffer.wrap(body).array();
             res[0] = ProtostuffUtils.deserialize(array, MessageListVO.class);
             System.out.println("-------------");
             latch.countDown();

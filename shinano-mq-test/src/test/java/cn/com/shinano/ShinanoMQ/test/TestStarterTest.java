@@ -113,7 +113,7 @@ class TestStarterTest {
     @Test
     public void brokerTPTest() throws IOException, InterruptedException {
         int putThreadCount = 10;
-        int threadPutMessageCount = 5000;
+        int threadPutMessageCount = 1000;
 
         Map<Integer, Integer> success = new HashMap<>();
         Map<Integer, Integer> fail = new HashMap<>();

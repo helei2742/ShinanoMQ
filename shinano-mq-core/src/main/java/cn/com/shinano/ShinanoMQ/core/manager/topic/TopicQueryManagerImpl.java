@@ -24,11 +24,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 @Slf4j
 @Service
 public class TopicQueryManagerImpl extends AbstractBrokerManager implements TopicQueryManager {
+
+    private static final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     @Autowired
     private OffsetManager offsetManager;
@@ -52,29 +56,31 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
     @Override
     public void queryTopicQueueOffsetMsg(Message message, int count, Channel channel) {
 
-        try {
+        executor.execute(()->{
+            try {
+                MessageListVO vo = queryTopicQueueAfterOffsetMsg(
+                        message.getTopic(),
+                        message.getQueue(),
+                        Long.parseLong(new String(message.getBody(),StandardCharsets.UTF_8)),
+                        count);
 
-            MessageListVO vo = queryTopicQueueAfterOffsetMsg(
-                    message.getTopic(),
-                    message.getQueue(),
-                    Long.parseLong(new String(message.getBody(),StandardCharsets.UTF_8)),
-                    count);
+                message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY_RESULT);
+                HashMap<String, String> map = new HashMap<>();
 
-            message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY_RESULT);
-            HashMap<String, String> map = new HashMap<>();
+                message.setProperties(map);
 
-            message.setProperties(map);
-            message.setBody(ProtostuffUtils.serialize(vo));
-        } catch (IOException e) {
-            log.error("query message[{}] get error", message, e);
-        }
+                message.setBody(ProtostuffUtils.serialize(vo));
+            } catch (IOException e) {
+                log.error("query message[{}] get error", message, e);
+            }
 
-        sendMessage(message, channel);
+            sendMessage(message, channel);
+        });
     }
 
 
     /**
-     * 查询topic queue 中 在offset之后的消息, 最多只会返回一个数据文件大小的内容。
+     * 查询topic queue 中 在offset之后的消息
      * @param topic topic name
      * @param queue queue name
      * @param logicOffset logicOffset
@@ -85,8 +91,9 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
                                                        String queue,
                                                        Long logicOffset,
                                                        int count) throws IOException {
+
         Path path = Paths.get(BrokerUtil.getTopicQueueSaveDir(topic, queue));
-        if(!Files.exists(path)) return null;
+        if(!Files.exists(path)) return new MessageListVO();
 
         //获取数据文件里offset的插入点文件名
         String filename = getIndexFileNameWithoutFix(path, logicOffset);
@@ -143,13 +150,14 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
             if (indexList.size() == 0) throw new IllegalArgumentException("index file context is empty");
             int i = Collections.binarySearch(indexList, new IndexNode(logicOffset, 0L));
             if (i < 0) {
-                i = Math.abs(i) - 2;
+                i = Math.abs(i) - 1;
             }
 
             File file = dataPath.toFile();
-            if(i < 0) { // 没有比当前小offset的索引
+            if(i == 0) { // 没有比当前小offset的索引
                 res = readDataFileAfterOffset(file, 0, logicOffset - startOffset, startOffset, count);
             }else {
+                i = Math.min(i, indexList.size()-1);
                 long fileOffset = indexList.get(i).getFileOffset();
                 long targetOffset = logicOffset - startOffset;
 
@@ -237,5 +245,20 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
             index = Math.abs(index) - 2;
 
         return BrokerUtil.getSaveFileName(startOffsets.get(index));
+    }
+
+    public static void main(String[] args) {
+        List<Integer> list = new ArrayList<>();
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(6);
+        list.add(8);
+        list.add(10);
+        System.out.println(Collections.binarySearch(list, 1));
+        System.out.println(Collections.binarySearch(list, 5));
+        System.out.println(Collections.binarySearch(list, 7));
+        System.out.println(Collections.binarySearch(list, 8));
+        System.out.println(Collections.binarySearch(list, 11));
     }
 }

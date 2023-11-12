@@ -12,7 +12,12 @@ public class BrokerConfig {
     /**
      * 处理BoostrapHandler的线程数
      */
-    public static final Integer BOOTSTRAP_HANDLER_THREAD = 1;
+    public static final Integer BOOTSTRAP_HANDLER_THREAD = 3;
+
+    /**
+     * 查询topic的消息时的线程数
+     */
+    public static final int TOPIC_QUERY_THREAD = 3;
 
     /**
      * 持久化文件目录
