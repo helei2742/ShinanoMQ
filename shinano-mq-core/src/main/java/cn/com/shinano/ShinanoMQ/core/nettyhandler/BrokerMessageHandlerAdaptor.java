@@ -2,7 +2,7 @@ package cn.com.shinano.ShinanoMQ.core.nettyhandler;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
-import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyHeartbeatHandler;
+import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessor;
 import cn.com.shinano.ShinanoMQ.core.manager.ConnectManager;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
@@ -21,7 +21,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @ChannelHandler.Sharable
-public class BrokerMessageHandlerAdaptor extends NettyHeartbeatHandler  {
+public class BrokerMessageHandlerAdaptor extends AbstractNettyProcessor {
 
     @Autowired
     @Qualifier("messageHandlerMap")

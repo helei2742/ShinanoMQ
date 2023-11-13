@@ -3,6 +3,7 @@ package cn.com.shinano.ShinanoMQ.test;
 import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
 import cn.com.shinano.ShinanoMQ.base.dto.*;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
+import cn.com.shinano.ShinanoMQ.producer.AbstractNettyClient;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +24,8 @@ public class ReadMessageTest {
     @Test
     public void getMessageTest() throws InterruptedException {
         ShinanoProducerClient client
-                = new ShinanoProducerClient("127.0.0.1", 10022);
+                = new ShinanoProducerClient("127.0.0.1", 10022, "client-query" );
+
         client.run();
 
         long p = 0;
@@ -51,7 +53,7 @@ public class ReadMessageTest {
         }
     }
 
-    private MessageListVO queryMessage(ShinanoProducerClient shinanoProducerClient,
+    private MessageListVO queryMessage(AbstractNettyClient shinanoProducerClient,
                                        long offset,
                                        int count) throws InterruptedException {
         Message message = new Message();
@@ -86,7 +88,7 @@ public class ReadMessageTest {
     }
 
 
-    private long queryOffset(ShinanoProducerClient shinanoProducerClient) throws InterruptedException {
+    private long queryOffset(AbstractNettyClient shinanoProducerClient) throws InterruptedException {
         Message message = new Message();
         message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY);
         Map<String, String> prop = new HashMap<>();

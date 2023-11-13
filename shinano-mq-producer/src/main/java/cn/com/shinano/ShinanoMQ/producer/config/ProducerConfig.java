@@ -6,14 +6,13 @@ import lombok.Data;
 public class ProducerConfig {
 
     /**
+     * 发送消息重试次数
+     */
+    public static final int SEND_MESSAGE_RETRY_TIMES = 3;
+    /**
      * 向服务端发送心跳的间隔
      */
     public static int IDLE_TIME_SECONDS = 30;
-
-    /**
-     * producer的id
-     */
-    public static String PRODUCER_CLIENT_ID = "producer-client-1";
 
 
     /**

@@ -1,5 +1,7 @@
 TODO
 
+PS 看同步双写
+
 -1 ByteBuf池，减少对象创建， 统一使用ByteBuf
 
 -2 服务端添加http接口，生产者、消费者的操作
@@ -17,7 +19,7 @@ TODO
 
 6 查询操作添加多线程处理
 
-7 broker topic info 的更改可能会有线程安全问题，需要排查
+8 CompletableFuture处理返回
 
 8 读取数据逻辑，添加，如果需要的数据有MappedFile，从其中读取。MappedFile还会有线程安全问题，需要该
 
@@ -40,6 +42,6 @@ TODO
 已解决
 6 broker区分消息时，不采用if、else的方式，而是使用一个map<State, Handler>的方式做，提高扩展信以及简洁性
 目前发送以及返回都用的Message对象，需要进行拆分。
-
+7 broker topic info 的更改可能会有线程安全问题，需要排查
 
 postman-collection-transformer convert --input ./ShinanoMQ.postman_collection.json --input-version 1.0.0 --output ./Postman_collection-V2.json --output-version 2.0.0 --pretty --overwrite

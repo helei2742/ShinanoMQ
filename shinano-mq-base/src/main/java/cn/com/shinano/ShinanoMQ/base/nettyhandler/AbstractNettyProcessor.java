@@ -12,8 +12,11 @@ import io.netty.handler.timeout.IdleStateEvent;
 /**
  * 处理broker与client之间的心跳
  */
-public abstract class NettyHeartbeatHandler extends SimpleChannelInboundHandler<Message> implements NettyBaseHandler {
+public abstract class AbstractNettyProcessor extends SimpleChannelInboundHandler<Message> implements NettyBaseHandler {
+
     private int heartbeatCount = 0;
+
+    public NettyClientEventHandler eventHandler;
 
     @Override
     protected void channelRead0(ChannelHandlerContext context, Message msg) throws Exception {

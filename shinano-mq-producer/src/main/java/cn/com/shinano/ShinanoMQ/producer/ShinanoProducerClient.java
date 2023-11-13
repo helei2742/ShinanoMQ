@@ -1,110 +1,146 @@
 package cn.com.shinano.ShinanoMQ.producer;
 
-import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.MessageDecoder;
-import cn.com.shinano.ShinanoMQ.base.MessageEncoder;
-import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgHandler;
+import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.ShinanoMQ.producer.config.ProducerConfig;
-import cn.com.shinano.ShinanoMQ.producer.nettyhandler.ProducerBootstrapHandler;
-import cn.com.shinano.ShinanoMQ.producer.nettyhandler.ResultCallBackInvoker;
-import cn.com.shinano.ShinanoMQ.producer.nettyhandler.msghandler.ProducerClientInitHandler;
-import cn.com.shinano.ShinanoMQ.producer.nettyhandler.msghandler.ReceiveMessageHandler;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.timeout.IdleStateHandler;
+import cn.com.shinano.ShinanoMQ.producer.constant.ProducerStatus;
+import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 @Slf4j
-public class ShinanoProducerClient {
-    private final String host;
-    private final int port;
-    private Channel channel;
+public class ShinanoProducerClient extends AbstractNettyClient {
 
-    private ProducerBootstrapHandler producerBootstrapHandler;
+    private ProducerStatus status;
 
-    private final ReceiveMessageHandler receiveMessageHandler;
+    private final String clientId;
 
-    private final ClientInitMsgHandler clientInitMsgHandler;
+    private final ConcurrentMap<String, Integer> retryTimesMap;
 
-    public ShinanoProducerClient(String host, int port) {
-        this.host = host;
-        this.port = port;
-        this.receiveMessageHandler = new ReceiveMessageHandler();
-        this.clientInitMsgHandler = new ProducerClientInitHandler();
+
+    public ShinanoProducerClient(String host, int port, String clientId) {
+        super(host, port);
+        this.status = ProducerStatus.CREATE_JUST;
+        this.clientId = clientId;
+
+        this.retryTimesMap = new ConcurrentHashMap<>();
+        init();
     }
 
-    public void run() throws InterruptedException {
-        NioEventLoopGroup group = new NioEventLoopGroup();
+    public void run()  {
+        switch (this.status) {
+            case CREATE_JUST:
+            case START_FAILED:
+                try {
+                    super.run();
+                } catch (InterruptedException e) {
+                    log.error("run client got an error", e);
+                    this.status = ProducerStatus.SHUTDOWN_ALREADY;
+                }
+                break;
+            case RUNNING:
+                log.warn("producer client already in running");
+                break;
+            case SHUTDOWN_ALREADY:
+                log.warn("producer client already shut down");
+                break;
+        }
+    }
 
-        this.producerBootstrapHandler = new ProducerBootstrapHandler(ProducerConfig.PRODUCER_CLIENT_ID);
-        ChannelFuture channelFuture = new Bootstrap()
-                .group(group)
-                .channel(NioSocketChannel.class)
-                .handler(new ChannelInitializer<NioSocketChannel>() {
-                    @Override//链接建立后被调用，进行初始化
-                    protected void initChannel(NioSocketChannel ch) throws Exception {
-                        ch.pipeline().addLast(new IdleStateHandler(0, 0, ProducerConfig.IDLE_TIME_SECONDS));
-
-                        ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(ShinanoMQConstants.MAX_FRAME_LENGTH, 0, 4, 0, 4));
-                        ch.pipeline().addLast(new LengthFieldPrepender(4));
-
-                        ch.pipeline().addLast(new MessageEncoder());
-                        ch.pipeline().addLast(new MessageDecoder());
-
-                        ch.pipeline().addLast(producerBootstrapHandler);
-                    }
-                })
-                .connect(new InetSocketAddress(host, port));
-
-        channel = channelFuture.sync().channel();
-
-        ChannelFuture closeFuture = channel.closeFuture();
-
-        closeFuture.addListener(new ChannelFutureListener() {
+    public void init() {
+        super.init(clientId, new NettyClientEventHandler() {
             @Override
-            public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                group.shutdownGracefully();
-                closeFuture.channel().flush();
-                log.info("connect to broker off");
+            public void activeHandler(ChannelHandlerContext ctx) {
+                switch (status) {
+                    case CREATE_JUST:
+                    case START_FAILED:
+                        //发送一条链接消息
+                        Message message = new Message();
+                        message.setFlag(MsgFlagConstants.CLIENT_CONNECT);
+                        message.setBody(clientId.getBytes(StandardCharsets.UTF_8));
+                        ctx.writeAndFlush(message);
+
+                        status = ProducerStatus.CREATE_JUST;
+                        break;
+                    default:
+                        log.warn("client [{}] in [{}] state, can not turn to active state", clientId, status);
+                }
+            }
+
+            @Override
+            public void closeHandler() {
+                switch (status) {
+                    case CREATE_JUST:
+                    case RUNNING:
+                        status = ProducerStatus.SHUTDOWN_ALREADY;
+                        break;
+                    default:
+                        log.warn("client [{}] in [{}] state, can not turn to close state", clientId, status);
+                }
+            }
+
+            @Override
+            public void initSuccessHandler() {
+                if (status == ProducerStatus.CREATE_JUST) {
+                    status = ProducerStatus.RUNNING;
+                } else {
+                    log.warn("client [{}] in [{}] state, can not turn to running state", clientId, status);
+                }
+            }
+
+            @Override
+            public void initFailHandler() {
+
+                if (status == ProducerStatus.CREATE_JUST) {
+                    status = ProducerStatus.START_FAILED;
+                } else {
+                    log.warn("client [{}] in [{}] state, can not turn to start failed state", clientId, status);
+                }
+            }
+
+            @Override
+            public void exceptionHandler(ChannelHandlerContext ctx, Throwable cause) {
+                log.error("producer got an error", cause);
+                status = ProducerStatus.SHUTDOWN_ALREADY;
             }
         });
-
-        this.receiveMessageHandler.init();
-
-        this.producerBootstrapHandler.init(
-                channel,
-                this.clientInitMsgHandler,
-                this.receiveMessageHandler);
-
-        log.info("producer channel init success");
     }
 
-    public void sendMsg(Message msg) {
-        msg.setTransactionId(UUID.randomUUID().toString());
 
-        producerBootstrapHandler.sendMsg(msg);
+    public void sendMessage(String topic, String queue, String value, Consumer<Message> success) {
+        sendMessage(UUID.randomUUID().toString(), topic, queue, value.getBytes(StandardCharsets.UTF_8), success);
     }
 
-    public void sendMsg(Message msg, Consumer<Message> success) {
-        msg.setTransactionId(UUID.randomUUID().toString());
+    public void sendMessage(String transactionId, String topic, String queue, byte[] value, Consumer<Message> success) {
+        Message message = new Message();
+        message.setFlag(MsgFlagConstants.PRODUCER_MESSAGE);
+        message.setTopic(topic);
+        message.setQueue(queue);
+        message.setBody(value);
+        message.setTransactionId(transactionId);
 
-        receiveMessageHandler.addAckListener(msg.getTransactionId(), success);
-        producerBootstrapHandler.sendMsg(msg);
+        sendMessage(message, success);
     }
 
-    public void sendMsg(Message msg, Consumer<Message> success, Consumer<Message> fail) {
-        msg.setTransactionId(UUID.randomUUID().toString());
+    public void sendMessage(Message message, Consumer<Message> success) {
 
-        receiveMessageHandler.addAckListener(msg.getTransactionId(), success, fail);
-        producerBootstrapHandler.sendMsg(msg);
+        super.sendMsg(message, success, msg -> {
+                    String transactionId = message.getTransactionId();
+                    int count = retryTimesMap.getOrDefault(transactionId, 0) + 1;
+                    if (count > ProducerConfig.SEND_MESSAGE_RETRY_TIMES) {
+                        retryTimesMap.remove(transactionId);
+                        log.error("message [{}] retry times out of limit", message);
+                    } else {
+                        retryTimesMap.put(transactionId, count);
+                        sendMessage(message, success);
+                    }
+                });
     }
 }

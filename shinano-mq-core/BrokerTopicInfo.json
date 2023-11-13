@@ -1,1 +1,1 @@
-{"activeTopicsMap":{"test-create1":{"queueCount":{},"queueInfo":{},"topic":"test-create1"}},"closedTopicsMap":{},"topicList":["test-create1"]}
+{"activeTopicsMap":{"test-create1":{"queueCount":{"queue1":1275},"queueInfo":{"queue1":116888,"queue2":0},"topic":"test-create1"}},"closedTopicsMap":{},"topicList":["test-create1"]}

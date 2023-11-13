@@ -1,4 +1,4 @@
-package cn.com.shinano.ShinanoMQ.producer.nettyhandler;
+package cn.com.shinano.ShinanoMQ.producer.processor;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;

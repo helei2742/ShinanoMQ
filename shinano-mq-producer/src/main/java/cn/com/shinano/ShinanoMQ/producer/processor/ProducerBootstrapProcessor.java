@@ -1,69 +1,69 @@
-package cn.com.shinano.ShinanoMQ.producer.nettyhandler;
+package cn.com.shinano.ShinanoMQ.producer.processor;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.MsgPropertiesConstants;
-import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgHandler;
-import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyHeartbeatHandler;
+import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgProcessor;
+import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessor;
 import cn.com.shinano.ShinanoMQ.base.util.MessageUtil;
-import cn.com.shinano.ShinanoMQ.producer.config.ProducerConfig;
-import cn.com.shinano.ShinanoMQ.producer.nettyhandler.msghandler.ReceiveMessageHandler;
+import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
+import cn.com.shinano.ShinanoMQ.producer.processor.msgprocessor.ReceiveMessageProcessor;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 /**
  * 处理生产者收到的消息
  */
 @Slf4j
-public class ProducerBootstrapHandler extends NettyHeartbeatHandler {
+public class ProducerBootstrapProcessor extends AbstractNettyProcessor {
 
     private String clientId;
 
     protected Channel channel;
 
-    private ReceiveMessageHandler receiveMessageHandler;
-    private ClientInitMsgHandler clientInitMsgHandler;
+    private ReceiveMessageProcessor receiveMessageProcessor;
+    private ClientInitMsgProcessor clientInitMsgProcessor;
 
-    public ProducerBootstrapHandler(String clientId) {
+    public ProducerBootstrapProcessor(String clientId) {
         this.clientId = clientId;
     }
 
     public void init(Channel channel,
-                     ClientInitMsgHandler clientInitMsgHandler,
-                     ReceiveMessageHandler receiveMessageHandler) {
+                     ClientInitMsgProcessor clientInitMsgHandler,
+                     ReceiveMessageProcessor receiveMessageHandler,
+                     NettyClientEventHandler eventHandler) {
+
+        super.eventHandler = eventHandler;
+
         this.channel = channel;
-        this.receiveMessageHandler = receiveMessageHandler;
-        this.clientInitMsgHandler = clientInitMsgHandler;
+        this.receiveMessageProcessor = receiveMessageHandler;
+        this.clientInitMsgProcessor = clientInitMsgHandler;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        //发送一条链接消息
-        Message message = new Message();
-        message.setFlag(MsgFlagConstants.CLIENT_CONNECT);
-        MessageUtil.setPropertiesValue(message, MsgPropertiesConstants.CLIENT_ID_KEY,
-            (this.clientId+ new Random().nextInt(10000)));
-//        message.setBody((ProducerConfig.PRODUCER_CLIENT_ID.getBytes(StandardCharsets.UTF_8));
-
-        ctx.writeAndFlush(message);
+        eventHandler.activeHandler(ctx);
     }
 
     @Override
     protected void handlerMessage(ChannelHandlerContext context, Message msg) {
         switch (msg.getFlag()) {
             case MsgFlagConstants.CLIENT_CONNECT_RESULT:
-                clientInitMsgHandler.initClient(msg.getProperties());
+                if(!clientInitMsgProcessor.initClient(msg.getProperties())) {
+                    eventHandler.initSuccessHandler();
+                }else {
+                    eventHandler.initFailHandler();
+                }
                 break;
             case MsgFlagConstants.TOPIC_INFO_QUERY_RESULT:
             case MsgFlagConstants.BROKER_MESSAGE_ACK:
-                receiveMessageHandler.invokeCallBack(msg.getTransactionId(), msg);
+                receiveMessageProcessor.invokeCallBack(msg.getTransactionId(), msg);
                 break;
             case MsgFlagConstants.BROKER_MESSAGE_BATCH_ACK:
-                receiveMessageHandler.resolveBatchACK(msg);
+                receiveMessageProcessor.resolveBatchACK(msg);
                 break;
         }
     }
@@ -82,6 +82,11 @@ public class ProducerBootstrapHandler extends NettyHeartbeatHandler {
     @Override
     public void sendMsg(ChannelHandlerContext context, Message msg) {
         sendMsg(msg);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        eventHandler.exceptionHandler(ctx, cause);
     }
 
     public void sendMsg(Message msg) {

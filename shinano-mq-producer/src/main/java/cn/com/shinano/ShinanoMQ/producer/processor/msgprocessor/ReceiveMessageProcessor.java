@@ -1,20 +1,19 @@
-package cn.com.shinano.ShinanoMQ.producer.nettyhandler.msghandler;
+package cn.com.shinano.ShinanoMQ.producer.processor.msgprocessor;
 
 import cn.com.shinano.ShinanoMQ.base.VO.BatchAckVO;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
-import cn.com.shinano.ShinanoMQ.producer.nettyhandler.ResultCallBackInvoker;
+import cn.com.shinano.ShinanoMQ.producer.processor.ResultCallBackInvoker;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author lhe.shinano
  * @date 2023/11/10
  */
 @Slf4j
-public class ReceiveMessageHandler extends ResultCallBackInvoker {
+public class ReceiveMessageProcessor extends ResultCallBackInvoker {
 
     @Override
     public void init() {
