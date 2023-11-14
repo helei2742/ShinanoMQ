@@ -43,7 +43,7 @@ public class BrokerMessageHandlerAdaptor extends AbstractNettyProcessor {
     @Override
     protected void handlerMessage(ChannelHandlerContext ctx, Message message) {
         Channel channel = ctx.channel();
-        log.info("get an message [{}]", message);
+//        log.info("get an message [{}]", message);
         //根据消息的类型从map中取出对应的handler处理
         RequestHandler requestHandler = messageHandlerMap.get(message.getFlag());
         if(requestHandler != null) {
@@ -81,19 +81,19 @@ public class BrokerMessageHandlerAdaptor extends AbstractNettyProcessor {
         connectManager.remove(id);
     }
 
-    /**
-     * 设备连接异常处理
-     *
-     * @param ctx
-     * @param cause
-     */
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        // 获取channel中id
-        String id = ctx.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get();
-
-        log.info("client:{}, request message{} got an exception", id, cause.getMessage(), cause);
-    }
+//    /**
+//     * 设备连接异常处理
+//     *
+//     * @param ctx
+//     * @param cause
+//     */
+//    @Override
+//    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+//        // 获取channel中id
+//        String id = ctx.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get();
+//
+//        log.info("client:{}, request message{} got an exception", id, cause.getMessage(), cause);
+//    }
 
 
     @Override

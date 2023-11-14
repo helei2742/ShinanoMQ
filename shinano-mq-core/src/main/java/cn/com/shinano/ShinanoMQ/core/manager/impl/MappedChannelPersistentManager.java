@@ -4,6 +4,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.core.datafile.MappedFile;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
+import cn.com.shinano.ShinanoMQ.core.dto.BrokerResult;
 import cn.com.shinano.ShinanoMQ.core.manager.topic.BrokerTopicInfo;
 import cn.com.shinano.ShinanoMQ.core.manager.*;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
@@ -62,7 +63,6 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
      * @param queue 消息的queue
      */
     @Override
-    @Deprecated
     public void persistentMessage(String id, String topic, String queue) {
         LinkedBlockingQueue<BrokerMessage> bq = dispatchMessageService.getTopicMessageBlockingQueue(topic);
 
@@ -87,16 +87,19 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
     }
 
     @Override
-    @Deprecated
-    public void saveMessageImmediately(Message message) {
-        executor.execute(()->{
+    public CompletableFuture<BrokerResult> saveMessageImmediately(Message message) {
+
+        return CompletableFuture.supplyAsync(() -> {
             String topic = message.getTopic();
             String queue = message.getQueue();
 
             String key = BrokerUtil.makeTopicQueueKey(topic, queue);
             try {
                 Long startOffset = brokerTopicInfo.queryTopicQueueOffset(topic, queue);
-                mappedFileMap.putIfAbsent(key, MappedFile.getMappedFile(topic, queue, startOffset));
+
+                if(!mappedFileMap.containsKey(key)) {
+                    mappedFileMap.put(key, MappedFile.getMappedFile(topic, queue, startOffset));
+                }
 
                 MappedFile mappedFile = mappedFileMap.get(key);
 
@@ -108,13 +111,14 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                 //更新offset
                 offsetManager.updateTopicQueueOffset(topic, queue, offset);
 
-                //发ACK
-                brokerAckManager.commitAck(message.getTransactionId(), AckStatus.SUCCESS);
+                return new BrokerResult(message.getTransactionId(), true);
             } catch (IOException e) {
                 log.error("save message got an error", e);
-                brokerAckManager.commitAck(message.getTransactionId(),AckStatus.FAIL);
+                brokerAckManager.commitAck(message.getTransactionId(), AckStatus.FAIL);
+
+                return new BrokerResult(message.getTransactionId(), false);
             }
-        });
+        }, executor);
     }
 
 

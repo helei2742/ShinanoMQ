@@ -158,7 +158,11 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
                 res = readDataFileAfterOffset(file, 0, logicOffset - startOffset, startOffset, count);
             }else {
                 i = Math.min(i, indexList.size()-1);
-                long fileOffset = indexList.get(i).getFileOffset();
+                IndexNode indexNode = indexList.get(i);
+                if(indexNode.getLogicOffset() > logicOffset) {
+                    indexNode = indexList.get(Math.max(0, i-1));
+                }
+                long fileOffset = indexNode.getFileOffset();
                 long targetOffset = logicOffset - startOffset;
 
 

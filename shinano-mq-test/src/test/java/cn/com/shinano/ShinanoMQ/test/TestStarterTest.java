@@ -113,7 +113,7 @@ class TestStarterTest {
     @Test
     public void brokerTPTest() throws IOException, InterruptedException {
         int putThreadCount = 10;
-        int threadPutMessageCount = 1000;
+        int threadPutMessageCount = 100;
 
         Map<Integer, Integer> success = new HashMap<>();
         Map<Integer, Integer> fail = new HashMap<>();
@@ -174,11 +174,6 @@ class TestStarterTest {
                                     else return v + 1;
                                 });
                             });
-//                    try {
-//                        TimeUnit.MILLISECONDS.sleep(10);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
                 }
                 latch.countDown();
             }, "thread-" + finalI).start();

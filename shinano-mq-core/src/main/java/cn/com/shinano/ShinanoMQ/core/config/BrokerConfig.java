@@ -1,6 +1,8 @@
 package cn.com.shinano.ShinanoMQ.core.config;
 
 
+import java.util.concurrent.TimeUnit;
+
 public class BrokerConfig {
 
     public static final String BROKER_TOPIC_INFO_SAVE_PATH = "shinano-mq-core/BrokerTopicInfo.json";
@@ -45,6 +47,18 @@ public class BrokerConfig {
      */
     public static final Integer CLIENT_OFF_LINE_INTERVAL = 3000;
 
+    /**
+     * 持久化到本地需要时间限制
+     */
+    public static final Integer LOCAL_PERSISTENT_WAIT_TIME_LIMIT = 60;
+    /**
+     * 持久化到本地需要时间限制的单位
+     */
+    public static final TimeUnit LOCAL_PERSISTENT_WAIT_TIME_UNIT = TimeUnit.SECONDS;
+    /**
+     * 超时后重试次数
+     */
+    public static final Integer LOCAL_PERSISTENT_WAIT_TIME_OUT_RETRY = 3;
 
 //    static {
 //        try {

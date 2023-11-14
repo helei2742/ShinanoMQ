@@ -1,0 +1,14 @@
+[ WARN ] [2023-11-13 23:32:00,986] [defaultEventLoopGroup-2-1] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:32:00,991] [defaultEventLoopGroup-2-3] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:32:01,001] [defaultEventLoopGroup-2-3] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:32:01,053] [defaultEventLoopGroup-2-1] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:32:01,056] [defaultEventLoopGroup-2-2] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:32:01,059] [defaultEventLoopGroup-2-1] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:32:01,087] [defaultEventLoopGroup-2-3] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:32:01,144] [defaultEventLoopGroup-2-2] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:32:01,160] [defaultEventLoopGroup-2-1] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:35:00,722] [defaultEventLoopGroup-2-1] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:35:00,725] [defaultEventLoopGroup-2-2] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:35:00,731] [defaultEventLoopGroup-2-3] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:35:00,733] [defaultEventLoopGroup-2-3] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel
+[ WARN ] [2023-11-13 23:35:00,734] [defaultEventLoopGroup-2-2] c.c.s.S.c.m.i.LocalConnectManager -client [] has bean registry, current registry cancel

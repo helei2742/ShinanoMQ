@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.manager.topic;
 
+import cn.com.shinano.ShinanoMQ.core.dto.OffsetAndCount;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -41,11 +42,11 @@ public class BrokerTopicInfo {
     public boolean addQueue(String topic, List<String> queues) {
         TopicInfo topicInfo = activeTopicsMap.get(topic);
 
-        ConcurrentMap<String, Long> queueInfo = topicInfo.getQueueInfo();
+        Map<String, OffsetAndCount> queueInfo = topicInfo.getQueueInfo();
 
         boolean f = true;
         for (String queue : queues) {
-            f &= queueInfo.putIfAbsent(queue, 0L) == null;
+            f &= queueInfo.putIfAbsent(queue, new OffsetAndCount(0L,0)) == null;
         }
         return f;
     }
@@ -119,45 +120,45 @@ public class BrokerTopicInfo {
         }
     }
 
-    @Data
-    public static class TopicInfo {
-        private String topic;
-        private ConcurrentMap<String, Long> queueInfo;
-        private ConcurrentMap<String, Long> queueCount;
-
-        public TopicInfo(String topic) {
-            this.topic = topic;
-            this.queueInfo = new ConcurrentHashMap<>();
-            this.queueCount = new ConcurrentHashMap<>();
-        }
-
-        public Long getOffset(String queue) {
-            return queueInfo.getOrDefault(queue, -1L);
-        }
-
-        public void setOffset(String queue, long offset) {
-            queueInfo.computeIfPresent(queue, (k,v)->{
-                queueCount.compute(k, (k1,v1)->{
-                    if(v1 == null) return 1L;
-                    return v1+1;
-                });
-                return Math.max(v, offset);
-            });
-        }
-
-        public List<String> removeQueues(List<String> queues) {
-            List<String> res = new ArrayList<>();
-            for (String queue : queues) {
-                queueInfo.compute(queue, (k, v)->{
-                    if(v != null) {
-                        res.add(queue);
-                        queueCount.remove(k);
-                        return null;
-                    }
-                    return v;
-                });
-            }
-            return res;
-        }
-    }
+//    @Data
+//    public static class TopicInfo {
+//        private String topic;
+//        private ConcurrentMap<String, Long> queueInfo;
+//        private ConcurrentMap<String, Long> queueCount;
+//
+//        public TopicInfo(String topic) {
+//            this.topic = topic;
+//            this.queueInfo = new ConcurrentHashMap<>();
+//            this.queueCount = new ConcurrentHashMap<>();
+//        }
+//
+//        public Long getOffset(String queue) {
+//            return queueInfo.getOrDefault(queue, -1L);
+//        }
+//
+//        public void setOffset(String queue, long offset) {
+//            queueInfo.computeIfPresent(queue, (k,v)->{
+//                queueCount.compute(k, (k1,v1)->{
+//                    if(v1 == null) return 1L;
+//                    return v1+1;
+//                });
+//                return Math.max(v, offset);
+//            });
+//        }
+//
+//        public List<String> removeQueues(List<String> queues) {
+//            List<String> res = new ArrayList<>();
+//            for (String queue : queues) {
+//                queueInfo.compute(queue, (k, v)->{
+//                    if(v != null) {
+//                        res.add(queue);
+//                        queueCount.remove(k);
+//                        return null;
+//                    }
+//                    return v;
+//                });
+//            }
+//            return res;
+//        }
+//    }
 }

@@ -27,15 +27,17 @@ public class LocalConnectManager implements ConnectManager {
 
     @Override
     public boolean add(String clientId, Channel channel) {
-        if (channelMap.putIfAbsent(clientId, channel) == null) { //添加成功
-            //给channel添加上标识
-            channel.attr(ShinanoMQConstants.ATTRIBUTE_KEY).setIfAbsent(clientId);
-            return true;
-        }else {
-            log.warn("client [{}] has bean registry, current registry cancel", clientId);
-            //重复
-            channel.close();
-            return false;
+        synchronized (clientId.intern()) {
+            if(channelMap.containsKey(clientId)) {
+                log.warn("client [{}] has bean registry, current registry cancel", clientId);
+                //重复
+                channel.close();
+                return false;
+            }else {
+                //给channel添加上标识
+                channel.attr(ShinanoMQConstants.ATTRIBUTE_KEY).setIfAbsent(clientId);
+                return true;
+            }
         }
     }
 }

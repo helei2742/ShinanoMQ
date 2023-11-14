@@ -48,9 +48,8 @@ public class ProducerRequestHandler implements RequestHandler {
 
         //设置该消息的响应ACK状态
         brokerAckManager.setAckFlag(messageId, channel);
-
         //交给下游处理
         dispatchMessageService.addMessageIntoQueue(brokerMessage);
-//        dispatchMessageService.saveMessageImmediately(brokerMessage);
+//        dispatchMessageService.saveMessageImmediately(brokerMessage, channel);
     }
 }
