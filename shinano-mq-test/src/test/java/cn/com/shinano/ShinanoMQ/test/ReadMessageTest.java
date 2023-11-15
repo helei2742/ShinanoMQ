@@ -28,14 +28,16 @@ public class ReadMessageTest {
 
         client.run();
 
-//        long p = 9379788;
+//        long p = 916685;
+//        long p = 910429;
+//        long p = 1032500;
         long p = 0;
         int total = 0;
         long start = System.currentTimeMillis();
         int sleep = 0;
         Set<String> set = new HashSet<>();
         while (true) {
-            MessageListVO x = queryMessage(client, p, 400);
+            MessageListVO x = queryMessage(client, p, 333);
             List<SaveMessage> messages = x.getMessages();
             if(messages == null || messages.size() == 0) break;
             p = x.getNextOffset();

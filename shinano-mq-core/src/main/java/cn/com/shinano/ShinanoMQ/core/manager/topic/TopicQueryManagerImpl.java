@@ -5,11 +5,14 @@ import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
+import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
+import cn.com.shinano.ShinanoMQ.core.config.TopicConfig;
 import cn.com.shinano.ShinanoMQ.core.dto.IndexNode;
 import cn.com.shinano.ShinanoMQ.core.manager.AbstractBrokerManager;
 import cn.com.shinano.ShinanoMQ.core.manager.OffsetManager;
 import cn.com.shinano.ShinanoMQ.core.manager.TopicQueryManager;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
+import cn.hutool.core.codec.BCD;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,8 +95,15 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
                                                        Long logicOffset,
                                                        int count) throws IOException {
 
+        //判断logicOffset是否超过当前写入的
+        long offsetLimit = offsetManager.queryTopicQueueOffset(topic, queue);
+        if (logicOffset >= offsetLimit) {
+           return MessageListVO.empty();
+        }
+
+
         Path path = Paths.get(BrokerUtil.getTopicQueueSaveDir(topic, queue));
-        if(!Files.exists(path)) return new MessageListVO();
+        if(!Files.exists(path)) return MessageListVO.empty();
 
         //获取数据文件里offset的插入点文件名
         String filename = getIndexFileNameWithoutFix(path, logicOffset);
@@ -104,7 +114,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
         int curNeed = count;
         long curLogicNeed = logicOffset;
         while (curNeed != 0) {
-            temp = getMessageListVO(curLogicNeed, curNeed, path, filename);
+            temp = getMessageListVO(curLogicNeed, offsetLimit, curNeed, path, filename);
 
             if(res == null) res = temp;
             else {
@@ -113,7 +123,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
             }
 
             curNeed -= temp.getMessages().size();
-            curLogicNeed += temp.getNextOffset();
+            curLogicNeed = temp.getNextOffset();
 
             if(curNeed == 0) break; //获取完
 
@@ -125,7 +135,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
         return res;
     }
 
-    private MessageListVO getMessageListVO(Long logicOffset, int count, Path path, String filename) throws IOException {
+    private MessageListVO getMessageListVO(Long logicOffset, long offsetLimit, int count, Path path, String filename) throws IOException {
         Path indexPath = Paths.get(path.toAbsolutePath().toString(), filename +".idx");
         Path dataPath = Paths.get(path.toAbsolutePath().toString(), filename +".dat");
 
@@ -133,7 +143,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
         long startOffset = Long.parseLong(filename);
         if(!Files.exists(indexPath)) { //没有索引文件,直接读数据文件
 
-            res = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, startOffset, count);
+            res = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, startOffset, offsetLimit, count);
         } else { //有索引
 
             //读取索引文件
@@ -144,7 +154,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
                     indexList.add(IndexNode.toIndexNode(line));
                 }
             }
-
+            indexList.sort((i1,i2)->i1.getLogicOffset().compareTo(i2.getLogicOffset()));
             //二分找在index的位置
             if (indexList.size() == 0) throw new IllegalArgumentException("index file context is empty");
             int i = Collections.binarySearch(indexList, new IndexNode(logicOffset, 0L));
@@ -154,7 +164,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
 
             File file = dataPath.toFile();
             if(i == 0) { // 没有比当前小offset的索引
-                res = readDataFileAfterOffset(file, 0, logicOffset - startOffset, startOffset, count);
+                res = readDataFileAfterOffset(file, 0, logicOffset - startOffset, startOffset, offsetLimit, count);
             }else {
                 i = Math.min(i, indexList.size()-1);
                 IndexNode indexNode = indexList.get(i);
@@ -165,7 +175,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
                 long targetOffset = logicOffset - startOffset;
 
 
-                res = readDataFileAfterOffset(file, fileOffset, targetOffset, logicOffset, count);
+                res = readDataFileAfterOffset(file, fileOffset, targetOffset, startOffset, offsetLimit, count);
             }
         }
         return res;
@@ -183,30 +193,50 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
     private MessageListVO readDataFileAfterOffset(File file,
                                                   long fileOffset,
                                                   long targetOffset,
-                                                  long startOffset,
+                                                  long fileLogicStart,
+                                                  long offsetLimit,
                                                   int count) throws IOException {
 
-        System.out.printf("fileOffset %d, targetOffset %d, startOffset %d\n", fileOffset, targetOffset, startOffset);
+        System.out.printf("fileOffset %d, targetOffset %d, fileLogicOffset %d\n", fileOffset, targetOffset, fileLogicStart);
         FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
-        MappedByteBuffer map = channel.map(FileChannel.MapMode.READ_ONLY, fileOffset, file.length()-fileOffset);
+
+        long size = Math.min(file.length() - fileOffset, TopicConfig.SINGLE_MESSAGE_LENGTH*count);
+        MappedByteBuffer map = channel.map(FileChannel.MapMode.READ_ONLY, fileOffset, size);
 
         byte[] lengthBytes = new byte[8];
 
 
         List<SaveMessage> messages = new ArrayList<>();
 
+        boolean readable = false;
+
+        long next = 0;
         while (map.position() < map.capacity()) {
-            if(map.remaining() < 8) break;
+            if(map.remaining() < 8){
+                break;
+            }
+
+            if(!readable && map.position()+fileOffset >= targetOffset) {
+                readable = true;
+                next = fileLogicStart + map.position()+fileOffset;
+            }
+
             map.get(lengthBytes);
 
             int length = ByteBuffer.wrap(lengthBytes).getInt();
-            if (length == 0) break;
+            //读到文件末尾
+            if (Arrays.equals(lengthBytes, BrokerConfig.PERSISTENT_FILE_END_MAGIC)) {
+                break;
+            }
+            if (next >= offsetLimit) break;
 
-            byte[] msgBytes = new byte[length];
+            System.out.println(new String(lengthBytes) + "    " + new String(BrokerConfig.PERSISTENT_FILE_END_MAGIC));
+            byte[] msgBytes = new byte[(int) length];
             map.get(msgBytes);
-            if(map.position()+fileOffset > targetOffset) {
-//                String json = new String(msgBytes, StandardCharsets.UTF_8);
-//                messages.add(JSONObject.parseObject(json, SaveMessage.class));
+
+            if(readable) {
+                next = next + msgBytes.length + 8;
+
                 messages.add(BrokerUtil.brokerSaveBytesTurnMessage(msgBytes));
                 if(messages.size() >= count) break;
             }
@@ -214,7 +244,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
 
         MessageListVO vo = new MessageListVO();
         vo.setMessages(messages);
-        vo.setNextOffset((long) map.position());
+        vo.setNextOffset(next);
         return vo;
     }
 

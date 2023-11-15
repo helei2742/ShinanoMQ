@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -17,4 +18,10 @@ import java.util.List;
 public class MessageListVO {
     private List<SaveMessage> messages;
     private Long nextOffset;
+
+    private final static MessageListVO EMPTYVO = new MessageListVO(new ArrayList<>(), -1L);
+
+    public static MessageListVO empty() {
+        return EMPTYVO;
+    }
 }

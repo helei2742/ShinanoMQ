@@ -1,9 +1,12 @@
 package cn.com.shinano.ShinanoMQ.core.config;
 
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 public class BrokerConfig {
+
+    public static final byte[] PERSISTENT_FILE_END_MAGIC = ByteBuffer.allocate(8).putLong(1111111111111111111L).array();
 
 //    public static final String BROKER_TOPIC_INFO_SAVE_PATH = "shinano-mq-core/BrokerTopicInfo.json";
     public static final String BROKER_TOPIC_INFO_SAVE_PATH = "shinano-mq-core\\BrokerTopicInfo.json";
@@ -36,7 +39,7 @@ public class BrokerConfig {
     /**
      * 持久化时生成的索引文件等级， 4代表写入一条数据时1/2^3次方概率生成索引
      */
-    public static final Integer PERSISTENT_INDEX_LEVEL = 3;
+    public static final Integer PERSISTENT_INDEX_LEVEL = 5;
 
     /**
      * 操作系统一页的大小

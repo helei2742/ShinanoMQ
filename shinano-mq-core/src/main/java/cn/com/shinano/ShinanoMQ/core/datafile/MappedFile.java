@@ -92,38 +92,37 @@ public class MappedFile {
     public long append(byte[] bytes) throws IOException {
         synchronized (this) {
             long filePos = FILE_POSITION_UPDATER.get(this);
+            long writePos = WRITE_POSITION_UPDATER.get(this);
 
-            if (filePos + bytes.length > mappedByteBuffer.capacity()) {
+            if (filePos + bytes.length > mappedByteBuffer.capacity() - 8) {
                 //装不下了，重新map一块装
                 //TODO file快装满的时候提前
 //                filePos = FILE_POSITION_UPDATER.get(this);
+                //文件结尾魔数
+                mappedByteBuffer.put(BrokerConfig.PERSISTENT_FILE_END_MAGIC);
+                mappedByteBuffer.force();
 
-                if (filePos + bytes.length > mappedByteBuffer.capacity()) {
-                    //原来的先刷盘
-                    mappedByteBuffer.force();
+                //保存索引文件
+                index.save(BrokerUtil.getSaveFileName(writePos));
 
-                    //保存索引文件
-                    index.save(BrokerUtil.getSaveFileName(writePosition));
+                //新搞一个
+                this.file = newFile(writePos);
+                this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
 
-                    //新搞一个
-                    this.file = newFile(writePosition);
-                    this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
-
-                    FILE_POSITION_UPDATER.set(this, 0);
-                    this.mappedByteBuffer = this.fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, this.fileSize);
-                }
-
+                FILE_POSITION_UPDATER.set(this, 0);
+                this.mappedByteBuffer = this.fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, this.fileSize);
             }
 
             this.mappedByteBuffer.put(bytes);
+
+            //更新内存中的索引
+            index.updateIndex(writePos, filePos);
+
 
             //获取最新的
             long currentPos = WRITE_POSITION_UPDATER.addAndGet(this, bytes.length);
             filePos = FILE_POSITION_UPDATER.addAndGet(this, bytes.length);
             System.out.println(bytes.length + "---" + currentPos + "---" + filePos+"-counter-"+counter.incrementAndGet());
-
-            //更新内存中的索引
-            index.updateIndex(currentPos, filePos);
             return currentPos;
         }
     }
