@@ -113,13 +113,12 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
             }
 
             curNeed -= temp.getMessages().size();
-            curLogicNeed = temp.getNextOffset();
+            curLogicNeed += temp.getNextOffset();
 
             if(curNeed == 0) break; //获取完
 
             String nextFileName = getIndexFileNameWithoutFix(path, curLogicNeed);
             if(nextFileName.equals(filename)) break; //没有下一个数据文件
-
             filename = nextFileName;
         }
 
@@ -187,7 +186,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
                                                   long startOffset,
                                                   int count) throws IOException {
 
-
+        System.out.printf("fileOffset %d, targetOffset %d, startOffset %d\n", fileOffset, targetOffset, startOffset);
         FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
         MappedByteBuffer map = channel.map(FileChannel.MapMode.READ_ONLY, fileOffset, file.length()-fileOffset);
 
@@ -215,7 +214,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
 
         MessageListVO vo = new MessageListVO();
         vo.setMessages(messages);
-        vo.setNextOffset((map.position() + startOffset));
+        vo.setNextOffset((long) map.position());
         return vo;
     }
 

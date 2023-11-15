@@ -5,6 +5,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.core.datafile.MappedFile;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerResult;
+import cn.com.shinano.ShinanoMQ.core.dto.PutMessageStatus;
 import cn.com.shinano.ShinanoMQ.core.manager.topic.BrokerTopicInfo;
 import cn.com.shinano.ShinanoMQ.core.manager.*;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
@@ -31,12 +32,6 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
     private final Map<String, PersistentTask> persistentTaskMap = new ConcurrentHashMap<>();
 
     /**
-     * topic-key: MappedFile
-     */
-    @Deprecated
-    private final Map<String, MappedFile> mappedFileMap = new ConcurrentHashMap<>();
-
-    /**
      * 执行持久化任务的线程池
      */
     private final ExecutorService executor = Executors.newFixedThreadPool(5);
@@ -58,7 +53,8 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
     /**
      * 持久化消息，以topic-queue 为标识创建任务加入到线程池中执行。
      * 消息从dispatchMessageService.getTopicMessageBlockingQueue(topic)的阻塞队列里获取
-     * @param id 由服务器生成的消息id
+     *
+     * @param id    由服务器生成的消息id
      * @param topic 消息的topic
      * @param queue 消息的queue
      */
@@ -82,9 +78,6 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
         return persistentTaskMap;
     }
 
-    public Map<String, MappedFile> getMappedFileMap() {
-        return mappedFileMap;
-    }
 
     @Override
     public CompletableFuture<BrokerResult> saveMessageImmediately(Message message) {
@@ -93,34 +86,40 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
             String topic = message.getTopic();
             String queue = message.getQueue();
 
-            String key = BrokerUtil.makeTopicQueueKey(topic, queue);
+
+            BrokerResult brokerResult = new BrokerResult();
+            brokerResult.setTransactionId(message.getTransactionId());
+
             try {
                 Long startOffset = brokerTopicInfo.queryTopicQueueOffset(topic, queue);
 
-                if(!mappedFileMap.containsKey(key)) {
-                    mappedFileMap.put(key, MappedFile.getMappedFile(topic, queue, startOffset));
+                MappedFile mappedFile = null;
+                try {
+                   mappedFile = MappedFile.getMappedFile(topic, queue, startOffset);
+                } catch (IOException e) {
+                   log.error("create mapped file got an error", e);
+                   return brokerResult.setStatus(PutMessageStatus.CREATE_MAPPED_FILE_FAILED);
                 }
-
-                MappedFile mappedFile = mappedFileMap.get(key);
 
                 byte[] bytes = BrokerUtil.messageTurnBrokerSaveBytes(message);
 
                 //追加写入
-                long offset = mappedFile.append(bytes);
-
+                long offset = 0;
+                try {
+                    offset = mappedFile.append(bytes);
+                } catch (IOException e) {
+                    log.error("write message into file got an error, topic [{}], queue[{}]", topic, queue, e);
+                    return brokerResult.setStatus(PutMessageStatus.PERSISTENT_MESSAGE_FAIL);
+                }
                 //更新offset
                 offsetManager.updateTopicQueueOffset(topic, queue, offset);
-
-                return new BrokerResult(message.getTransactionId(), true);
-            } catch (IOException e) {
-                log.error("save message got an error", e);
-                brokerAckManager.commitAck(message.getTransactionId(), AckStatus.FAIL);
-
-                return new BrokerResult(message.getTransactionId(), false);
+                return brokerResult.setStatus(PutMessageStatus.PUT_OK);
+            }catch (Exception e) {
+                log.error("write message got unknown error", e);
+                return brokerResult.setStatus(PutMessageStatus.UNKNOWN_ERROR);
             }
         }, executor);
     }
-
 
     /**
      * 持久化任务，每个持久化任务负责一个topic的一个key内的消息的持久化
@@ -158,7 +157,7 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                 try {
                     msg = bq.take();
 
-                    if(mappedFile == null) {
+                    if (mappedFile == null) {
                         mappedFile = MappedFile.getMappedFile(topic, queue, offset);
                     }
 
@@ -176,7 +175,7 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                     this.offset += bytes.length;
                 } catch (InterruptedException | IOException e) {
                     log.error("persistent task get a error, ", e);
-                    if(msg != null) {
+                    if (msg != null) {
                         ackService.commitAck(msg.getId(), AckStatus.FAIL);
                     }
                 }

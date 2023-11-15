@@ -4,6 +4,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerResult;
+import cn.com.shinano.ShinanoMQ.core.dto.PutMessageStatus;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +61,9 @@ public class DispatchMessageService {
             BrokerResult result = tryGetFutureResult(localFuture, tsId, 1);
 
             brokerAckManager.setAckFlag(tsId, channel);
-            brokerAckManager.commitAck(tsId, result.getSuccess()? AckStatus.SUCCESS : AckStatus.FAIL);
+
+            AckStatus ackStatus = result.getStatus().equals(PutMessageStatus.PUT_OK) ? AckStatus.SUCCESS : AckStatus.FAIL;
+            brokerAckManager.commitAck(tsId, ackStatus);
         } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
@@ -70,7 +73,7 @@ public class DispatchMessageService {
         try {
             return future.get(BrokerConfig.LOCAL_PERSISTENT_WAIT_TIME_LIMIT, BrokerConfig.LOCAL_PERSISTENT_WAIT_TIME_UNIT);
         } catch (TimeoutException e) {
-            if(count > BrokerConfig.LOCAL_PERSISTENT_WAIT_TIME_OUT_RETRY) return new BrokerResult(tsId, false);
+            if(count > BrokerConfig.LOCAL_PERSISTENT_WAIT_TIME_OUT_RETRY) return new BrokerResult(tsId, PutMessageStatus.FLUSH_DISK_TIMEOUT);
             log.warn("local persistent time out, tsId[{}]", tsId);
             return tryGetFutureResult(future, tsId, count+1);
         }

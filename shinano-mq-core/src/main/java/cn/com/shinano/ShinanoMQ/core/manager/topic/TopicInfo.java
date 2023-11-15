@@ -30,7 +30,7 @@ public class TopicInfo {
         return queueInfo.get(queue).getOffset();
     }
 
-    public void setOffset(String queue, long offset) {
+    public synchronized void setOffset(String queue, long offset) {
         queueInfo.computeIfPresent(queue, (k, v) -> {
             v.setOffset(Math.max(v.getOffset(), offset));
             v.setCount(v.getCount()+1);

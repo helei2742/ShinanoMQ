@@ -22,7 +22,8 @@ public class FlushMappedFileJob {
     private MappedChannelPersistentManager persistentService;
 
     @Scheduled(cron = "0/10 * * * * *")
-    public void flushMappedFile() {
+    @Deprecated
+    public void flushMappedFile2() {
         Map<String, MappedChannelPersistentManager.PersistentTask> map = persistentService.getPersistentTask();
 
         log.info("start flush mapped file");
@@ -38,6 +39,16 @@ public class FlushMappedFileJob {
                     log.error("flush mappedFile get an error", e);
                 }
             }
+        }
+    }
+
+    @Scheduled(cron = "0/10 * * * * *")
+    public void flushMappedFile() {
+        log.info("start flush mapped file");
+        try {
+            MappedFile.flushMappedFiles();
+        } catch (IOException e) {
+            log.error("flush mappedFile get an error", e);
         }
     }
 }

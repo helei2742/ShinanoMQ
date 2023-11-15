@@ -28,6 +28,7 @@ public class ReadMessageTest {
 
         client.run();
 
+//        long p = 9379788;
         long p = 0;
         int total = 0;
         long start = System.currentTimeMillis();
