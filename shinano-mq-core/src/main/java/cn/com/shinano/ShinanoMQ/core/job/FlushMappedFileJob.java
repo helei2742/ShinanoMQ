@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.job;
 
-import cn.com.shinano.ShinanoMQ.core.datafile.MappedFile;
+import cn.com.shinano.ShinanoMQ.core.store.MappedFile;
 import cn.com.shinano.ShinanoMQ.core.manager.impl.MappedChannelPersistentManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,7 @@ public class FlushMappedFileJob {
     @Autowired
     private MappedChannelPersistentManager persistentService;
 
-    @Scheduled(cron = "0/10 * * * * *")
+//    @Scheduled(cron = "0/10 * * * * *")
     @Deprecated
     public void flushMappedFile2() {
         Map<String, MappedChannelPersistentManager.PersistentTask> map = persistentService.getPersistentTask();

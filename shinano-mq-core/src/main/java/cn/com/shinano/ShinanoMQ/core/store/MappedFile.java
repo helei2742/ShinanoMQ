@@ -1,10 +1,12 @@
-package cn.com.shinano.ShinanoMQ.core.datafile;
+package cn.com.shinano.ShinanoMQ.core.store;
 
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
-import cn.com.shinano.ShinanoMQ.core.manager.impl.MappedChannelPersistentManager;
+import cn.com.shinano.ShinanoMQ.core.config.TopicConfig;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
@@ -12,15 +14,17 @@ import java.nio.channels.FileChannel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class MappedFile {
 
     private static final ConcurrentMap<String, MappedFile> existMappedFileMap = new ConcurrentHashMap<>();
 
     protected static final AtomicLongFieldUpdater<MappedFile> WRITE_POSITION_UPDATER;
-    protected static final AtomicLongFieldUpdater<MappedFile> FILE_POSITION_UPDATER;
+    protected static final AtomicIntegerFieldUpdater<MappedFile> FILE_POSITION_UPDATER;
 
 
     private File file;
@@ -28,7 +32,7 @@ public class MappedFile {
     private MappedByteBuffer mappedByteBuffer;
 
     private volatile long writePosition; //逻辑上写的位置
-    private volatile long filePosition; //物理上写的位置
+    private volatile int filePosition; //物理上写的位置
 
     private final Long fileSize;
     private final String fileDir;
@@ -39,9 +43,11 @@ public class MappedFile {
      */
     private final MappedFileIndex index;
 
+    private final ReentrantLock lock = new ReentrantLock();
+
     static {
         WRITE_POSITION_UPDATER = AtomicLongFieldUpdater.newUpdater(MappedFile.class, "writePosition");
-        FILE_POSITION_UPDATER = AtomicLongFieldUpdater.newUpdater(MappedFile.class, "filePosition");
+        FILE_POSITION_UPDATER = AtomicIntegerFieldUpdater.newUpdater(MappedFile.class, "filePosition");
     }
 
     /**
@@ -54,7 +60,7 @@ public class MappedFile {
      * @throws IOException
      */
     protected MappedFile(long writePosition,
-                         long filePosition,
+                         int filePosition,
                          long fileLimit,
                          File file) throws IOException {
         if (file.isDirectory()) {
@@ -85,46 +91,40 @@ public class MappedFile {
     /**
      * 向文件中追加内容
      *
-     * @param bytes
+     * @param message
      * @return
      * @throws IOException
      */
-    public long append(byte[] bytes) throws IOException {
-        synchronized (this) {
-            long filePos = FILE_POSITION_UPDATER.get(this);
-            long writePos = WRITE_POSITION_UPDATER.get(this);
+    public AppendMessageResult append(Message message) {
+        byte[] bytes = BrokerUtil.messageTurnBrokerSaveBytes(message);
 
-            if (filePos + bytes.length > mappedByteBuffer.capacity() - 8) {
-                //装不下了，重新map一块装
-                //TODO file快装满的时候提前
-//                filePos = FILE_POSITION_UPDATER.get(this);
-                //文件结尾魔数
-                mappedByteBuffer.put(BrokerConfig.PERSISTENT_FILE_END_MAGIC);
-                mappedByteBuffer.force();
+        int filePos = FILE_POSITION_UPDATER.get(this);
+        long writePos = WRITE_POSITION_UPDATER.get(this);
 
-                //保存索引文件
-                index.save(BrokerUtil.getSaveFileName(writePos));
-
-                //新搞一个
-                this.file = newFile(writePos);
-                this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
-
-                FILE_POSITION_UPDATER.set(this, 0);
-                this.mappedByteBuffer = this.fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, this.fileSize);
-            }
-
-            this.mappedByteBuffer.put(bytes);
-
-            //更新内存中的索引
-            index.updateIndex(writePos, filePos);
-
-
-            //获取最新的
-            long currentPos = WRITE_POSITION_UPDATER.addAndGet(this, bytes.length);
-            filePos = FILE_POSITION_UPDATER.addAndGet(this, bytes.length);
-            System.out.println(bytes.length + "---" + currentPos + "---" + filePos+"-counter-"+counter.incrementAndGet());
-            return currentPos;
+        if(bytes.length > TopicConfig.SINGLE_MESSAGE_LENGTH) {
+            return new AppendMessageResult(AppendMessageStatus.MESSAGE_SIZE_EXCEEDED, writePos,
+                    bytes.length, null, message.getTransactionId(), System.currentTimeMillis());
         }
+
+        if (filePos + bytes.length >
+                mappedByteBuffer.capacity() - BrokerConfig.PERSISTENT_FILE_END_MAGIC.length) {
+            return new AppendMessageResult(AppendMessageStatus.END_OF_FILE,
+                    writePos,
+                    bytes.length,
+                    bytes,
+                    message.getTransactionId(),
+                    System.currentTimeMillis());
+        }
+
+        this.mappedByteBuffer.put(bytes);
+        //更新内存中的索引
+        index.updateIndex(writePos, filePos);
+
+        writePos = WRITE_POSITION_UPDATER.addAndGet(this, bytes.length);
+        filePos = FILE_POSITION_UPDATER.addAndGet(this, bytes.length);
+
+        return new AppendMessageResult(AppendMessageStatus.PUT_OK, writePos, bytes.length,
+                null, message.getTransactionId(), System.currentTimeMillis());
     }
 
     /**
@@ -168,7 +168,7 @@ public class MappedFile {
 
                         long fileLogicStart = Long.parseLong(newest.getName().split("\\.")[0]);
 
-                        long fileUsedLength = logicOffset - fileLogicStart;
+                        int fileUsedLength = (int) (logicOffset - fileLogicStart);
 
                         if (fileUsedLength >= BrokerConfig.PERSISTENT_FILE_SIZE) { //文件已经写满
                             res = new MappedFile(logicOffset, 0, BrokerConfig.PERSISTENT_FILE_SIZE, dirFile);
@@ -214,5 +214,33 @@ public class MappedFile {
                 mappedFile.flush();
             }
         }
+    }
+
+    public void loadNextFile(long writePos) {
+        //装不下了，重新map一块装
+        try {
+            //文件结尾魔数
+            mappedByteBuffer.put(BrokerConfig.PERSISTENT_FILE_END_MAGIC);
+            mappedByteBuffer.force();
+
+            //保存索引文件
+            index.save(BrokerUtil.getSaveFileName(writePos));
+
+            //新搞一个
+            this.file = newFile(writePos);
+            this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
+            FILE_POSITION_UPDATER.set(this, 0);
+            this.mappedByteBuffer = this.fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, this.fileSize);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void lock() {
+        lock.lock();
+    }
+
+    public void unlock() {
+        lock.unlock();
     }
 }

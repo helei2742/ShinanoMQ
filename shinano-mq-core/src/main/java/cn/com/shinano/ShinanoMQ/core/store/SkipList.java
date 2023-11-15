@@ -1,4 +1,4 @@
-package cn.com.shinano.ShinanoMQ.core.datafile;
+package cn.com.shinano.ShinanoMQ.core.store;
 
 import java.util.*;
 

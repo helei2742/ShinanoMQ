@@ -1,4 +1,4 @@
-package cn.com.shinano.ShinanoMQ.core.nettyhandler;
+package cn.com.shinano.ShinanoMQ.core.processor;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
@@ -21,11 +21,11 @@ import java.util.Map;
 @Slf4j
 @Component
 @ChannelHandler.Sharable
-public class BrokerMessageHandlerAdaptor extends AbstractNettyProcessor {
+public class BrokerMessageProcessorAdaptor extends AbstractNettyProcessor {
 
     @Autowired
     @Qualifier("messageHandlerMap")
-    private Map<Integer, RequestHandler> messageHandlerMap;
+    private Map<Integer, RequestProcessor> messageHandlerMap;
 
     @Autowired
     private ConnectManager connectManager;
@@ -45,9 +45,9 @@ public class BrokerMessageHandlerAdaptor extends AbstractNettyProcessor {
         Channel channel = ctx.channel();
 //        log.info("get an message [{}]", message);
         //根据消息的类型从map中取出对应的handler处理
-        RequestHandler requestHandler = messageHandlerMap.get(message.getFlag());
-        if(requestHandler != null) {
-            requestHandler.handlerMessage(ctx, message, channel);
+        RequestProcessor requestProcessor = messageHandlerMap.get(message.getFlag());
+        if(requestProcessor != null) {
+            requestProcessor.handlerMessage(ctx, message, channel);
         }
     }
 

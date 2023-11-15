@@ -1,9 +1,9 @@
-package cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler;
+package cn.com.shinano.ShinanoMQ.core.processor.msgprocessor;
 
 import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
-import cn.com.shinano.ShinanoMQ.core.nettyhandler.RequestHandler;
+import cn.com.shinano.ShinanoMQ.core.processor.RequestProcessor;
 import cn.com.shinano.ShinanoMQ.core.manager.BrokerAckManager;
 import cn.com.shinano.ShinanoMQ.core.manager.DispatchMessageService;
 import cn.com.shinano.ShinanoMQ.core.manager.TopicManager;
@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
  * 处理生产者发送的需要保存的数据消息
  */
 @Slf4j
-public class ProducerRequestHandler implements RequestHandler {
+public class ProducerRequestProcessor implements RequestProcessor {
 
     private final TopicManager topicManager;
 
@@ -24,7 +24,7 @@ public class ProducerRequestHandler implements RequestHandler {
 
     private final BrokerAckManager brokerAckManager;
 
-    public ProducerRequestHandler(TopicManager topicManager, DispatchMessageService dispatchMessageService, BrokerAckManager brokerAckManager) {
+    public ProducerRequestProcessor(TopicManager topicManager, DispatchMessageService dispatchMessageService, BrokerAckManager brokerAckManager) {
         this.topicManager = topicManager;
         this.dispatchMessageService = dispatchMessageService;
         this.brokerAckManager = brokerAckManager;

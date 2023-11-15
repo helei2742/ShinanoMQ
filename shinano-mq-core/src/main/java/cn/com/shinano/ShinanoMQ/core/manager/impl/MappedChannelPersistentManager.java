@@ -2,7 +2,9 @@ package cn.com.shinano.ShinanoMQ.core.manager.impl;
 
 import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.core.datafile.MappedFile;
+import cn.com.shinano.ShinanoMQ.core.store.AppendMessageResult;
+import cn.com.shinano.ShinanoMQ.core.store.AppendMessageStatus;
+import cn.com.shinano.ShinanoMQ.core.store.MappedFile;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerResult;
 import cn.com.shinano.ShinanoMQ.core.dto.PutMessageStatus;
@@ -86,38 +88,46 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
             String topic = message.getTopic();
             String queue = message.getQueue();
 
-
             BrokerResult brokerResult = new BrokerResult();
             brokerResult.setTransactionId(message.getTransactionId());
+            Long startOffset = brokerTopicInfo.queryTopicQueueOffset(topic, queue);
 
+            MappedFile mappedFile = null;
             try {
-                Long startOffset = brokerTopicInfo.queryTopicQueueOffset(topic, queue);
+                mappedFile = MappedFile.getMappedFile(topic, queue, startOffset);
+            } catch (IOException e) {
+                log.error("create mapped file got an error", e);
+                return brokerResult.setStatus(PutMessageStatus.CREATE_MAPPED_FILE_FAILED);
+            }
+            mappedFile.lock();
+            try {
+                AppendMessageResult result = mappedFile.append(message);
 
-                MappedFile mappedFile = null;
-                try {
-                   mappedFile = MappedFile.getMappedFile(topic, queue, startOffset);
-                } catch (IOException e) {
-                   log.error("create mapped file got an error", e);
-                   return brokerResult.setStatus(PutMessageStatus.CREATE_MAPPED_FILE_FAILED);
+                switch (result.getStatus()) {
+                    case PUT_OK:
+                        //更新offset
+                        offsetManager.updateTopicQueueOffset(topic, queue, result.getWroteOffset());
+                        return brokerResult.setStatus(PutMessageStatus.PUT_OK);
+                    case END_OF_FILE:
+                        mappedFile.loadNextFile(result.getWroteOffset());
+
+                        result = mappedFile.append(message);
+                        if (AppendMessageStatus.PUT_OK.equals(result.getStatus())) {
+                            return brokerResult.setStatus(PutMessageStatus.PUT_OK);
+                        }
+                        break;
+                    case MESSAGE_SIZE_EXCEEDED:
+                    case PROPERTIES_SIZE_EXCEEDED:
+                        return brokerResult.setStatus(PutMessageStatus.PROPERTIES_SIZE_EXCEEDED);
                 }
-
-                byte[] bytes = BrokerUtil.messageTurnBrokerSaveBytes(message);
-
-                //追加写入
-                long offset = 0;
-                try {
-                    offset = mappedFile.append(bytes);
-                } catch (IOException e) {
-                    log.error("write message into file got an error, topic [{}], queue[{}]", topic, queue, e);
-                    return brokerResult.setStatus(PutMessageStatus.PERSISTENT_MESSAGE_FAIL);
-                }
-                //更新offset
-                offsetManager.updateTopicQueueOffset(topic, queue, offset);
-                return brokerResult.setStatus(PutMessageStatus.PUT_OK);
             }catch (Exception e) {
                 log.error("write message got unknown error", e);
                 return brokerResult.setStatus(PutMessageStatus.UNKNOWN_ERROR);
+            }finally {
+                mappedFile.unlock();
             }
+
+            return brokerResult.setStatus(PutMessageStatus.UNKNOWN_ERROR);
         }, executor);
     }
 
@@ -164,7 +174,7 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                     byte[] bytes = BrokerUtil.messageTurnBrokerSaveBytes(msg.getMessage());
 
                     //追加写入
-                    this.offset = mappedFile.append(bytes);
+//                    this.offset = mappedFile.append(bytes);
 
                     //更新offset
                     offsetManager.updateTopicQueueOffset(topic, queue, this.offset);

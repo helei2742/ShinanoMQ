@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 @NoArgsConstructor
 public class IndexNode implements Comparable<IndexNode>{
     private Long logicOffset;
-    private Long fileOffset;
+    private Integer fileOffset;
     public byte[] toSaveBytes() {
         return toSaveString().getBytes(StandardCharsets.UTF_8);
     }
@@ -22,7 +22,7 @@ public class IndexNode implements Comparable<IndexNode>{
         String[] split = line.replace("<", "").replace(">", "").split("-");
         IndexNode indexNode = new IndexNode();
         indexNode.setLogicOffset(Long.parseLong(split[0]));
-        indexNode.setFileOffset(Long.parseLong(split[1]));
+        indexNode.setFileOffset(Integer.parseInt(split[1]));
         return indexNode;
     }
 

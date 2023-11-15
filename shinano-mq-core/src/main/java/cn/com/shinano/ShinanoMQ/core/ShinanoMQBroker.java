@@ -4,7 +4,7 @@ import cn.com.shinano.ShinanoMQ.base.MessageDecoder;
 import cn.com.shinano.ShinanoMQ.base.MessageEncoder;
 import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
-import cn.com.shinano.ShinanoMQ.core.nettyhandler.BrokerMessageHandlerAdaptor;
+import cn.com.shinano.ShinanoMQ.core.processor.BrokerMessageProcessorAdaptor;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -33,7 +33,7 @@ public class ShinanoMQBroker implements ApplicationRunner {
     private Integer port;
 
     @Autowired
-    private BrokerMessageHandlerAdaptor brokerMessageHandlerAdaptor;
+    private BrokerMessageProcessorAdaptor brokerMessageProcessorAdaptor;
 
     public void init() {
         resolveMessageGroup = new DefaultEventLoopGroup(BrokerConfig.BOOTSTRAP_HANDLER_THREAD);
@@ -58,7 +58,7 @@ public class ShinanoMQBroker implements ApplicationRunner {
                         ch.pipeline().addLast(new MessageDecoder());
                         ch.pipeline().addLast(new MessageEncoder());
 
-                        ch.pipeline().addLast(resolveMessageGroup, "bootstrapHandler", brokerMessageHandlerAdaptor);
+                        ch.pipeline().addLast(resolveMessageGroup, "bootstrapHandler", brokerMessageProcessorAdaptor);
                     }
                 }).bind(this.port);
 

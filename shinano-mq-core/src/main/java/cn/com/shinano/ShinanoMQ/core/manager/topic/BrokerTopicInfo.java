@@ -119,46 +119,4 @@ public class BrokerTopicInfo {
             return true;
         }
     }
-
-//    @Data
-//    public static class TopicInfo {
-//        private String topic;
-//        private ConcurrentMap<String, Long> queueInfo;
-//        private ConcurrentMap<String, Long> queueCount;
-//
-//        public TopicInfo(String topic) {
-//            this.topic = topic;
-//            this.queueInfo = new ConcurrentHashMap<>();
-//            this.queueCount = new ConcurrentHashMap<>();
-//        }
-//
-//        public Long getOffset(String queue) {
-//            return queueInfo.getOrDefault(queue, -1L);
-//        }
-//
-//        public void setOffset(String queue, long offset) {
-//            queueInfo.computeIfPresent(queue, (k,v)->{
-//                queueCount.compute(k, (k1,v1)->{
-//                    if(v1 == null) return 1L;
-//                    return v1+1;
-//                });
-//                return Math.max(v, offset);
-//            });
-//        }
-//
-//        public List<String> removeQueues(List<String> queues) {
-//            List<String> res = new ArrayList<>();
-//            for (String queue : queues) {
-//                queueInfo.compute(queue, (k, v)->{
-//                    if(v != null) {
-//                        res.add(queue);
-//                        queueCount.remove(k);
-//                        return null;
-//                    }
-//                    return v;
-//                });
-//            }
-//            return res;
-//        }
-//    }
 }

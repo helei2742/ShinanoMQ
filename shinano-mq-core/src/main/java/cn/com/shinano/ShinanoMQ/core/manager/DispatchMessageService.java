@@ -22,6 +22,7 @@ import java.util.concurrent.*;
 public class DispatchMessageService {
     private final Map<String, LinkedBlockingQueue<BrokerMessage>> dispatchMap = new ConcurrentHashMap<>();
 
+
     @Autowired
     private PersistentSupport persistentSupport;
 

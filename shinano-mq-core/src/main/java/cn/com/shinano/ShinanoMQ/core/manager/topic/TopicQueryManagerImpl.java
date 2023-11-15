@@ -157,7 +157,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
             indexList.sort((i1,i2)->i1.getLogicOffset().compareTo(i2.getLogicOffset()));
             //二分找在index的位置
             if (indexList.size() == 0) throw new IllegalArgumentException("index file context is empty");
-            int i = Collections.binarySearch(indexList, new IndexNode(logicOffset, 0L));
+            int i = Collections.binarySearch(indexList, new IndexNode(logicOffset, 0));
             if (i < 0) {
                 i = Math.abs(i) - 1;
             }

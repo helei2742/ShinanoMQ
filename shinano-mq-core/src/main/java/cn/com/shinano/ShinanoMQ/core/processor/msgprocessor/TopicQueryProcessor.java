@@ -1,23 +1,21 @@
-package cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler;
+package cn.com.shinano.ShinanoMQ.core.processor.msgprocessor;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.dto.MsgPropertiesConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.TopicQueryConstants;
 import cn.com.shinano.ShinanoMQ.base.util.MessageUtil;
-import cn.com.shinano.ShinanoMQ.core.nettyhandler.RequestHandler;
+import cn.com.shinano.ShinanoMQ.core.processor.RequestProcessor;
 import cn.com.shinano.ShinanoMQ.core.manager.TopicQueryManager;
 import cn.hutool.core.util.StrUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 
-import java.util.Map;
-
 /**
  * 处理查询topic相关的信息
  */
-public class TopicQueryHandler implements RequestHandler {
+public class TopicQueryProcessor implements RequestProcessor {
 
-    public TopicQueryHandler(TopicQueryManager topicQueryManager) {
+    public TopicQueryProcessor(TopicQueryManager topicQueryManager) {
         this.topicQueryManager = topicQueryManager;
     }
 

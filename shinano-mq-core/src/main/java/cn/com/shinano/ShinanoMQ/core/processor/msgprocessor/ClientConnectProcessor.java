@@ -1,11 +1,11 @@
-package cn.com.shinano.ShinanoMQ.core.nettyhandler.msghandler;
+package cn.com.shinano.ShinanoMQ.core.processor.msgprocessor;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.MsgPropertiesConstants;
 import cn.com.shinano.ShinanoMQ.base.util.MessageUtil;
 import cn.com.shinano.ShinanoMQ.core.config.TopicConfig;
-import cn.com.shinano.ShinanoMQ.core.nettyhandler.RequestHandler;
+import cn.com.shinano.ShinanoMQ.core.processor.RequestProcessor;
 import cn.com.shinano.ShinanoMQ.core.manager.ConnectManager;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -15,9 +15,9 @@ import lombok.extern.slf4j.Slf4j;
  * 处理客户端链接
  */
 @Slf4j
-public class ClientConnectHandler implements RequestHandler {
+public class ClientConnectProcessor implements RequestProcessor {
 
-    public ClientConnectHandler(ConnectManager connectManager) {
+    public ClientConnectProcessor(ConnectManager connectManager) {
         this.connectManager = connectManager;
     }
 
