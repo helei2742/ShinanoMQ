@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.base;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.util.MessageUtil;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import io.netty.buffer.ByteBuf;
@@ -11,7 +12,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import java.nio.ByteBuffer;
 
 
-public class MessageEncoder extends MessageToByteEncoder<Message> {
+public class RemotingCommandEncoder extends MessageToByteEncoder<RemotingCommand> {
 
    /* @Override
     protected void encode(ChannelHandlerContext ctx, Message msg, ByteBuf out)throws Exception{
@@ -25,8 +26,8 @@ public class MessageEncoder extends MessageToByteEncoder<Message> {
     }*/
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, Message msg, ByteBuf out)throws Exception{
-        out.writeBytes(MessageUtil.messageTurnBytes(msg));
-        msg.release();
+    protected void encode(ChannelHandlerContext ctx, RemotingCommand remotingCommand, ByteBuf out)throws Exception{
+        out.writeBytes(remotingCommand.turnToBytes());
+        remotingCommand.release();
     }
 }

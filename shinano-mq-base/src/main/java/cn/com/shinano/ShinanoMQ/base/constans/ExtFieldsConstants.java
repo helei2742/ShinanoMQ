@@ -1,6 +1,6 @@
-package cn.com.shinano.ShinanoMQ.base.dto;
+package cn.com.shinano.ShinanoMQ.base.constans;
 
-public class MsgPropertiesConstants {
+public class ExtFieldsConstants {
 
     /**
      * 客户端的key
@@ -26,4 +26,15 @@ public class MsgPropertiesConstants {
      * 查询topic的类型key
      */
     public final static String TOPIC_QUERY_OPT_KEY = "topic_query_opt";
+
+    /**
+     * 生产者发送消息的结果key
+     */
+    public final static String PRODUCER_PUT_MESSAGE_RESULT_KEY = "producer_send_message_result";
+
+    public static final String TRANSACTION_ID_KEY = "transaction_id";
+
+    public static final String TOPIC_KEY = "topic";
+    public static final String QUEUE_KEY = "queue";
+    public static final String OFFSET_KEY = "offset";
 }

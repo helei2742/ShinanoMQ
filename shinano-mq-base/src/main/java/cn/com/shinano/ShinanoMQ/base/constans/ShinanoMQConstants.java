@@ -1,4 +1,4 @@
-package cn.com.shinano.ShinanoMQ.base;
+package cn.com.shinano.ShinanoMQ.base.constans;
 
 import io.netty.util.AttributeKey;
 

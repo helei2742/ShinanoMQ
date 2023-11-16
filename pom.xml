@@ -14,6 +14,7 @@
         <module>shinano-mq-producer</module>
         <module>shinano-mq-test</module>
         <module>shinano-mq-base</module>
+        <module>shinano-mq-consumer</module>
     </modules>
 
     <properties>

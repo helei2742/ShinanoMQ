@@ -10,7 +10,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Maven: cn.com.shinano:shinano-mq-core:1.0-SNAPSHOT" level="project" />
+    <orderEntry type="module" module-name="shinano-mq-core" />
     <orderEntry type="module" module-name="shinano-mq-base" />
     <orderEntry type="library" name="Maven: com.alibaba:fastjson:1.2.79" level="project" />
     <orderEntry type="library" name="Maven: io.protostuff:protostuff-core:1.7.2" level="project" />

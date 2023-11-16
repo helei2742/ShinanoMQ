@@ -1,9 +1,11 @@
 package cn.com.shinano.ShinanoMQ.base.nettyhandler;
 
 
-import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
-import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
+import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
@@ -12,27 +14,27 @@ import io.netty.handler.timeout.IdleStateEvent;
 /**
  * 处理broker与client之间的心跳
  */
-public abstract class AbstractNettyProcessor extends SimpleChannelInboundHandler<Message> implements NettyBaseHandler {
+public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInboundHandler<RemotingCommand> implements NettyBaseHandler {
 
     private int heartbeatCount = 0;
 
     public NettyClientEventHandler eventHandler;
 
     @Override
-    protected void channelRead0(ChannelHandlerContext context, Message msg) throws Exception {
-        Integer opt = msg.getFlag();
-        if(opt.equals(MsgFlagConstants.BROKER_PING)) {
+    protected void channelRead0(ChannelHandlerContext context, RemotingCommand remotingCommand) throws Exception {
+        Integer opt = remotingCommand.getFlag();
+        if(opt.equals(RemotingCommandFlagConstants.BROKER_PING)) {
             sendPongMsg(context);
-        } else if (opt.equals(MsgFlagConstants.BROKER_PONG)){
+        } else if (opt.equals(RemotingCommandFlagConstants.BROKER_PONG)){
             printLog(String.format("get pong msg from [%s][%s] ",
                     context.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get(),
                     context.channel().remoteAddress()));
         }else {
-            handlerMessage(context, msg);
+            handlerMessage(context, remotingCommand);
         }
     }
 
-    protected abstract void handlerMessage(ChannelHandlerContext context, Message msg);
+    protected abstract void handlerMessage(ChannelHandlerContext context, RemotingCommand msg);
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -77,29 +79,23 @@ public abstract class AbstractNettyProcessor extends SimpleChannelInboundHandler
     }
 
     protected void sendPingMsg(ChannelHandlerContext context) {
-
-        Message message = new Message();
-        message.setFlag(MsgFlagConstants.BROKER_PONG);
-//        message.setBody(String.valueOf(++heartbeatCount).getBytes(StandardCharsets.UTF_8));
-        sendMsg(context, message);
-
+        RemotingCommand remotingCommand = RemotingCommandPool.getObject();
+        remotingCommand.setFlag(RemotingCommandFlagConstants.BROKER_PING);
+        sendMsg(context, remotingCommand);
         printLog(String.format("send ping msg to [%s], hear beat count [%d]",
                 context.channel().remoteAddress(), heartbeatCount));
     }
 
     protected void sendPongMsg(ChannelHandlerContext context) {
-        Message message = new Message();
-        message.setFlag(MsgFlagConstants.BROKER_PONG);
-//        message.setBody(String.valueOf(++heartbeatCount).getBytes(StandardCharsets.UTF_8));
-        sendMsg(context, message);
-
-
+        RemotingCommand remotingCommand = RemotingCommandPool.getObject();
+        remotingCommand.setFlag(RemotingCommandFlagConstants.BROKER_PONG);
+        sendMsg(context, remotingCommand);
         printLog(String.format("send pong msg to [%s], hear beat count [%d]",
                 context.channel().remoteAddress(), heartbeatCount));
     }
 
     @Override
-    public void sendMsg(ChannelHandlerContext context, Message msg) {
-        context.channel().writeAndFlush(msg);
+    public void sendMsg(ChannelHandlerContext context, RemotingCommand remotingCommand) {
+        NettyChannelSendSupporter.sendMessage(remotingCommand, context.channel());
     }
 }

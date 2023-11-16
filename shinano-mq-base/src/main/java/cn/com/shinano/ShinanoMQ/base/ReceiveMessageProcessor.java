@@ -1,9 +1,8 @@
-package cn.com.shinano.ShinanoMQ.producer.processor.msgprocessor;
+package cn.com.shinano.ShinanoMQ.base;
 
 import cn.com.shinano.ShinanoMQ.base.VO.BatchAckVO;
-import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
-import cn.com.shinano.ShinanoMQ.producer.processor.ResultCallBackInvoker;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -22,15 +21,13 @@ public class ReceiveMessageProcessor extends ResultCallBackInvoker {
 
     /**
      * 处理批量ack
-     * @param msg
+     * @param remotingCommand
      */
-    public void resolveBatchACK(Message msg) {
-        BatchAckVO vo = ProtostuffUtils.deserialize(msg.getBody(), BatchAckVO.class);
+    public void resolveBatchACK(RemotingCommand remotingCommand) {
+        BatchAckVO vo = ProtostuffUtils.deserialize(remotingCommand.getBody(), BatchAckVO.class);
 
         List<String> successTsIdLIst = vo.getSuccessTsIdLIst();
         List<String> failIdLIst = vo.getFailTsIdList();
-
-        log.debug("get a batch ack message, success [{}], fail[{}]", successTsIdLIst, failIdLIst);
 
         if(successTsIdLIst != null) {
             successTsIdLIst.forEach(tsId->invokeSuccessCallBack(tsId, null));

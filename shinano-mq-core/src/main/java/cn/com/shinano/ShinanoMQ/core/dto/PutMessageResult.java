@@ -6,11 +6,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class BrokerResult {
+public class PutMessageResult {
     private String transactionId;
     private PutMessageStatus status;
 
-    public BrokerResult setStatus(PutMessageStatus status) {
+    public PutMessageResult setStatus(PutMessageStatus status) {
         this.status = status;
         return this;
     }

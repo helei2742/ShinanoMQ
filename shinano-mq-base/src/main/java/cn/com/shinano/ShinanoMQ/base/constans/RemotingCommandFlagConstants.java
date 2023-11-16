@@ -1,6 +1,6 @@
-package cn.com.shinano.ShinanoMQ.base.dto;
+package cn.com.shinano.ShinanoMQ.base.constans;
 
-public class MsgFlagConstants {
+public class RemotingCommandFlagConstants {
 
     public static final String REQUEST_ERROR = "request_error";
 
@@ -29,7 +29,10 @@ public class MsgFlagConstants {
      * 生产者发消息
      */
     public static final int PRODUCER_MESSAGE = 3;
-
+    /**
+     * 生产者发消息的结果
+     */
+    public static final int PRODUCER_MESSAGE_RESULT = -3;
     /**
      * broker发送给客户端的ack
      */

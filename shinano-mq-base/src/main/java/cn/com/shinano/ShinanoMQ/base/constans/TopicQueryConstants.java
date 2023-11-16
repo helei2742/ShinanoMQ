@@ -1,4 +1,4 @@
-package cn.com.shinano.ShinanoMQ.base.dto;
+package cn.com.shinano.ShinanoMQ.base.constans;
 
 /**
  * @author lhe.shinano

@@ -1,9 +1,9 @@
 package cn.com.shinano.ShinanoMQ.core.manager.impl;
 
 import cn.com.shinano.ShinanoMQ.base.VO.BatchAckVO;
-import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
+import cn.com.shinano.ShinanoMQ.base.constans.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.pool.MessagePool;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.manager.AbstractBrokerManager;
@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -30,6 +29,7 @@ import java.util.function.Consumer;
  * @date 2023/11/10
  */
 @Slf4j
+@Deprecated
 public class AsyncBrokerAckManager extends AbstractBrokerManager implements BrokerAckManager {
     private final ConcurrentMap<String, AckStatus> isDoneMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Channel> ackChannelMap = new ConcurrentHashMap<>();
@@ -94,7 +94,7 @@ public class AsyncBrokerAckManager extends AbstractBrokerManager implements Brok
             BatchAckVO vo = new BatchAckVO(success, fail);
             Message message = MessagePool.getObject();
 //            Message message = new Message();
-            message.setFlag(MsgFlagConstants.BROKER_MESSAGE_BATCH_ACK);
+            message.setFlag(RemotingCommandFlagConstants.BROKER_MESSAGE_BATCH_ACK);
             message.setBody(ProtostuffUtils.serialize(vo));
 
             log.info("send batch ack -- [{}]", message);
@@ -109,7 +109,7 @@ public class AsyncBrokerAckManager extends AbstractBrokerManager implements Brok
 //        Message message = new Message();
 
         message.setTransactionId(id);
-        message.setFlag(MsgFlagConstants.BROKER_MESSAGE_ACK);
+        message.setFlag(RemotingCommandFlagConstants.BROKER_MESSAGE_ACK);
         message.setBody(ByteBuffer.allocate(4).putInt(ack).array());
 
         sendMessage(message, channel);

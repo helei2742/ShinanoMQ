@@ -1,15 +1,15 @@
 package cn.com.shinano.ShinanoMQ.test;
 
-import cn.com.shinano.ShinanoMQ.base.dto.*;
-import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
-import cn.com.shinano.ShinanoMQ.producer.AbstractNettyClient;
+import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.TopicQueryConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -33,79 +33,38 @@ class TestStarterTest {
     void tearDown() {
     }
 
-    @Test
-    public void test() throws InterruptedException, IOException {
-//        ShinanoMQServer shinanoMQServer = new ShinanoMQServer(10011);
-//        shinanoMQServer.run();
 
-//        AbstractNettyClient shinanoProducerClient
-//                = new AbstractNettyClient("127.0.0.1", 10022);
-//        shinanoProducerClient.run();
-//
-//        String line = null;
-//        AtomicInteger atomicInteger = new AtomicInteger(0);
-//        while ((line = br.readLine()) != null) {
-//            for (int i = 0; i < 1; i++) {
-//                String finalLine = line;
-//                int finalI = i;
-//                new Thread(() -> {
-//                    for (int j = 0; j < 1; j++) {
-//                        Message message = new Message();
-//                        message.setFlag(MsgFlagConstants.PRODUCER_MESSAGE);
-//                        message.setTopic("test-create1");
-//                        message.setQueue("queue1");
-////                        message.setValue("test-line-" + finalLine + "-" + atomicInteger.incrementAndGet());
-//                        message.setBody(("test-line-" + atomicInteger.incrementAndGet()).getBytes(StandardCharsets.UTF_8));
-//                        message.setTransactionId(UUID.randomUUID().toString());
-//                        shinanoProducerClient.sendMsg(message);
-//                        try {
-//                            TimeUnit.MILLISECONDS.sleep(10);
-//                        } catch (InterruptedException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-//                }).start();
-//                break;
-//            }
-//        }
-//
-//        TimeUnit.SECONDS.sleep(500);
-    }
 
     @Test
     public void testQueryOffset() throws InterruptedException {
-//        AbstractNettyClient shinanoProducerClient
-//                = new AbstractNettyClient("localhost", 10022);
-//        shinanoProducerClient.run();
-//        Message message = new Message();
-//        message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY);
-//        Map<String, String> prop = new HashMap<>();
-//        prop.put(MsgPropertiesConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET);
-//        message.setProperties(prop);
-//        message.setTopic("test-create1");
-//        message.setQueue("queue1");
-//        message.setBody("123-client".getBytes(StandardCharsets.UTF_8));
-//        shinanoProducerClient.sendMsg(message);
-//        TimeUnit.SECONDS.sleep(100);
+        ShinanoProducerClient client = new ShinanoProducerClient("localhost", 10022, "test-query-offset");
+        client.run();
+        System.out.println(queryOffset(client));
     }
 
-    @Test
-    public void testQueryTopicQueueMsg() throws InterruptedException {
-//        ShinanoProducerClient client
-//                = new ShinanoProducerClient("127.0.0.1", 10022, "client-" + finalI);
-//
-//        client.run();
-//
-//        Message message = new Message();
-//        message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY);
-//        Map<String, String> prop = new HashMap<>();
-//        prop.put(MsgPropertiesConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE);
-//        message.setProperties(prop);
-//        message.setTopic("test-create1");
-//        message.setQueue("queue1");
-//        message.setBody("3630".getBytes(StandardCharsets.UTF_8));
-//        client.sendMsg(message);
-//        TimeUnit.SECONDS.sleep(500);
+
+    private long queryOffset(ShinanoProducerClient shinanoProducerClient) throws InterruptedException {
+        RemotingCommand request = new RemotingCommand();
+        request.setFlag(RemotingCommandFlagConstants.TOPIC_INFO_QUERY);
+
+        request.addExtField(ExtFieldsConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET);
+
+        request.setTransactionId(UUID.randomUUID().toString());
+        request.addExtField(ExtFieldsConstants.TOPIC_KEY, "test-create1");
+        request.addExtField(ExtFieldsConstants.QUEUE_KEY, "queue1");
+
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicLong res = new AtomicLong();
+
+        shinanoProducerClient.sendMessage(request, remotingCommand->{
+            System.out.println(remotingCommand);
+            Long aLong = remotingCommand.getExtFieldsLong(TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET);
+            System.out.println("--offset--" + aLong);
+            latch.countDown();
+        });
+
+        latch.await();
+        return res.get();
     }
 
     AtomicLong lastGetTime = new AtomicLong(0);
@@ -167,7 +126,7 @@ class TestStarterTest {
                             "test-create1",
                             "queue1",
                             "thread-" + finalI + "-data-" + sendCount.incrementAndGet(),
-                            msg -> {
+                            remotingCommand -> {
                                 lastGetTime.set(System.currentTimeMillis());
                                 successCounter.compute(finalI, (k, v) -> {
                                     if (v == null) return 1;

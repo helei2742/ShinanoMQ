@@ -1,7 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.manager;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.core.dto.BrokerResult;
+import cn.com.shinano.ShinanoMQ.core.dto.PutMessageResult;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -15,5 +15,17 @@ public interface PersistentSupport {
     void persistentMessage(String id, String topic, String queue);
 
 
-    CompletableFuture<BrokerResult> saveMessageImmediately(Message message);
+    /**
+     * 异步保存消息
+     * @param message
+     * @return
+     */
+    CompletableFuture<PutMessageResult> asyncPutMessage(Message message);
+
+    /**
+     * 同步保存消息
+     * @param message
+     * @return
+     */
+    PutMessageResult syncPutMessage(Message message);
 }

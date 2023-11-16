@@ -13,4 +13,4 @@ shinano:
       producer-commit-ack-batch-size: 100
       producer-commit-ack-ttl: 300
       producer-commit-ack-thread: 3
-
+      asyncSendEnable: true

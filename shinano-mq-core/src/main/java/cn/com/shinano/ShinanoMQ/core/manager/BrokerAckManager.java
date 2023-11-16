@@ -1,8 +1,9 @@
 package cn.com.shinano.ShinanoMQ.core.manager;
 
-import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
+import cn.com.shinano.ShinanoMQ.base.constans.AckStatus;
 import io.netty.channel.Channel;
 
+@Deprecated
 public interface BrokerAckManager {
 
     /**

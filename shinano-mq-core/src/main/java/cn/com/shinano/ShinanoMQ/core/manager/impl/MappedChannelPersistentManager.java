@@ -1,12 +1,13 @@
 package cn.com.shinano.ShinanoMQ.core.manager.impl;
 
-import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
+import cn.com.shinano.ShinanoMQ.base.constans.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.store.AppendMessageResult;
 import cn.com.shinano.ShinanoMQ.core.store.AppendMessageStatus;
 import cn.com.shinano.ShinanoMQ.core.store.MappedFile;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
-import cn.com.shinano.ShinanoMQ.core.dto.BrokerResult;
+import cn.com.shinano.ShinanoMQ.core.dto.PutMessageResult;
 import cn.com.shinano.ShinanoMQ.core.dto.PutMessageStatus;
 import cn.com.shinano.ShinanoMQ.core.manager.topic.BrokerTopicInfo;
 import cn.com.shinano.ShinanoMQ.core.manager.*;
@@ -82,14 +83,14 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
 
 
     @Override
-    public CompletableFuture<BrokerResult> saveMessageImmediately(Message message) {
+    public CompletableFuture<PutMessageResult> asyncPutMessage(Message message) {
 
         return CompletableFuture.supplyAsync(() -> {
             String topic = message.getTopic();
             String queue = message.getQueue();
 
-            BrokerResult brokerResult = new BrokerResult();
-            brokerResult.setTransactionId(message.getTransactionId());
+            PutMessageResult putMessageResult = new PutMessageResult();
+            putMessageResult.setTransactionId(message.getTransactionId());
             Long startOffset = brokerTopicInfo.queryTopicQueueOffset(topic, queue);
 
             MappedFile mappedFile = null;
@@ -97,9 +98,10 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                 mappedFile = MappedFile.getMappedFile(topic, queue, startOffset);
             } catch (IOException e) {
                 log.error("create mapped file got an error", e);
-                return brokerResult.setStatus(PutMessageStatus.CREATE_MAPPED_FILE_FAILED);
+                return putMessageResult.setStatus(PutMessageStatus.CREATE_MAPPED_FILE_FAILED);
             }
-            mappedFile.lock();
+
+            mappedFile.writeLock();
             try {
                 AppendMessageResult result = mappedFile.append(message);
 
@@ -107,29 +109,48 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                     case PUT_OK:
                         //更新offset
                         offsetManager.updateTopicQueueOffset(topic, queue, result.getWroteOffset());
-                        return brokerResult.setStatus(PutMessageStatus.PUT_OK);
+                        return putMessageResult.setStatus(PutMessageStatus.PUT_OK);
                     case END_OF_FILE:
                         mappedFile.loadNextFile(result.getWroteOffset());
 
                         result = mappedFile.append(message);
                         if (AppendMessageStatus.PUT_OK.equals(result.getStatus())) {
-                            return brokerResult.setStatus(PutMessageStatus.PUT_OK);
+                            return putMessageResult.setStatus(PutMessageStatus.PUT_OK);
                         }
                         break;
                     case MESSAGE_SIZE_EXCEEDED:
                     case PROPERTIES_SIZE_EXCEEDED:
-                        return brokerResult.setStatus(PutMessageStatus.PROPERTIES_SIZE_EXCEEDED);
+                        return putMessageResult.setStatus(PutMessageStatus.PROPERTIES_SIZE_EXCEEDED);
                 }
             }catch (Exception e) {
                 log.error("write message got unknown error", e);
-                return brokerResult.setStatus(PutMessageStatus.UNKNOWN_ERROR);
+                return putMessageResult.setStatus(PutMessageStatus.UNKNOWN_ERROR);
             }finally {
-                mappedFile.unlock();
+                mappedFile.writeUnlock();
             }
 
-            return brokerResult.setStatus(PutMessageStatus.UNKNOWN_ERROR);
+            return putMessageResult.setStatus(PutMessageStatus.UNKNOWN_ERROR);
         }, executor);
     }
+
+    @Override
+    public PutMessageResult syncPutMessage(Message message) {
+        return waiteForFutureResult(asyncPutMessage(message), message.getTransactionId(), 0);
+    }
+
+
+    private PutMessageResult waiteForFutureResult(CompletableFuture<PutMessageResult> future, String tsId, int count)  {
+        try {
+            return future.get(BrokerConfig.LOCAL_PERSISTENT_WAIT_TIME_LIMIT, BrokerConfig.LOCAL_PERSISTENT_WAIT_TIME_UNIT);
+        } catch (TimeoutException e) {
+            if(count > BrokerConfig.LOCAL_PERSISTENT_WAIT_TIME_OUT_RETRY) return new PutMessageResult(tsId, PutMessageStatus.FLUSH_DISK_TIMEOUT);
+            log.warn("local persistent time out, tsId[{}]", tsId);
+            return waiteForFutureResult(future, tsId, count+1);
+        } catch (InterruptedException | ExecutionException e) {
+            return new PutMessageResult(tsId, PutMessageStatus.UNKNOWN_ERROR);
+        }
+    }
+
 
     /**
      * 持久化任务，每个持久化任务负责一个topic的一个key内的消息的持久化

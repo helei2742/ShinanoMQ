@@ -1,9 +1,14 @@
 package cn.com.shinano.ShinanoMQ.core.manager;
 
-import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
-import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
+import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
+import cn.com.shinano.ShinanoMQ.core.config.BrokerSpringConfig;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
-import cn.com.shinano.ShinanoMQ.core.dto.BrokerResult;
+import cn.com.shinano.ShinanoMQ.core.dto.PutMessageResult;
 import cn.com.shinano.ShinanoMQ.core.dto.PutMessageStatus;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
@@ -22,12 +27,16 @@ import java.util.concurrent.*;
 public class DispatchMessageService {
     private final Map<String, LinkedBlockingQueue<BrokerMessage>> dispatchMap = new ConcurrentHashMap<>();
 
+    private static final ExecutorService executor = Executors.newFixedThreadPool(2);
 
     @Autowired
     private PersistentSupport persistentSupport;
 
     @Autowired
     private BrokerAckManager brokerAckManager;
+
+    @Autowired
+    private BrokerSpringConfig brokerSpringConfig;
 
     /**
      * 添加message到对应topic的阻塞队列
@@ -51,34 +60,53 @@ public class DispatchMessageService {
      * @param message
      * @param channel
      */
-    public void saveMessageImmediately(BrokerMessage message, Channel channel) {
-        //本地持久化
-        CompletableFuture<BrokerResult> localFuture = persistentSupport.saveMessageImmediately(message.getMessage());
+    public RemotingCommand saveMessage(Message message, Channel channel) {
+        PutMessageResult result;
+        if(brokerSpringConfig.getAsyncSendEnable()) {
+            CompletableFuture<PutMessageResult> localFuture = persistentSupport.asyncPutMessage(message);
 
-        //TODO 将来集群部署，其它broker持久化
+            localFuture.thenAcceptAsync(putMessageResult ->{
+                //TODO 保存到其它broker
+                RemotingCommand response = handlePutMessageResult(putMessageResult);
 
-        try {
-            String tsId = message.getId();
-            BrokerResult result = tryGetFutureResult(localFuture, tsId, 1);
 
-            brokerAckManager.setAckFlag(tsId, channel);
+                NettyChannelSendSupporter.sendMessage(response, channel);
+            }, executor);
+            return null;
+        } else {
+            result = persistentSupport.syncPutMessage(message);
 
-            AckStatus ackStatus = result.getStatus().equals(PutMessageStatus.PUT_OK) ? AckStatus.SUCCESS : AckStatus.FAIL;
-            brokerAckManager.commitAck(tsId, ackStatus);
-        } catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
+           return handlePutMessageResult(result);
         }
     }
 
-    private BrokerResult tryGetFutureResult(CompletableFuture<BrokerResult> future, String tsId,  int count) throws ExecutionException, InterruptedException {
-        try {
-            return future.get(BrokerConfig.LOCAL_PERSISTENT_WAIT_TIME_LIMIT, BrokerConfig.LOCAL_PERSISTENT_WAIT_TIME_UNIT);
-        } catch (TimeoutException e) {
-            if(count > BrokerConfig.LOCAL_PERSISTENT_WAIT_TIME_OUT_RETRY) return new BrokerResult(tsId, PutMessageStatus.FLUSH_DISK_TIMEOUT);
-            log.warn("local persistent time out, tsId[{}]", tsId);
-            return tryGetFutureResult(future, tsId, count+1);
+    public RemotingCommand handlePutMessageResult(PutMessageResult result) {
+        String tsId = result.getTransactionId();
+        RemotingCommand response = RemotingCommandPool.getObject();
+        response.setFlag(RemotingCommandFlagConstants.PRODUCER_MESSAGE_RESULT);
+        response.setTransactionId(tsId);
+
+        switch (result.getStatus()) {
+            case PUT_OK:
+                response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.PUT_OK.name());
+                break;
+            case FLUSH_DISK_TIMEOUT:
+                response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.FLUSH_DISK_TIMEOUT.name());
+                break;
+            case CREATE_MAPPED_FILE_FAILED:
+                response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.CREATE_MAPPED_FILE_FAILED.name());
+                break;
+            case PROPERTIES_SIZE_EXCEEDED:
+                response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.PROPERTIES_SIZE_EXCEEDED.name());
+                break;
+            case UNKNOWN_ERROR:
+            default:
+                response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.UNKNOWN_ERROR.name());
         }
+        return response;
     }
+
+
 
     /**
      * 获取topic对应的阻塞队列

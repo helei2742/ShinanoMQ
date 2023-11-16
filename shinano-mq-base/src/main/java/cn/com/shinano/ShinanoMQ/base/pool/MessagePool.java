@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.base.pool;
 
-import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 
 

@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.base.nettyhandler;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
@@ -11,9 +12,9 @@ public interface NettyBaseHandler {
    /**
     * 发送消息
     * @param context context
-    * @param msg 消息体
+    * @param remotingCommand 消息体
     */
-   void sendMsg(ChannelHandlerContext context,Message msg);
+   void sendMsg(ChannelHandlerContext context, RemotingCommand remotingCommand);
 
    /**
     * 打印日志

@@ -1,24 +1,23 @@
 package cn.com.shinano.ShinanoMQ.core.manager;
 
-import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import io.netty.channel.Channel;
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+
+import java.util.concurrent.CompletableFuture;
 
 public interface TopicQueryManager {
 
     /**
      * 查询topic下queue中消息当前的offset
-     * @param message 请求体
-
-     * @param channel 数据返回的channel
+     * @param topic
+     * @param queue
      */
-    void queryTopicQueueOffset(Message message, Channel channel);
+    CompletableFuture<RemotingCommand> queryTopicQueueOffset(String topic, String queue);
 
     /**
      * 查询topic下queue中 offset 位置的消息
-     * @param message 请求体
-     * @param count 获取数量
-     * @param channel 数据返回的channel
+     * @param topic
+     * @param queue
+     * @param count
      */
-    void queryTopicQueueOffsetMsg(Message message, int count, Channel channel);
-
+    CompletableFuture<RemotingCommand> queryTopicQueueOffsetMsg(String topic, String queue, long offset, int count);
 }

@@ -43,7 +43,7 @@ public class MappedFile {
      */
     private final MappedFileIndex index;
 
-    private final ReentrantLock lock = new ReentrantLock();
+    private final ReentrantLock writeLock = new ReentrantLock();
 
     static {
         WRITE_POSITION_UPDATER = AtomicLongFieldUpdater.newUpdater(MappedFile.class, "writePosition");
@@ -236,11 +236,11 @@ public class MappedFile {
         }
     }
 
-    public void lock() {
-        lock.lock();
+    public void writeLock() {
+        writeLock.lock();
     }
 
-    public void unlock() {
-        lock.unlock();
+    public void writeUnlock() {
+        writeLock.unlock();
     }
 }

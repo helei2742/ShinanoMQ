@@ -41,4 +41,9 @@ public class BrokerSpringConfig {
      * 异步提交ack的线程数
      */
     private Integer producerCommitAckThread;
+
+    /**
+     * 是否允许异步发送
+     */
+    private Boolean asyncSendEnable;
 }

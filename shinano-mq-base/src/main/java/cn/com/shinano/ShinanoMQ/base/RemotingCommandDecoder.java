@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.base;
 
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.util.ByteBufPool;
 import cn.com.shinano.ShinanoMQ.base.util.MessageUtil;
 import io.netty.buffer.ByteBuf;
@@ -9,7 +10,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
-public class MessageDecoder extends ByteToMessageDecoder {
+public class RemotingCommandDecoder extends ByteToMessageDecoder {
 /*
     // 用来临时保留没有处理过的请求报文
     ByteBuf tempMsg = ByteBufPool.getByteBuf();
@@ -57,7 +58,7 @@ public class MessageDecoder extends ByteToMessageDecoder {
         if(in.readableBytes() >= 0) {
             byte[] bytes = new byte[in.readableBytes()];
             in.readBytes(bytes);
-            out.add(MessageUtil.bytesTurnMessage(bytes));
+            out.add(RemotingCommand.turnToRemotingCommand(bytes));
         }
     }
 }

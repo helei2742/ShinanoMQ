@@ -1,8 +1,8 @@
 package cn.com.shinano.ShinanoMQ.core.manager.impl;
 
-import cn.com.shinano.ShinanoMQ.base.dto.AckStatus;
+import cn.com.shinano.ShinanoMQ.base.constans.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 
 import cn.com.shinano.ShinanoMQ.base.pool.MessagePool;
 import cn.com.shinano.ShinanoMQ.core.manager.AbstractBrokerManager;
@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 同步处理ACK响应
  */
 @Slf4j
+@Deprecated
 public class SyncBrokerAckManager extends AbstractBrokerManager implements BrokerAckManager {
     private final Map<String, Channel> ackChannelMap = new ConcurrentHashMap<>();
 
@@ -47,7 +48,7 @@ public class SyncBrokerAckManager extends AbstractBrokerManager implements Broke
 //        Message message = new Message();
 
         message.setTransactionId(id);
-        message.setFlag(MsgFlagConstants.BROKER_MESSAGE_ACK);
+        message.setFlag(RemotingCommandFlagConstants.BROKER_MESSAGE_ACK);
         message.setBody(ByteBuffer.allocate(4).putInt(ack).array());
 
         sendMessage(message, channel);
