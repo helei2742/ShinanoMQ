@@ -236,7 +236,6 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
             }
             if (next >= offsetLimit) break;
 
-            System.out.println(new String(lengthBytes) + "    " + new String(BrokerConfig.PERSISTENT_FILE_END_MAGIC));
             byte[] msgBytes = new byte[(int) length];
             map.get(msgBytes);
 

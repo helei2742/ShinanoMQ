@@ -5,6 +5,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgProcessor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
+import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -37,7 +38,7 @@ public abstract class AbstractNettyClient {
 
     private AbstractNettyProcessorAdaptor nettyProcessorAdaptor;
 
-    protected Channel channel;
+    private Channel channel;
 
 
     public AbstractNettyClient(String host, int port) {
@@ -51,12 +52,19 @@ public abstract class AbstractNettyClient {
                      ClientInitMsgProcessor clientInitMsgProcessor,
                      AbstractNettyProcessorAdaptor nettyProcessorAdaptor,
                      NettyClientEventHandler eventHandler) {
+
+
+
         this.clientId = clientId;
         this.idleTimeSeconds = idleTimeSeconds;
         this.eventHandler = eventHandler;
+
         this.receiveMessageProcessor = receiveMessageProcessor;
         this.clientInitMsgProcessor = clientInitMsgProcessor;
         this.nettyProcessorAdaptor = nettyProcessorAdaptor;
+
+        this.receiveMessageProcessor.init();
+        this.nettyProcessorAdaptor.init(clientInitMsgProcessor, receiveMessageProcessor, eventHandler);
     }
 
     public void run() throws InterruptedException {
@@ -99,9 +107,8 @@ public abstract class AbstractNettyClient {
 
     protected void sendMsg(RemotingCommand remotingCommand, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
         remotingCommand.setTransactionId(UUID.randomUUID().toString());
-
         receiveMessageProcessor.addAckListener(remotingCommand.getTransactionId(), success, fail);
-
-
+        NettyChannelSendSupporter.sendMessage(remotingCommand, channel);
+        log.debug("send remotingCommand [{}]", remotingCommand);
     }
 }

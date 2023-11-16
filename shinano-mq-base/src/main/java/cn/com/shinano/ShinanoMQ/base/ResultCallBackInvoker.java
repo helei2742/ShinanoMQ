@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.base;
 
-import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import lombok.extern.slf4j.Slf4j;
@@ -32,8 +32,8 @@ public abstract class ResultCallBackInvoker {
      */
     public void addAckListener(String transactionId, Consumer<RemotingCommand> successCallback) {
         this.successCallbackMap.put(transactionId, successCallback);
-
     }
+
     /**
      * 添加消息的回调
      * @param transactionId 消息的事务id
@@ -51,13 +51,11 @@ public abstract class ResultCallBackInvoker {
      * @param remotingCommand broker返回的消息
      */
     public void invokeCallBack(String transactionId, RemotingCommand remotingCommand) {
-        boolean flag = remotingCommand.getExtFields() != null
-                && remotingCommand.getExtFields().containsKey(RemotingCommandFlagConstants.REQUEST_ERROR);
+        boolean flag = RemotingCommandCodeConstants.FAIL.equals(remotingCommand.getCode());
 
         Consumer<RemotingCommand> success = successCallbackMap.remove(transactionId);
         Consumer<RemotingCommand> fail = failCallbackMap.remove(transactionId);
         if(!flag) {
-
             if (success != null) {
                 success.accept(remotingCommand);
             }

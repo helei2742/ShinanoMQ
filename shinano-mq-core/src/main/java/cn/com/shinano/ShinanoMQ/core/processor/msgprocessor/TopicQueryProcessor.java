@@ -1,9 +1,12 @@
 package cn.com.shinano.ShinanoMQ.core.processor.msgprocessor;
 
 import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.TopicQueryConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
 import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
 import cn.com.shinano.ShinanoMQ.base.util.MessageUtil;
 import cn.com.shinano.ShinanoMQ.core.processor.RequestProcessor;
@@ -64,6 +67,10 @@ public class TopicQueryProcessor implements RequestProcessor {
             }
         } catch (InterruptedException | ExecutionException e) {
             log.error("query topic queue offset got an error", e);
+            response = RemotingCommandPool.getObject();
+            response.setFlag(RemotingCommandFlagConstants.TOPIC_INFO_QUERY_RESULT);
+            response.setCode(RemotingCommandCodeConstants.FAIL);
+            NettyChannelSendSupporter.sendMessage(response, channel);
         }
     }
 }

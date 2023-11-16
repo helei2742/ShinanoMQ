@@ -34,7 +34,7 @@ public class ReceiveMessageProcessor extends ResultCallBackInvoker {
         }
 
         if(failIdLIst != null) {
-            failIdLIst.forEach(tsId->invokeSuccessCallBack(tsId, null));
+            failIdLIst.forEach(tsId->invokeFailCallBack(tsId, null));
         }
     }
 }

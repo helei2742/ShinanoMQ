@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.base.nettyhandler;
 
 
+import cn.com.shinano.ShinanoMQ.base.ReceiveMessageProcessor;
 import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
@@ -18,7 +19,25 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
 
     private int heartbeatCount = 0;
 
+    protected ReceiveMessageProcessor receiveMessageProcessor;
+
+    protected ClientInitMsgProcessor clientInitMsgProcessor;
+
     public NettyClientEventHandler eventHandler;
+
+    public void init(ClientInitMsgProcessor clientInitMsgHandler,
+                     ReceiveMessageProcessor receiveMessageHandler,
+                     NettyClientEventHandler eventHandler) {
+
+        this.eventHandler = eventHandler;
+        this.receiveMessageProcessor = receiveMessageHandler;
+        this.clientInitMsgProcessor = clientInitMsgHandler;
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        eventHandler.activeHandler(ctx);
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext context, RemotingCommand remotingCommand) throws Exception {
@@ -34,7 +53,12 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
         }
     }
 
-    protected abstract void handlerMessage(ChannelHandlerContext context, RemotingCommand msg);
+    protected abstract void handlerMessage(ChannelHandlerContext context, RemotingCommand remotingCommand);
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        eventHandler.exceptionHandler(ctx, cause);
+    }
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -83,7 +107,7 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
         remotingCommand.setFlag(RemotingCommandFlagConstants.BROKER_PING);
         sendMsg(context, remotingCommand);
         printLog(String.format("send ping msg to [%s], hear beat count [%d]",
-                context.channel().remoteAddress(), heartbeatCount));
+                context.channel().remoteAddress(), heartbeatCount++));
     }
 
     protected void sendPongMsg(ChannelHandlerContext context) {
@@ -91,7 +115,7 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
         remotingCommand.setFlag(RemotingCommandFlagConstants.BROKER_PONG);
         sendMsg(context, remotingCommand);
         printLog(String.format("send pong msg to [%s], hear beat count [%d]",
-                context.channel().remoteAddress(), heartbeatCount));
+                context.channel().remoteAddress(), heartbeatCount++));
     }
 
     @Override

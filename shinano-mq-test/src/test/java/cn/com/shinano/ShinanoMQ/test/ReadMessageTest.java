@@ -6,7 +6,6 @@ import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.*;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
-import cn.com.shinano.ShinanoMQ.base.AbstractNettyClient;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +56,7 @@ public class ReadMessageTest {
         }
     }
 
-    private MessageListVO queryMessage(AbstractNettyClient shinanoProducerClient,
+    private MessageListVO queryMessage(ShinanoProducerClient shinanoProducerClient,
                                        long offset,
                                        int count) throws InterruptedException {
         RemotingCommand request = new RemotingCommand();
@@ -76,13 +75,13 @@ public class ReadMessageTest {
         CountDownLatch latch = new CountDownLatch(1);
 
 
-//        shinanoProducerClient.sendMsg(request, remotingCommand->{
-//            byte[] body = remotingCommand.getBody();
-//            byte[] array = ByteBuffer.wrap(body).array();
-//            res[0] = ProtostuffUtils.deserialize(array, MessageListVO.class);
-//            System.out.println("-------------");
-//            latch.countDown();
-//        });
+        shinanoProducerClient.sendMessage(request, remotingCommand->{
+            byte[] body = remotingCommand.getBody();
+            byte[] array = ByteBuffer.wrap(body).array();
+            res[0] = ProtostuffUtils.deserialize(array, MessageListVO.class);
+            System.out.println("-------------");
+            latch.countDown();
+        });
 
         latch.await();
         return res[0];

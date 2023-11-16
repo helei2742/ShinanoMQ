@@ -3,12 +3,12 @@ package cn.com.shinano.ShinanoMQ.producer;
 import cn.com.shinano.ShinanoMQ.base.AbstractNettyClient;
 import cn.com.shinano.ShinanoMQ.base.ReceiveMessageProcessor;
 import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
+import cn.com.shinano.ShinanoMQ.base.constant.ClientStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.ShinanoMQ.producer.config.ProducerConfig;
-import cn.com.shinano.ShinanoMQ.producer.constant.ProducerStatus;
 import cn.com.shinano.ShinanoMQ.producer.processor.ProducerBootstrapProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.producer.processor.msgprocessor.ProducerClientInitProcessor;
 import io.netty.channel.ChannelHandlerContext;
@@ -23,27 +23,17 @@ import java.util.function.Consumer;
 @Slf4j
 public class ShinanoProducerClient extends AbstractNettyClient {
 
-    private ProducerStatus status;
+    private ClientStatus status;
 
     private final String clientId;
 
     private final ConcurrentMap<String, Integer> retryTimesMap;
 
-    private final ReceiveMessageProcessor receiveMessageProcessor;
-
-    private final ProducerClientInitProcessor clientInitMsgProcessor;
-
-    private final ProducerBootstrapProcessorAdaptor processorAdaptor;
 
     public ShinanoProducerClient(String host, int port, String clientId) {
         super(host, port);
 
-        receiveMessageProcessor = new ReceiveMessageProcessor();
-        clientInitMsgProcessor = new ProducerClientInitProcessor();
-        processorAdaptor = new ProducerBootstrapProcessorAdaptor(clientId);
-
-
-        this.status = ProducerStatus.CREATE_JUST;
+        this.status = ClientStatus.CREATE_JUST;
         this.clientId = clientId;
 
         this.retryTimesMap = new ConcurrentHashMap<>();
@@ -59,7 +49,7 @@ public class ShinanoProducerClient extends AbstractNettyClient {
                     super.run();
                 } catch (InterruptedException e) {
                     log.error("run client got an error", e);
-                    this.status = ProducerStatus.SHUTDOWN_ALREADY;
+                    this.status = ClientStatus.SHUTDOWN_ALREADY;
                 }
                 break;
             case RUNNING:
@@ -84,7 +74,7 @@ public class ShinanoProducerClient extends AbstractNettyClient {
                         message.setBody(clientId.getBytes(StandardCharsets.UTF_8));
                         ctx.writeAndFlush(message);
 
-                        status = ProducerStatus.CREATE_JUST;
+                        status = ClientStatus.CREATE_JUST;
                         break;
                     default:
                         log.warn("client [{}] in [{}] state, can not turn to active state", clientId, status);
@@ -95,7 +85,7 @@ public class ShinanoProducerClient extends AbstractNettyClient {
                 switch (status) {
                     case CREATE_JUST:
                     case RUNNING:
-                        status = ProducerStatus.SHUTDOWN_ALREADY;
+                        status = ClientStatus.SHUTDOWN_ALREADY;
                         break;
                     default:
                         log.warn("client [{}] in [{}] state, can not turn to close state", clientId, status);
@@ -103,8 +93,8 @@ public class ShinanoProducerClient extends AbstractNettyClient {
             }
             @Override
             public void initSuccessHandler() {
-                if (status == ProducerStatus.CREATE_JUST) {
-                    status = ProducerStatus.RUNNING;
+                if (status == ClientStatus.CREATE_JUST) {
+                    status = ClientStatus.RUNNING;
                 } else {
                     log.warn("client [{}] in [{}] state, can not turn to running state", clientId, status);
                 }
@@ -112,8 +102,8 @@ public class ShinanoProducerClient extends AbstractNettyClient {
             @Override
             public void initFailHandler() {
 
-                if (status == ProducerStatus.CREATE_JUST) {
-                    status = ProducerStatus.START_FAILED;
+                if (status == ClientStatus.CREATE_JUST) {
+                    status = ClientStatus.START_FAILED;
                 } else {
                     log.warn("client [{}] in [{}] state, can not turn to start failed state", clientId, status);
                 }
@@ -121,13 +111,17 @@ public class ShinanoProducerClient extends AbstractNettyClient {
             @Override
             public void exceptionHandler(ChannelHandlerContext ctx, Throwable cause) {
                 log.error("producer got an error", cause);
-                status = ProducerStatus.SHUTDOWN_ALREADY;
+                status = ClientStatus.SHUTDOWN_ALREADY;
             }
         };
-        receiveMessageProcessor.init();
-        processorAdaptor.init(clientInitMsgProcessor, receiveMessageProcessor, nettyClientEventHandler);
 
-        super.init(clientId, ProducerConfig.IDLE_TIME_SECONDS, processorAdaptor, nettyClientEventHandler);
+
+        super.init(clientId,
+                ProducerConfig.IDLE_TIME_SECONDS,
+                new ReceiveMessageProcessor(),
+                new ProducerClientInitProcessor(),
+                new ProducerBootstrapProcessorAdaptor(),
+                nettyClientEventHandler);
     }
 
 

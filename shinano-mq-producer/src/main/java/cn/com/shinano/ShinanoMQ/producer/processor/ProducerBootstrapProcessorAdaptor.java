@@ -16,35 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ProducerBootstrapProcessorAdaptor extends AbstractNettyProcessorAdaptor {
 
-    private String clientId;
-
-    protected Channel channel;
-
-    private ReceiveMessageProcessor receiveMessageProcessor;
-    private ClientInitMsgProcessor clientInitMsgProcessor;
-
-    public ProducerBootstrapProcessorAdaptor(String clientId) {
-        this.clientId = clientId;
-    }
-
-    public void init(ClientInitMsgProcessor clientInitMsgHandler,
-                     ReceiveMessageProcessor receiveMessageHandler,
-                     NettyClientEventHandler eventHandler) {
-
-        super.eventHandler = eventHandler;
-
-        this.receiveMessageProcessor = receiveMessageHandler;
-        this.clientInitMsgProcessor = clientInitMsgHandler;
-    }
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        eventHandler.activeHandler(ctx);
-    }
-
     @Override
     protected void handlerMessage(ChannelHandlerContext context, RemotingCommand remotingCommand) {
-//        log.info("got message [{}]", remotingCommand);
+        log.debug("producer client got message [{}]", remotingCommand);
         switch (remotingCommand.getFlag()) {
             case RemotingCommandFlagConstants.CLIENT_CONNECT_RESULT:
                 if(!clientInitMsgProcessor.initClient(remotingCommand.getExtFields())) {
@@ -69,25 +43,9 @@ public class ProducerBootstrapProcessorAdaptor extends AbstractNettyProcessorAda
         sendPingMsg(ctx);
     }
 
-
     @Override
     public void printLog(String logStr) {
         log.info(logStr);
     }
 
-    @Override
-    public void sendMsg(ChannelHandlerContext context,RemotingCommand remotingCommand) {
-
-        sendMsg(remotingCommand);
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        eventHandler.exceptionHandler(ctx, cause);
-    }
-
-    public void sendMsg(RemotingCommand remotingCommand) {
-        log.info("send msg [{}]", remotingCommand);
-        channel.writeAndFlush(remotingCommand);
-    }
 }
