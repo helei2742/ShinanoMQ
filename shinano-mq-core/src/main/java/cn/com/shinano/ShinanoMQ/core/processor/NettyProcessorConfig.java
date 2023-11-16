@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.processor;
 
-import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.core.processor.msgprocessor.BrokerInfoQueryProcessor;
 import cn.com.shinano.ShinanoMQ.core.processor.msgprocessor.ClientConnectProcessor;
 import cn.com.shinano.ShinanoMQ.core.processor.msgprocessor.ProducerRequestProcessor;
@@ -38,10 +38,10 @@ public class NettyProcessorConfig {
     public Map<Integer, RequestProcessor> messageHandlerMap() {
         Map<Integer, RequestProcessor> res = new HashMap<>();
 
-        res.put(MsgFlagConstants.BROKER_INFO_QUERY, new BrokerInfoQueryProcessor(brokerQueryManager));
-        res.put(MsgFlagConstants.CLIENT_CONNECT, new ClientConnectProcessor(connectManager));
-        res.put(MsgFlagConstants.TOPIC_INFO_QUERY, new TopicQueryProcessor(topicQueryManager));
-        res.put(MsgFlagConstants.PRODUCER_MESSAGE, new ProducerRequestProcessor(topicManager, dispatchMessageService, brokerAckManager));
+        res.put(RemotingCommandFlagConstants.BROKER_INFO_QUERY, new BrokerInfoQueryProcessor(brokerQueryManager));
+        res.put(RemotingCommandFlagConstants.CLIENT_CONNECT, new ClientConnectProcessor(connectManager));
+        res.put(RemotingCommandFlagConstants.TOPIC_INFO_QUERY, new TopicQueryProcessor(topicQueryManager));
+        res.put(RemotingCommandFlagConstants.PRODUCER_MESSAGE, new ProducerRequestProcessor(topicManager, dispatchMessageService, brokerAckManager));
         return res;
     }
 }

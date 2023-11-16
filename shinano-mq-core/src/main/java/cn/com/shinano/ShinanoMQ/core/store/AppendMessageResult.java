@@ -1,12 +1,15 @@
+
 package cn.com.shinano.ShinanoMQ.core.store;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-
+/**
+ * When write a message to the commit log, returns results
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,11 +20,10 @@ public class AppendMessageResult {
     private long wroteOffset;
     // Write Bytes
     private int wroteBytes;
-
-    private byte[] appendContent;
-
+    private byte[] content;
     // Message ID
     private String msgId;
     // Message storage timestamp
     private long storeTimestamp;
+
 }

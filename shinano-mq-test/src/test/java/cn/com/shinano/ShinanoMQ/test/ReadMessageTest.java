@@ -1,18 +1,18 @@
 package cn.com.shinano.ShinanoMQ.test;
 
+import cn.com.shinano.ShinanoMQ.base.constans.TopicQueryConstants;
 import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.*;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
-import cn.com.shinano.ShinanoMQ.producer.AbstractNettyClient;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author lhe.shinano
@@ -56,30 +56,27 @@ public class ReadMessageTest {
         }
     }
 
-    private MessageListVO queryMessage(AbstractNettyClient shinanoProducerClient,
+    private MessageListVO queryMessage(ShinanoProducerClient shinanoProducerClient,
                                        long offset,
                                        int count) throws InterruptedException {
-        Message message = new Message();
-        message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY);
+        RemotingCommand request = new RemotingCommand();
+        request.setFlag(RemotingCommandFlagConstants.TOPIC_INFO_QUERY);
 
-        Map<String, String> prop = new HashMap<>();
-        prop.put(MsgPropertiesConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE);
-        prop.put(MsgPropertiesConstants.QUERY_TOPIC_MESSAGE_COUNT_KEY, String.valueOf(count));
-        message.setProperties(prop);
+        request.addExtField(ExtFieldsConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE);
+        request.addExtField(ExtFieldsConstants.QUERY_TOPIC_MESSAGE_COUNT_KEY, String.valueOf(count));
 
-        message.setTopic("test-create1");
-        message.setQueue("queue1");
-        message.setBody(String.valueOf(offset).getBytes(StandardCharsets.UTF_8));
-        message.setTransactionId(UUID.randomUUID().toString());
-
+        request.setTransactionId(UUID.randomUUID().toString());
+        request.addExtField(ExtFieldsConstants.TOPIC_KEY, "test-create1");
+        request.addExtField(ExtFieldsConstants.QUEUE_KEY, "queue1");
+        request.addExtField(ExtFieldsConstants.OFFSET_KEY, String.valueOf(offset));
 
         final MessageListVO[] res = new MessageListVO[1];
 
         CountDownLatch latch = new CountDownLatch(1);
 
 
-        shinanoProducerClient.sendMsg(message, msg->{
-            byte[] body = msg.getBody();
+        shinanoProducerClient.sendMessage(request, remotingCommand->{
+            byte[] body = remotingCommand.getBody();
             byte[] array = ByteBuffer.wrap(body).array();
             res[0] = ProtostuffUtils.deserialize(array, MessageListVO.class);
             System.out.println("-------------");
@@ -90,27 +87,4 @@ public class ReadMessageTest {
         return res[0];
     }
 
-
-    private long queryOffset(AbstractNettyClient shinanoProducerClient) throws InterruptedException {
-        Message message = new Message();
-        message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY);
-        Map<String, String> prop = new HashMap<>();
-        prop.put(MsgPropertiesConstants.TOPIC_QUERY_OPT_KEY, TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET);
-        message.setProperties(prop);
-        message.setTopic("test-create1");
-        message.setQueue("queue1");
-        message.setBody("123-client".getBytes(StandardCharsets.UTF_8));
-        message.setTransactionId(UUID.randomUUID().toString());
-
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicLong res = new AtomicLong();
-
-        shinanoProducerClient.sendMsg(message, msg->{
-            res.set(ByteBuffer.wrap(msg.getBody()).getLong());
-            latch.countDown();
-        });
-
-        latch.await();
-        return res.get();
-    }
 }

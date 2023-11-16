@@ -1,8 +1,8 @@
 package cn.com.shinano.ShinanoMQ.core.processor;
 
-import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
-import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessor;
+import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.core.manager.ConnectManager;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
@@ -21,7 +21,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @ChannelHandler.Sharable
-public class BrokerMessageProcessorAdaptor extends AbstractNettyProcessor {
+public class BrokerMessageProcessorAdaptor extends AbstractNettyProcessorAdaptor {
 
     @Autowired
     @Qualifier("messageHandlerMap")
@@ -38,16 +38,16 @@ public class BrokerMessageProcessorAdaptor extends AbstractNettyProcessor {
     /**
      * 得到message后处理
      * @param ctx
-     * @param message
+     * @param remotingCommand
      */
     @Override
-    protected void handlerMessage(ChannelHandlerContext ctx, Message message) {
+    protected void handlerMessage(ChannelHandlerContext ctx, RemotingCommand remotingCommand) {
         Channel channel = ctx.channel();
 //        log.info("get an message [{}]", message);
         //根据消息的类型从map中取出对应的handler处理
-        RequestProcessor requestProcessor = messageHandlerMap.get(message.getFlag());
+        RequestProcessor requestProcessor = messageHandlerMap.get(remotingCommand.getFlag());
         if(requestProcessor != null) {
-            requestProcessor.handlerMessage(ctx, message, channel);
+            requestProcessor.handlerMessage(ctx, remotingCommand, channel);
         }
     }
 

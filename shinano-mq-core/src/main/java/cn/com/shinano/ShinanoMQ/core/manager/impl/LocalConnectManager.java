@@ -1,6 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.manager.impl;
 
-import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.core.manager.ConnectManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

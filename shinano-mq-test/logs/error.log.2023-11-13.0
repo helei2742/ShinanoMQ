@@ -1,6 +1,6 @@
 [ ERROR] [2023-11-13 23:37:31,691] [nioEventLoopGroup-11-1] c.c.s.S.p.ShinanoProducerClient -producer got an error
 java.lang.NullPointerException: Cannot invoke "cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler.activeHandler(io.netty.channel.ChannelHandlerContext)" because "this.eventHandler" is null
-	at cn.com.shinano.ShinanoMQ.producer.processor.ProducerBootstrapProcessor.channelActive(ProducerBootstrapProcessor.java:48)
+	at cn.com.shinano.ShinanoMQ.producer.processor.ProducerBootstrapProcessorAdaptor.channelActive(ProducerBootstrapProcessor.java:48)
 	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelActive(AbstractChannelHandlerContext.java:230)
 	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelActive(AbstractChannelHandlerContext.java:216)
 	at io.netty.channel.AbstractChannelHandlerContext.fireChannelActive(AbstractChannelHandlerContext.java:209)
@@ -25,7 +25,7 @@ java.lang.NullPointerException: Cannot invoke "cn.com.shinano.ShinanoMQ.base.net
 	at java.base/java.lang.Thread.run(Thread.java:833)
 [ ERROR] [2023-11-13 23:42:02,454] [nioEventLoopGroup-10-1] c.c.s.S.p.ShinanoProducerClient -producer got an error
 java.lang.NullPointerException: Cannot invoke "cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler.activeHandler(io.netty.channel.ChannelHandlerContext)" because "this.eventHandler" is null
-	at cn.com.shinano.ShinanoMQ.producer.processor.ProducerBootstrapProcessor.channelActive(ProducerBootstrapProcessor.java:48)
+	at cn.com.shinano.ShinanoMQ.producer.processor.ProducerBootstrapProcessorAdaptor.channelActive(ProducerBootstrapProcessor.java:48)
 	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelActive(AbstractChannelHandlerContext.java:230)
 	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelActive(AbstractChannelHandlerContext.java:216)
 	at io.netty.channel.AbstractChannelHandlerContext.fireChannelActive(AbstractChannelHandlerContext.java:209)
@@ -50,7 +50,7 @@ java.lang.NullPointerException: Cannot invoke "cn.com.shinano.ShinanoMQ.base.net
 	at java.base/java.lang.Thread.run(Thread.java:833)
 [ ERROR] [2023-11-13 23:42:02,455] [nioEventLoopGroup-7-1] c.c.s.S.p.ShinanoProducerClient -producer got an error
 java.lang.NullPointerException: Cannot invoke "cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler.activeHandler(io.netty.channel.ChannelHandlerContext)" because "this.eventHandler" is null
-	at cn.com.shinano.ShinanoMQ.producer.processor.ProducerBootstrapProcessor.channelActive(ProducerBootstrapProcessor.java:48)
+	at cn.com.shinano.ShinanoMQ.producer.processor.ProducerBootstrapProcessorAdaptor.channelActive(ProducerBootstrapProcessor.java:48)
 	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelActive(AbstractChannelHandlerContext.java:230)
 	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelActive(AbstractChannelHandlerContext.java:216)
 	at io.netty.channel.AbstractChannelHandlerContext.fireChannelActive(AbstractChannelHandlerContext.java:209)

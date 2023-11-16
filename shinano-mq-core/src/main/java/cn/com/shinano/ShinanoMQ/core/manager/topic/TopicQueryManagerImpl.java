@@ -1,8 +1,10 @@
 package cn.com.shinano.ShinanoMQ.core.manager.topic;
 
+import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
 import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
-import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.dto.MsgFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.TopicQueryConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
@@ -12,8 +14,6 @@ import cn.com.shinano.ShinanoMQ.core.manager.AbstractBrokerManager;
 import cn.com.shinano.ShinanoMQ.core.manager.OffsetManager;
 import cn.com.shinano.ShinanoMQ.core.manager.TopicQueryManager;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
-import cn.hutool.core.codec.BCD;
-import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,10 +23,10 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -42,43 +42,49 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
 
     /**
      * 查询topic下queue中消息当前的offset
-     * @param message 请求体
-     * @param channel 数据返回的channel
+     * @param topic
+     * @param queue
+     * @return
      */
     @Override
-    public void queryTopicQueueOffset(Message message, Channel channel) {
-        long l = offsetManager.queryTopicQueueOffset(message.getTopic(), message.getQueue());
-        sendMessage(MsgFlagConstants.TOPIC_INFO_QUERY_RESULT, String.valueOf(l), channel);
+    public CompletableFuture<RemotingCommand> queryTopicQueueOffset(String topic, String queue) {
+        long l = offsetManager.queryTopicQueueOffset(topic, queue);
+        RemotingCommand remotingCommand = RemotingCommandPool.getObject();
+        remotingCommand.setFlag(RemotingCommandFlagConstants.TOPIC_INFO_QUERY_RESULT);
+        remotingCommand.addExtField(TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET, String.valueOf(l));
+        return CompletableFuture.completedFuture(remotingCommand);
     }
 
     /**
      * 查询topic下queue中 offset 位置后的消息
-     * @param message 请求体
-     * @param channel 数据返回的channel
+     * @param topic
+     * @param queue
+     * @param offset
+     * @param count
+     * @return
      */
     @Override
-    public void queryTopicQueueOffsetMsg(Message message, int count, Channel channel) {
+    public CompletableFuture<RemotingCommand> queryTopicQueueOffsetMsg(String topic, String queue, long offset, int count) {
 
-        executor.execute(()->{
+        return CompletableFuture.supplyAsync(()->{
+            RemotingCommand remotingCommand = RemotingCommandPool.getObject();
+            remotingCommand.setFlag(RemotingCommandFlagConstants.TOPIC_INFO_QUERY_RESULT);
+
             try {
                 MessageListVO vo = queryTopicQueueAfterOffsetMsg(
-                        message.getTopic(),
-                        message.getQueue(),
-                        Long.parseLong(new String(message.getBody(),StandardCharsets.UTF_8)),
+                        topic,
+                        queue,
+                        offset,
                         count);
-
-                message.setFlag(MsgFlagConstants.TOPIC_INFO_QUERY_RESULT);
-                HashMap<String, String> map = new HashMap<>();
-
-                message.setProperties(map);
-
-                message.setBody(ProtostuffUtils.serialize(vo));
+                remotingCommand.addExtField(TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE, String.valueOf(true));
+                remotingCommand.setBody(ProtostuffUtils.serialize(vo));
+                return remotingCommand;
             } catch (IOException e) {
-                log.error("query message[{}] get error", message, e);
+                log.error("query topic[{}] queue[{}] offset[{}] count[{}] get error", topic, offset, count, e);
             }
-
-            sendMessage(message, channel);
-        });
+            remotingCommand.addExtField(TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE, String.valueOf(false));
+            return remotingCommand;
+        }, executor);
     }
 
 
@@ -230,7 +236,6 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
             }
             if (next >= offsetLimit) break;
 
-            System.out.println(new String(lengthBytes) + "    " + new String(BrokerConfig.PERSISTENT_FILE_END_MAGIC));
             byte[] msgBytes = new byte[(int) length];
             map.get(msgBytes);
 

@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.processor.msgprocessor;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.core.processor.RequestProcessor;
 import cn.com.shinano.ShinanoMQ.core.manager.BrokerQueryManager;
 import io.netty.channel.Channel;
@@ -19,7 +20,7 @@ public class BrokerInfoQueryProcessor implements RequestProcessor {
 
 
     @Override
-    public void handlerMessage(ChannelHandlerContext ctx, Message message, Channel channel) {
+    public void handlerMessage(ChannelHandlerContext ctx, RemotingCommand remotingCommand, Channel channel) {
 
     }
 }

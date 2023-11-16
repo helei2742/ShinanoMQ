@@ -1,8 +1,8 @@
 package cn.com.shinano.ShinanoMQ.core;
 
-import cn.com.shinano.ShinanoMQ.base.MessageDecoder;
-import cn.com.shinano.ShinanoMQ.base.MessageEncoder;
-import cn.com.shinano.ShinanoMQ.base.ShinanoMQConstants;
+import cn.com.shinano.ShinanoMQ.base.RemotingCommandDecoder;
+import cn.com.shinano.ShinanoMQ.base.RemotingCommandEncoder;
+import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.processor.BrokerMessageProcessorAdaptor;
 import io.netty.bootstrap.ServerBootstrap;
@@ -55,8 +55,8 @@ public class ShinanoMQBroker implements ApplicationRunner {
                         ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(ShinanoMQConstants.MAX_FRAME_LENGTH, 0, 4, 0, 4));
                         ch.pipeline().addLast(new LengthFieldPrepender(4));
 
-                        ch.pipeline().addLast(new MessageDecoder());
-                        ch.pipeline().addLast(new MessageEncoder());
+                        ch.pipeline().addLast(new RemotingCommandDecoder());
+                        ch.pipeline().addLast(new RemotingCommandEncoder());
 
                         ch.pipeline().addLast(resolveMessageGroup, "bootstrapHandler", brokerMessageProcessorAdaptor);
                     }
