@@ -63,6 +63,7 @@ public class TopicQueryProcessor implements RequestProcessor {
             if(future != null){
                 response = future.get();
                 response.setTransactionId(transactionId);
+                response.setCode(RemotingCommandCodeConstants.SUCCESS);
                 NettyChannelSendSupporter.sendMessage(response, channel);
             }
         } catch (InterruptedException | ExecutionException e) {

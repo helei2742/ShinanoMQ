@@ -9,7 +9,9 @@ import java.util.List;
  * @date 2023/11/8
  */
 @Data
-public class TopicRequestDTO {
+public class BrokerRequestDTO {
     private String topic;
     private List<String> queues;
+
+    private String clientId;
 }

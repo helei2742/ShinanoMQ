@@ -22,7 +22,7 @@ public class ProducerBootstrapProcessorAdaptor extends AbstractNettyProcessorAda
         switch (remotingCommand.getFlag()) {
             case RemotingCommandFlagConstants.CLIENT_CONNECT_RESULT:
                 if(!clientInitMsgProcessor.initClient(remotingCommand.getExtFields())) {
-                    eventHandler.initSuccessHandler();
+                    eventHandler.initSuccessHandler(remotingCommand);
                 }else {
                     eventHandler.initFailHandler();
                 }

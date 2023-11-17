@@ -9,7 +9,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.config.TopicConfig;
-import cn.com.shinano.ShinanoMQ.core.dto.IndexNode;
+import cn.com.shinano.ShinanoMQ.core.store.IndexNode;
 import cn.com.shinano.ShinanoMQ.core.manager.AbstractBrokerManager;
 import cn.com.shinano.ShinanoMQ.core.manager.OffsetManager;
 import cn.com.shinano.ShinanoMQ.core.manager.TopicQueryManager;

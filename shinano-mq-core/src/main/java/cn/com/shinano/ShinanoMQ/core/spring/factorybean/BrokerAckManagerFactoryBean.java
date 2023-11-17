@@ -19,6 +19,7 @@ import java.util.concurrent.Executors;
  */
 @Slf4j
 @Component
+@Deprecated
 public class BrokerAckManagerFactoryBean extends AbstractFactoryBean<BrokerAckManager> {
 
     @Autowired

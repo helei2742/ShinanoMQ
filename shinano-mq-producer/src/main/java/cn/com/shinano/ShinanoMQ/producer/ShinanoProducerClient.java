@@ -8,6 +8,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
+import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
 import cn.com.shinano.ShinanoMQ.producer.config.ProducerConfig;
 import cn.com.shinano.ShinanoMQ.producer.processor.ProducerBootstrapProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.producer.processor.msgprocessor.ProducerClientInitProcessor;
@@ -62,66 +63,22 @@ public class ShinanoProducerClient extends AbstractNettyClient {
     }
 
     public void init() {
-        NettyClientEventHandler nettyClientEventHandler = new NettyClientEventHandler() {
-            @Override
-            public void activeHandler(ChannelHandlerContext ctx) {
-                switch (status) {
-                    case CREATE_JUST:
-                    case START_FAILED:
-                        //发送一条链接消息
-                        Message message = new Message();
-                        message.setFlag(RemotingCommandFlagConstants.CLIENT_CONNECT);
-                        message.setBody(clientId.getBytes(StandardCharsets.UTF_8));
-                        ctx.writeAndFlush(message);
-
-                        status = ClientStatus.CREATE_JUST;
-                        break;
-                    default:
-                        log.warn("client [{}] in [{}] state, can not turn to active state", clientId, status);
-                }
-            }
-            @Override
-            public void closeHandler() {
-                switch (status) {
-                    case CREATE_JUST:
-                    case RUNNING:
-                        status = ClientStatus.SHUTDOWN_ALREADY;
-                        break;
-                    default:
-                        log.warn("client [{}] in [{}] state, can not turn to close state", clientId, status);
-                }
-            }
-            @Override
-            public void initSuccessHandler() {
-                if (status == ClientStatus.CREATE_JUST) {
-                    status = ClientStatus.RUNNING;
-                } else {
-                    log.warn("client [{}] in [{}] state, can not turn to running state", clientId, status);
-                }
-            }
-            @Override
-            public void initFailHandler() {
-
-                if (status == ClientStatus.CREATE_JUST) {
-                    status = ClientStatus.START_FAILED;
-                } else {
-                    log.warn("client [{}] in [{}] state, can not turn to start failed state", clientId, status);
-                }
-            }
-            @Override
-            public void exceptionHandler(ChannelHandlerContext ctx, Throwable cause) {
-                log.error("producer got an error", cause);
-                status = ClientStatus.SHUTDOWN_ALREADY;
-            }
-        };
-
-
         super.init(clientId,
                 ProducerConfig.IDLE_TIME_SECONDS,
                 new ReceiveMessageProcessor(),
                 new ProducerClientInitProcessor(),
                 new ProducerBootstrapProcessorAdaptor(),
-                nettyClientEventHandler);
+                new DefaultNettyEventClientHandler(){
+                    @Override
+                    protected void sendInitMessage(ChannelHandlerContext ctx) {
+                        RemotingCommand remotingCommand = new RemotingCommand();
+                        remotingCommand.setFlag(RemotingCommandFlagConstants.CLIENT_CONNECT);
+                        remotingCommand.addExtField(ExtFieldsConstants.CLIENT_ID_KEY, clientId);
+                        remotingCommand.addExtField(ExtFieldsConstants.CLIENT_TYPE_KEY, ExtFieldsConstants.CLIENT_TYPE_PRODUCER);
+
+                        NettyChannelSendSupporter.sendMessage(remotingCommand, ctx.channel());
+                    }
+                });
     }
 
 

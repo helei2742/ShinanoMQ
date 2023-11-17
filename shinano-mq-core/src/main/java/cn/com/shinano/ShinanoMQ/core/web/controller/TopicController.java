@@ -1,7 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.web.controller;
 
 import cn.com.shinano.ShinanoMQ.core.web.dto.Result;
-import cn.com.shinano.ShinanoMQ.core.web.dto.TopicRequestDTO;
+import cn.com.shinano.ShinanoMQ.core.web.dto.BrokerRequestDTO;
 import cn.com.shinano.ShinanoMQ.core.web.service.TopicManagerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +21,7 @@ public class TopicController {
     private TopicManagerService topicManagerService;
 
     @PostMapping("/create")
-    public Result createTopic(@RequestBody TopicRequestDTO requestDTO) {
+    public Result createTopic(@RequestBody BrokerRequestDTO requestDTO) {
         return topicManagerService.createTopic(requestDTO);
     }
 

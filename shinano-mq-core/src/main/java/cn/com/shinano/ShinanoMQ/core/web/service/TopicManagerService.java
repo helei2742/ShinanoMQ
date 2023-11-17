@@ -1,7 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.web.service;
 
 import cn.com.shinano.ShinanoMQ.core.web.dto.Result;
-import cn.com.shinano.ShinanoMQ.core.web.dto.TopicRequestDTO;
+import cn.com.shinano.ShinanoMQ.core.web.dto.BrokerRequestDTO;
 
 import java.util.List;
 
@@ -17,7 +17,7 @@ public interface TopicManagerService {
      * @param requestDTO
      * @return
      */
-    Result createTopic(TopicRequestDTO requestDTO);
+    Result createTopic(BrokerRequestDTO requestDTO);
 
     /**
      * 查询当前topic列表

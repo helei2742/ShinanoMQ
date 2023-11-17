@@ -8,8 +8,11 @@ public class BrokerConfig {
 
     public static final byte[] PERSISTENT_FILE_END_MAGIC = ByteBuffer.allocate(8).putLong(1111111111111111111L).array();
 
-    public static final String BROKER_TOPIC_INFO_SAVE_PATH = "shinano-mq-core/BrokerTopicInfo.json";
-//    public static final String BROKER_TOPIC_INFO_SAVE_PATH = "shinano-mq-core\\BrokerTopicInfo.json";
+//    public static final String BROKER_TOPIC_INFO_SAVE_PATH = "shinano-mq-core/BrokerTopicInfo.json";
+    public static final String BROKER_TOPIC_INFO_SAVE_PATH = "shinano-mq-core\\BrokerTopicInfo.json";
+
+    public static final String BROKER_CONSUMER_INFO_SAVE_PATH = "shinano-mq-core\\BrokerConsumerInfo.json";
+
     /**
      * 本broker的host
      */
@@ -28,8 +31,8 @@ public class BrokerConfig {
     /**
      * 持久化文件目录
      */
-    public static final String PERSISTENT_FILE_LOCATION = "/Users/helei/develop/ideaworkspace/ShinanoMQ/shinano-mq-core/datalog";
-//    public static final String PERSISTENT_FILE_LOCATION = "D:\\develop\\git\\data\\ShinanoMQ\\shinano-mq-core\\datalog";
+//    public static final String PERSISTENT_FILE_LOCATION = "/Users/helei/develop/ideaworkspace/ShinanoMQ/shinano-mq-core/datalog";
+    public static final String PERSISTENT_FILE_LOCATION = "D:\\develop\\git\\data\\ShinanoMQ\\shinano-mq-core\\datalog";
 
     /**
      * 单个数据文件大小，单位byte

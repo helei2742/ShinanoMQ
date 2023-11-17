@@ -32,9 +32,38 @@ public class ExtFieldsConstants {
      */
     public final static String PRODUCER_PUT_MESSAGE_RESULT_KEY = "producer_send_message_result";
 
+    /**
+     * transaction id
+     */
     public static final String TRANSACTION_ID_KEY = "transaction_id";
 
+    /**
+     * topic name
+     */
     public static final String TOPIC_KEY = "topic";
+
+    /**
+     * queue name
+     */
     public static final String QUEUE_KEY = "queue";
+
+    /**
+     * offset
+     */
     public static final String OFFSET_KEY = "offset";
+
+    /**
+     * 客户端类型
+     */
+    public static final String CLIENT_TYPE_KEY = "client_type";
+
+    /**
+     * producer 客户端
+     */
+    public static final String CLIENT_TYPE_PRODUCER = "client_producer";
+
+    /**
+     * consumer 客户端
+     */
+    public static final String CLIENT_TYPE_CONSUMER = "client_consumer";
 }

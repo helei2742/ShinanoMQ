@@ -1,6 +1,9 @@
 package cn.com.shinano.ShinanoMQ.core.manager;
 
 
+
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+
 import io.netty.channel.Channel;
 
 public interface ConnectManager {
@@ -18,4 +21,9 @@ public interface ConnectManager {
      * @return
      */
     boolean remove(String serviceName);
+
+
+    RemotingCommand buildConsumerInitCommand(String clientId);
+
+    RemotingCommand buildProducerInitCommand(String clientId);
 }

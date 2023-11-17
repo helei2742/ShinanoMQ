@@ -3,6 +3,7 @@ package cn.com.shinano.ShinanoMQ.core.processor;
 import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
+import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.ShinanoMQ.core.manager.ConnectManager;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
@@ -29,6 +30,15 @@ public class BrokerMessageProcessorAdaptor extends AbstractNettyProcessorAdaptor
 
     @Autowired
     private ConnectManager connectManager;
+
+    public BrokerMessageProcessorAdaptor() {
+        super(new NettyClientEventHandler() {
+            @Override
+            public void exceptionHandler(ChannelHandlerContext ctx, Throwable cause) {
+                log.error("broker got an exception, ", cause);
+            }
+        });
+    }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
@@ -80,20 +90,6 @@ public class BrokerMessageProcessorAdaptor extends AbstractNettyProcessorAdaptor
         // map移除channel
         connectManager.remove(id);
     }
-
-//    /**
-//     * 设备连接异常处理
-//     *
-//     * @param ctx
-//     * @param cause
-//     */
-//    @Override
-//    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-//        // 获取channel中id
-//        String id = ctx.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get();
-//
-//        log.info("client:{}, request message{} got an exception", id, cause.getMessage(), cause);
-//    }
 
 
     @Override

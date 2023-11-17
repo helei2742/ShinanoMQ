@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.base.nettyhandler;
 
 
+import cn.com.shinano.ShinanoMQ.base.AbstractNettyClient;
 import cn.com.shinano.ShinanoMQ.base.ReceiveMessageProcessor;
 import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
@@ -24,6 +25,18 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
     protected ClientInitMsgProcessor clientInitMsgProcessor;
 
     public NettyClientEventHandler eventHandler;
+
+    public AbstractNettyProcessorAdaptor() {
+        this.eventHandler = new NettyClientEventHandler() {
+            @Override
+            public void exceptionHandler(ChannelHandlerContext ctx, Throwable cause) {
+            }
+        };
+    }
+
+    public AbstractNettyProcessorAdaptor(NettyClientEventHandler eventHandler) {
+        this.eventHandler = eventHandler;
+    }
 
     public void init(ClientInitMsgProcessor clientInitMsgHandler,
                      ReceiveMessageProcessor receiveMessageHandler,

@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.base.nettyhandler;
 
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import io.netty.channel.ChannelHandlerContext;
 
 public interface NettyClientEventHandler {
@@ -8,7 +9,7 @@ public interface NettyClientEventHandler {
 
     default void closeHandler(){}
 
-    default void initSuccessHandler(){}
+    default void initSuccessHandler(RemotingCommand remotingCommand){}
 
     default void initFailHandler(){}
 

@@ -1,7 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.store;
 
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
-import cn.com.shinano.ShinanoMQ.core.dto.IndexNode;
 ;
 
 import java.io.BufferedWriter;

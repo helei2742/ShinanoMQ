@@ -1,4 +1,4 @@
-package cn.com.shinano.ShinanoMQ.core.dto;
+package cn.com.shinano.ShinanoMQ.core.store;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

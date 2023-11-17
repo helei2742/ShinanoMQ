@@ -2,7 +2,7 @@ package cn.com.shinano.ShinanoMQ.core.web.service.impl;
 
 import cn.com.shinano.ShinanoMQ.core.manager.TopicManager;
 import cn.com.shinano.ShinanoMQ.core.web.dto.Result;
-import cn.com.shinano.ShinanoMQ.core.web.dto.TopicRequestDTO;
+import cn.com.shinano.ShinanoMQ.core.web.dto.BrokerRequestDTO;
 import cn.com.shinano.ShinanoMQ.core.web.service.TopicManagerService;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ public class TopicManagerServiceImpl implements TopicManagerService {
     private TopicManager topicManager;
 
     @Override
-    public Result createTopic(TopicRequestDTO requestDTO) {
+    public Result createTopic(BrokerRequestDTO requestDTO) {
         String topic = requestDTO.getTopic();
         if(StrUtil.isBlank(topic)) {
             return Result.fail(Result.ResultCode.PARAMS_ERROR);

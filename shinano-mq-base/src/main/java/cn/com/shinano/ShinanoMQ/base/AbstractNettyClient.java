@@ -1,6 +1,9 @@
 package cn.com.shinano.ShinanoMQ.base;
 
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
+import cn.com.shinano.ShinanoMQ.base.constant.ClientStatus;
+import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgProcessor;
@@ -16,8 +19,12 @@ import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.function.Consumer;
+
+import static cn.com.shinano.ShinanoMQ.base.constant.ClientStatus.CREATE_JUST;
+import static cn.com.shinano.ShinanoMQ.base.constant.ClientStatus.RUNNING;
 
 
 @Slf4j
@@ -27,6 +34,8 @@ public abstract class AbstractNettyClient {
     private final int port;
 
     private String clientId;
+
+    protected ClientStatus status;
 
     private int idleTimeSeconds;
 
@@ -44,6 +53,7 @@ public abstract class AbstractNettyClient {
     public AbstractNettyClient(String host, int port) {
         this.host = host;
         this.port = port;
+        this.status = CREATE_JUST;
     }
 
     public void init(String clientId,
@@ -52,9 +62,6 @@ public abstract class AbstractNettyClient {
                      ClientInitMsgProcessor clientInitMsgProcessor,
                      AbstractNettyProcessorAdaptor nettyProcessorAdaptor,
                      NettyClientEventHandler eventHandler) {
-
-
-
         this.clientId = clientId;
         this.idleTimeSeconds = idleTimeSeconds;
         this.eventHandler = eventHandler;
@@ -111,4 +118,64 @@ public abstract class AbstractNettyClient {
         NettyChannelSendSupporter.sendMessage(remotingCommand, channel);
         log.debug("send remotingCommand [{}]", remotingCommand);
     }
+
+
+    public class DefaultNettyEventClientHandler implements NettyClientEventHandler {
+        @Override
+        public void activeHandler(ChannelHandlerContext ctx) {
+            switch (status) {
+                case CREATE_JUST:
+                case START_FAILED:
+                    sendInitMessage(ctx);
+                    break;
+                default:
+                    log.warn("client [{}] in [{}] state, can not turn to active state", clientId, status);
+            }
+        }
+
+        protected void sendInitMessage(ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        public void closeHandler() {
+            switch (status) {
+                case CREATE_JUST:
+                case RUNNING:
+                    status = ClientStatus.SHUTDOWN_ALREADY;
+                    break;
+                default:
+                    log.warn("client [{}] in [{}] state, can not turn to close state", clientId, status);
+            }
+        }
+
+        @Override
+        public void initSuccessHandler(RemotingCommand remotingCommand) {
+            if (status == CREATE_JUST) {
+                clientInit(remotingCommand);
+                status = RUNNING;
+            } else {
+                log.warn("client [{}] in [{}] state, can not turn to running state", clientId, status);
+            }
+        }
+
+        protected void clientInit(RemotingCommand remotingCommand) {
+        }
+
+        @Override
+        public void initFailHandler() {
+
+            if (status == CREATE_JUST) {
+                status = ClientStatus.START_FAILED;
+            } else {
+                log.warn("client [{}] in [{}] state, can not turn to start failed state", clientId, status);
+            }
+        }
+
+        @Override
+        public void exceptionHandler(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("producer got an error", cause);
+            status = ClientStatus.SHUTDOWN_ALREADY;
+        }
+    }
+
 }

@@ -51,11 +51,10 @@ public abstract class ResultCallBackInvoker {
      * @param remotingCommand broker返回的消息
      */
     public void invokeCallBack(String transactionId, RemotingCommand remotingCommand) {
-        boolean flag = RemotingCommandCodeConstants.FAIL.equals(remotingCommand.getCode());
-
+        log.debug("invoke call back, transactionId[{}]", transactionId);
         Consumer<RemotingCommand> success = successCallbackMap.remove(transactionId);
         Consumer<RemotingCommand> fail = failCallbackMap.remove(transactionId);
-        if(!flag) {
+        if(!(RemotingCommandCodeConstants.FAIL == remotingCommand.getCode())) {
             if (success != null) {
                 success.accept(remotingCommand);
             }

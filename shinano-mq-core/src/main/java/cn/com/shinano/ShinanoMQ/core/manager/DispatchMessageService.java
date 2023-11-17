@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.manager;
 
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
@@ -88,19 +89,24 @@ public class DispatchMessageService {
 
         switch (result.getStatus()) {
             case PUT_OK:
+                response.setCode(RemotingCommandCodeConstants.SUCCESS);
                 response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.PUT_OK.name());
                 break;
             case FLUSH_DISK_TIMEOUT:
+                response.setCode(RemotingCommandCodeConstants.FAIL);
                 response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.FLUSH_DISK_TIMEOUT.name());
                 break;
             case CREATE_MAPPED_FILE_FAILED:
+                response.setCode(RemotingCommandCodeConstants.FAIL);
                 response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.CREATE_MAPPED_FILE_FAILED.name());
                 break;
             case PROPERTIES_SIZE_EXCEEDED:
+                response.setCode(RemotingCommandCodeConstants.FAIL);
                 response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.PROPERTIES_SIZE_EXCEEDED.name());
                 break;
             case UNKNOWN_ERROR:
             default:
+                response.setCode(RemotingCommandCodeConstants.FAIL);
                 response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.UNKNOWN_ERROR.name());
         }
         return response;

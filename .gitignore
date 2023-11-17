@@ -6,6 +6,7 @@ config.ini
 
 # log 不需要提交的任意包含后缀名为log的文件
 *.log
+**/logs/**
 
 # Package Files 不需要提交的任意包含后缀名为jar的文件
 *.jar
