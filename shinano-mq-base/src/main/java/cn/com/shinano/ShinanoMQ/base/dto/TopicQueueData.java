@@ -1,6 +1,5 @@
 package cn.com.shinano.ShinanoMQ.base.dto;
 
-import javafx.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

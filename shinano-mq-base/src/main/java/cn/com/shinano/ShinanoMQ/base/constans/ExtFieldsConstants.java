@@ -66,4 +66,20 @@ public class ExtFieldsConstants {
      * consumer 客户端
      */
     public static final String CLIENT_TYPE_CONSUMER = "client_consumer";
+    /**
+     * consumer 消费完消息ack状态的key
+     */
+    public static final String CONSUMER_MIN_ACK_OFFSET_KEY = "consumer_ack_min_offset";
+    /**
+     * consumer 操作的key
+     */
+    public static final String CONSUMER_OPT_KEY = "consumer_opt";
+    /**
+     * consumer 消费完消息的批量ack
+     */
+    public static final String CONSUMER_BATCH_ACK = "consumer_batch_ack";
+    /**
+     * consumer 消费完消息的批量ack的响应结果
+     */
+    public static final String CONSUMER_BATCH_ACK_RESULT = "consumer_batch_ack_result";
 }

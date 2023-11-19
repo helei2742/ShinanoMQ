@@ -13,6 +13,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.consmer.config.ConsumerConfig;
+import cn.com.shinano.ShinanoMQ.consmer.listener.ConsumerOnMsgListener;
 import cn.com.shinano.ShinanoMQ.consmer.manager.ConsumerQueueManager;
 import cn.com.shinano.ShinanoMQ.consmer.processor.ConsumerBootstrapProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.consmer.processor.ConsumerClientInitProcessor;
@@ -100,7 +101,7 @@ public class ShinanoConsumerClient extends AbstractNettyClient {
     }
 
 
-    public void onMessage(String topic, String queue, Consumer<SaveMessage> handler) {
+    public void onMessage(String topic, String queue, ConsumerOnMsgListener listener) {
         while (!status.equals(ClientStatus.RUNNING)) {
             try {
                 TimeUnit.MILLISECONDS.sleep(50);
@@ -109,6 +110,10 @@ public class ShinanoConsumerClient extends AbstractNettyClient {
             }
         }
 
-        this.consumerQueueManager.onMessageReceive(topic, queue, handler);
+        this.consumerQueueManager.onMessageReceive(topic, queue, listener);
+    }
+
+    public String getClientId() {
+        return clientId;
     }
 }

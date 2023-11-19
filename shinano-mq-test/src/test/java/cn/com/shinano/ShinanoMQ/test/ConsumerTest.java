@@ -1,7 +1,8 @@
 package cn.com.shinano.ShinanoMQ.test;
 
+import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.consmer.ShinanoConsumerClient;
-import org.junit.jupiter.api.BeforeAll;
+import cn.com.shinano.ShinanoMQ.consmer.listener.ConsumerOnMsgListener;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -32,15 +33,19 @@ public class ConsumerTest {
 
     @Test
     public void testOnMessage() throws InterruptedException {
-        consumerClient.onMessage("test-create1", "queue1", saveMessage -> {
-            System.out.println(saveMessage);
-            try {
-                TimeUnit.SECONDS.sleep(1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        final int[] total = {0};
+        consumerClient.onMessage("test-create1", "queue1", new ConsumerOnMsgListener() {
+            @Override
+            public void successHandler(SaveMessage message) {
+                    total[0]++;
+                System.out.println(total[0]);
+            }
+
+            @Override
+            public void failHandler(Exception exception) {
+                System.out.println(exception.getMessage());
             }
         });
-
 
         TimeUnit.SECONDS.sleep(4000);
     }

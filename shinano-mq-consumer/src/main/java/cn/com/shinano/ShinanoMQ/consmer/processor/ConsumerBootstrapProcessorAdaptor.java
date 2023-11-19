@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.consmer.processor;
 
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
@@ -21,6 +22,7 @@ public class ConsumerBootstrapProcessorAdaptor extends AbstractNettyProcessorAda
                 }
                 break;
             case RemotingCommandFlagConstants.TOPIC_INFO_QUERY_RESULT:
+            case RemotingCommandFlagConstants.CONSUMER_MESSAGE_RESULT:
                 receiveMessageProcessor.invokeCallBack(remotingCommand.getTransactionId(), remotingCommand);
                 break;
         }

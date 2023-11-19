@@ -4,6 +4,11 @@ import lombok.Data;
 
 @Data
 public class SaveMessage {
+
+    /**
+     * 逻辑偏移
+     */
+    private Long offset;
     /**
      * 消息事务id
      */

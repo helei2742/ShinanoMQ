@@ -66,4 +66,12 @@ public class RemotingCommandFlagConstants {
     public static final int TOPIC_INFO_QUERY_RESULT = -6;
 
 
+    /**
+     * consumer 消息
+     */
+    public static final int CONSUMER_MESSAGE = 7;
+    /**
+     * consumer 消息的响应
+     */
+    public static final int CONSUMER_MESSAGE_RESULT = -7;
 }

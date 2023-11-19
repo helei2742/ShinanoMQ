@@ -192,7 +192,7 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                         mappedFile = MappedFile.getMappedFile(topic, queue, offset);
                     }
 
-                    byte[] bytes = BrokerUtil.messageTurnBrokerSaveBytes(msg.getMessage());
+                    byte[] bytes = BrokerUtil.messageTurnBrokerSaveBytes(msg.getMessage(), offset);
 
                     //追加写入
 //                    this.offset = mappedFile.append(bytes);

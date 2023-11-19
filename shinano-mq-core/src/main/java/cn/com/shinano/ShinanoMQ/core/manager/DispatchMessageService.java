@@ -43,7 +43,7 @@ public class DispatchMessageService {
      * 添加message到对应topic的阻塞队列
      * @param message 服务器收到的消息，加上为其生成的唯一id
      */
-
+    @Deprecated
     public void addMessageIntoQueue(BrokerMessage message) {
         String topic = message.getMessage().getTopic();
         String queue = message.getMessage().getQueue();

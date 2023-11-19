@@ -1,10 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.processor;
 
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
-import cn.com.shinano.ShinanoMQ.core.processor.msgprocessor.BrokerInfoQueryProcessor;
-import cn.com.shinano.ShinanoMQ.core.processor.msgprocessor.ClientConnectProcessor;
-import cn.com.shinano.ShinanoMQ.core.processor.msgprocessor.ProducerRequestProcessor;
-import cn.com.shinano.ShinanoMQ.core.processor.msgprocessor.TopicQueryProcessor;
+import cn.com.shinano.ShinanoMQ.core.processor.msgprocessor.*;
 import cn.com.shinano.ShinanoMQ.core.manager.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -34,6 +31,9 @@ public class NettyProcessorConfig {
     @Autowired
     private BrokerAckManager brokerAckManager;
 
+    @Autowired
+    private ConsumeOffsetManager consumeOffsetManager;
+
     @Bean("messageHandlerMap")
     public Map<Integer, RequestProcessor> messageHandlerMap() {
         Map<Integer, RequestProcessor> res = new HashMap<>();
@@ -42,6 +42,7 @@ public class NettyProcessorConfig {
         res.put(RemotingCommandFlagConstants.CLIENT_CONNECT, new ClientConnectProcessor(connectManager));
         res.put(RemotingCommandFlagConstants.TOPIC_INFO_QUERY, new TopicQueryProcessor(topicQueryManager));
         res.put(RemotingCommandFlagConstants.PRODUCER_MESSAGE, new ProducerRequestProcessor(topicManager, dispatchMessageService, brokerAckManager));
+        res.put(RemotingCommandFlagConstants.CONSUMER_MESSAGE, new ConsumerRequestProcessor(consumeOffsetManager));
         return res;
     }
 }

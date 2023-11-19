@@ -41,8 +41,8 @@ public abstract class ResultCallBackInvoker {
      * @param fail      失败回调
      */
     public void addAckListener(String transactionId, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
-        this.successCallbackMap.put(transactionId, success);
-        this.failCallbackMap.put(transactionId, fail);
+        if(success != null) this.successCallbackMap.put(transactionId, success);
+        if(fail != null) this.failCallbackMap.put(transactionId, fail);
     }
 
     /**

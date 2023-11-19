@@ -1,9 +1,7 @@
 package cn.com.shinano.ShinanoMQ.base;
 
-import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.constant.ClientStatus;
-import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgProcessor;
@@ -19,7 +17,6 @@ import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -112,7 +109,7 @@ public abstract class AbstractNettyClient {
     }
 
 
-    protected void sendMsg(RemotingCommand remotingCommand, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
+    public void sendMsg(RemotingCommand remotingCommand, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
         remotingCommand.setTransactionId(UUID.randomUUID().toString());
         receiveMessageProcessor.addAckListener(remotingCommand.getTransactionId(), success, fail);
         NettyChannelSendSupporter.sendMessage(remotingCommand, channel);

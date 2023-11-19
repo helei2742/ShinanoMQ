@@ -96,10 +96,10 @@ public class MappedFile {
      * @throws IOException
      */
     public AppendMessageResult append(Message message) {
-        byte[] bytes = BrokerUtil.messageTurnBrokerSaveBytes(message);
-
         int filePos = FILE_POSITION_UPDATER.get(this);
         long writePos = WRITE_POSITION_UPDATER.get(this);
+
+        byte[] bytes = BrokerUtil.messageTurnBrokerSaveBytes(message, writePos);
 
         if(bytes.length > TopicConfig.SINGLE_MESSAGE_LENGTH) {
             return new AppendMessageResult(AppendMessageStatus.MESSAGE_SIZE_EXCEEDED, writePos,
