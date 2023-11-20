@@ -6,6 +6,7 @@ import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.consmer.ShinanoConsumerClient;
 import cn.com.shinano.ShinanoMQ.consmer.config.ConsumerConfig;
+import cn.com.shinano.ShinanoMQ.consmer.support.CommitLocalSupport;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,6 +30,13 @@ public class ConsumerOffsetManager {
         this.consumerClient = consumerClient;
     }
 
+    /**
+     * 向broker提交消费offset
+     * @param clientId
+     * @param topic
+     * @param queue
+     * @param offset
+     */
     public void commitOffset(String clientId, String topic, String queue, Long offset) {
         String key = getKey(clientId, topic, queue);
         consumerOffsetMap.compute(key, (k,v)->{
@@ -53,22 +61,19 @@ public class ConsumerOffsetManager {
                     command.addExtField(ExtFieldsConstants.CONSUMER_MIN_ACK_OFFSET_KEY, String.valueOf(min));
                     command.setBody(JSON.toJSONBytes(finalV));
 
-                    pushConsumeOffset(command, 1);
+                    pushConsumeOffset(command);
                 });
             }
             return v;
         });
     }
 
-    private void pushConsumeOffset(RemotingCommand command, int count) {
+    private void pushConsumeOffset(RemotingCommand command) {
         consumerClient.sendMsg(command, remotingCommand->{
             log.info("push consume offset result: [{}]", remotingCommand);
         }, remotingCommand -> {
-//            if(count >= 3){
-                log.error("push batch consume offset to remote fail, retry [{}] out of limit", count);
-//            }
-//            log.warn("push batch consume offset to remote fail, retry [{}]", count);
-//            pushConsumeOffset(command, count + 1);
+            log.error("push batch consume offset to remote fail");
+            CommitLocalSupport.commitLocal(command);
         });
     }
 
