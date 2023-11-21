@@ -17,6 +17,7 @@ public class ConsumeMessage extends SaveMessage {
 
     public ConsumeMessage(SaveMessage saveMessage, Long nextOffset) {
         super(saveMessage.getOffset(),
+                saveMessage.getLength(),
                 saveMessage.getTransactionId(),
                 saveMessage.getTimestamp(),
                 saveMessage.getStoreHost(),

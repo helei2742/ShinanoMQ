@@ -18,7 +18,7 @@ public class SaveMessage {
     /**
      * 长度 TODO broker存消息自定义才方便得到存入的长度
      */
-//    private Integer length;
+    private Integer length;
     /**
      * 消息事务id
      */

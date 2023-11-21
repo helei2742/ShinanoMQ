@@ -2,12 +2,11 @@ TODO
 
 PS 看同步双写
 
--1 ByteBuf池，减少对象创建， 统一使用ByteBuf
+
 
 -2 服务端添加http接口，生产者、消费者的操作
 
-0 生产者添加维护offset的功能，更改broker逻辑，发送时没有topic对应的queue则给producer返回失败。消费进度以json文件的形式
-持久化，类似于RocketMQ的ComsumerOffset.json
+
 
 1 broker同步刷盘逻辑，需要重构原本的持久化类，抽象出抽象类给同步与异步刷盘类继承
 2 拉取消息添加数量控制的功能（原来是拉一次就拉完那一个持久化文件），还要添加跨文件获取消息的功能。！！！
@@ -45,3 +44,7 @@ PS 看同步双写
 7 broker topic info 的更改可能会有线程安全问题，需要排查
 
 postman-collection-transformer convert --input ./ShinanoMQ.postman_collection.json --input-version 1.0.0 --output ./Postman_collection-V2.json --output-version 2.0.0 --pretty --overwrite
+-1 ByteBuf池，减少对象创建， 统一使用ByteBuf
+
+0 生产者添加维护offset的功能，更改broker逻辑，发送时没有topic对应的queue则给producer返回失败。消费进度以json文件的形式
+持久化，类似于RocketMQ的ComsumerOffset.json

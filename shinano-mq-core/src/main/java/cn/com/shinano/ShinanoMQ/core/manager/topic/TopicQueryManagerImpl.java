@@ -241,8 +241,9 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
 
             if(readable) {
                 next = next + msgBytes.length + 8;
-
-                messages.add(BrokerUtil.brokerSaveBytesTurnMessage(msgBytes));
+                SaveMessage e = BrokerUtil.brokerSaveBytesTurnMessage(msgBytes);
+                e.setLength(length + 8);
+                messages.add(e);
                 if(messages.size() >= count) break;
             }
         }

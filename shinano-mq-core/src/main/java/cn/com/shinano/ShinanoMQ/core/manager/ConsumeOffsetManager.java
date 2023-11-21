@@ -1,7 +1,9 @@
 package cn.com.shinano.ShinanoMQ.core.manager;
 
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -18,4 +20,6 @@ public interface ConsumeOffsetManager {
      * @return
      */
     CompletableFuture<RemotingCommand> resolveConsumeOffset(String clientId, String topic, String queue, Long minOffset, List<Long> offsets);
+
+    void registryWaitAckOffset(String clientId, String topic, String queue, ArrayList<SaveMessage> saveMessages);
 }

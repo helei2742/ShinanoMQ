@@ -1,6 +1,5 @@
 package cn.com.shinano.ShinanoMQ.test;
 
-import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.consmer.ShinanoConsumerClient;
 import cn.com.shinano.ShinanoMQ.consmer.dto.ConsumeMessage;
 import cn.com.shinano.ShinanoMQ.consmer.listener.ConsumerOnMsgListener;
