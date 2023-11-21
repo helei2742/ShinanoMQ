@@ -18,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static cn.com.shinano.ShinanoMQ.base.constant.ClientStatus.CREATE_JUST;
@@ -109,11 +111,39 @@ public abstract class AbstractNettyClient {
     }
 
 
+    /**
+     * 非阻塞发送消息
+     * @param remotingCommand
+     * @param success
+     * @param fail
+     */
     public void sendMsg(RemotingCommand remotingCommand, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
-        remotingCommand.setTransactionId(UUID.randomUUID().toString());
+        if(remotingCommand.getTransactionId() == null) {
+            remotingCommand.setTransactionId(UUID.randomUUID().toString());
+        }
         receiveMessageProcessor.addAckListener(remotingCommand.getTransactionId(), success, fail);
         NettyChannelSendSupporter.sendMessage(remotingCommand, channel);
         log.debug("send remotingCommand [{}]", remotingCommand);
+    }
+
+    /**
+     * 阻塞发送消息
+     * @param remotingCommand
+     * @return
+     * @throws InterruptedException
+     */
+    public boolean sendMsg(RemotingCommand remotingCommand) throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        AtomicBoolean success = new AtomicBoolean(true);
+        log.debug("send remotingCommand [{}]", remotingCommand);
+        sendMsg(remotingCommand, result->{
+            countDownLatch.countDown();
+        },result->{
+            countDownLatch.countDown();
+            success.set(false);
+        });
+        countDownLatch.await();
+        return success.get();
     }
 
 

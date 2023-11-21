@@ -2,17 +2,19 @@ package cn.com.shinano.ShinanoMQ.consmer.manager;
 
 import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.consmer.config.ConsumerConfig;
+import cn.com.shinano.ShinanoMQ.consmer.dto.ConsumeMessage;
 import cn.com.shinano.ShinanoMQ.consmer.listener.ConsumerOnMsgListener;
-import com.sun.scenario.effect.Offset;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -25,7 +27,7 @@ public class QueueData {
     private String topic;
     private String queueName;
     private long nextOffset;
-    private LinkedBlockingQueue<SaveMessage> queue;
+    private LinkedBlockingQueue<ConsumeMessage> queue;
 
     private ConsumerQueueManager queueManager;
 
@@ -40,7 +42,7 @@ public class QueueData {
     public QueueData(String topic,
                      String queue,
                      Long nextOffset,
-                     LinkedBlockingQueue<SaveMessage> es) {
+                     LinkedBlockingQueue<ConsumeMessage> es) {
         this.topic = topic;
         this.queueName = queue;
         this.nextOffset = nextOffset;
@@ -52,7 +54,7 @@ public class QueueData {
 
     /**
      * 添加监听消息的listener
-     * @param listener
+     * @param listener listener
      */
     public void addListener(ConsumerOnMsgListener listener) {
         lock.lock();
@@ -67,6 +69,7 @@ public class QueueData {
             publishExecutor.execute(this::publishGetMessageEvent);
         }
     }
+    AtomicInteger counter = new AtomicInteger(0);
 
     /**
      * 向添加的listener 发布消息
@@ -77,7 +80,7 @@ public class QueueData {
             try {
                 if(queue.size() < ConsumerConfig.PRE_PULL_MESSAGE_COUNT) prePullMessage();
 
-                SaveMessage take = queue.poll(incrementInterval(ConsumerConfig.PRE_PULL_MESSAGE_INTERVAL, fail),
+                ConsumeMessage take = queue.poll(incrementInterval(ConsumerConfig.PRE_PULL_MESSAGE_INTERVAL, fail),
                         TimeUnit.MILLISECONDS);
 
                 if(take == null) {
@@ -86,6 +89,7 @@ public class QueueData {
                 }
                 fail = 0;
                 for (ConsumerOnMsgListener msgListener : listeners) {
+                    //执行消息的逻辑使用其它线程池
                     messageHandlerExecutor.execute(()->{
                         log.debug("publish message event, topic[{}]-queue[{}], message[{}]", topic, queueName, take);
                         boolean success = true;
@@ -97,6 +101,7 @@ public class QueueData {
                             //失败ack
                             success = false;
                         }
+                        //给broker发送consume offset
                         queueManager.commitConsumeACK(take.getTransactionId(), take.getOffset(), success, this);
                     });
                 }
@@ -115,18 +120,23 @@ public class QueueData {
 
     /**
      * 添加预拉取的消息
-     * @param messages
-     * @param nextOffset
+     * @param messages messages
+     * @param nextOffset nextOffset
      */
     public void appendNewMessages(List<SaveMessage> messages, Long nextOffset) {
         lock.lock();
         try {
-            if(queue == null) queue = new LinkedBlockingQueue<>();
+            if(this.queue == null) this.queue = new LinkedBlockingQueue<>();
 
-            this.queue.addAll(messages);
-
+            for (int i = 0; i < messages.size(); i++) {
+                Long no = null;
+                if(i+1<messages.size()){
+                    no = messages.get(i+1).getOffset();
+                }
+                ConsumeMessage message = new ConsumeMessage(messages.get(i), no);
+                this.queue.add(message);
+            }
             this.nextOffset = nextOffset;
-
             this.lastAppendTime = System.currentTimeMillis();
         } finally {
             lock.unlock();
@@ -135,7 +145,7 @@ public class QueueData {
 
     /**
      * 判断是否需要提取拉取新的消息
-     * @return
+     * @return 是否能够拉取消息，若返回true，会重置唱一次拉取的时间
      */
     public boolean canPullNew() {
         boolean f = queue.size() < ConsumerConfig.PRE_PULL_MESSAGE_COUNT/4 &&

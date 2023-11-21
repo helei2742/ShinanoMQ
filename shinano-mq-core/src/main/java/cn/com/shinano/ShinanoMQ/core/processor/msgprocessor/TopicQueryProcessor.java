@@ -69,6 +69,7 @@ public class TopicQueryProcessor implements RequestProcessor {
         } catch (InterruptedException | ExecutionException e) {
             log.error("query topic queue offset got an error", e);
             response = RemotingCommandPool.getObject();
+            response.setTransactionId(transactionId);
             response.setFlag(RemotingCommandFlagConstants.TOPIC_INFO_QUERY_RESULT);
             response.setCode(RemotingCommandCodeConstants.FAIL);
             NettyChannelSendSupporter.sendMessage(response, channel);

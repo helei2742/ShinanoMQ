@@ -1,131 +1,14 @@
 {
-    "info": {
-        "_postman_id": "740014ac-aff7-8b7c-c43e-9a17a3094a92",
-        "name": "ShinanoMQ",
-        "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
-    },
-    "item": [
+    "top_p": 0.9,
+    "max_tokens": 4096,
+    "temperature": 0.01,
+    "messages": [
         {
-            "name": "topic管理",
-            "item": [
-                {
-                    "name": "查询topicList",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "formdata",
-                            "formdata": []
-                        },
-                        "url": "http://localhost:8888/topic/topicList",
-                        "description": "查询topicList"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "根据topic查询topic的信息",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "formdata",
-                            "formdata": []
-                        },
-                        "url": "http://localhost:8888/topic/topicInfo/create-topic1"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "创建topic或添加queue",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n\t\"topic\": \"test-create1\",\n\t\"queues\": [\"queue1\",\"queue2\"]\n}"
-                        },
-                        "url": "http://localhost:8888/topic/create"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "关闭topic",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n\t\"topic\": \"test-create1\",\n\t\"queues\": []"
-                        },
-                        "url": "http://localhost:8888/topic/closeTopic/test-create1"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "删除topic",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n\t\"topic\": \"test-create1\",\n\t\"queues\": []"
-                        },
-                        "url": "http://localhost:8888/topic/closeTopic/test-create1"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "删除topic下的queue",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n\t\"topic\": \"test-create1\",\n\t\"queues\": []"
-                        },
-                        "url": "http://localhost:8888/topic/closeTopic/test-create1"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "恢复被关闭的topic",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n\t\"topic\": \"test-create1\",\n\t\"queues\": []"
-                        },
-                        "url": "http://localhost:8888/topic/closeTopic/test-create1"
-                    },
-                    "response": []
-                }
-            ]
+            "role": "user",
+            "content": "今世缘上半年营收净利双增长 合同负债同比下降近五成\n <p>本报记者 贺俊 见习记者 梁傲男 </p><p>8月28日晚间，江苏 今世缘 酒业股份有限公司（以下简称“今世缘”）交出了上半年营收和 净利润 双位数增长的业绩，展现了公司运作大单品的成功。 </p><p>“今世缘业绩的增长来自于产品结构的不断升级，特别是国缘系列产品在次高端市场的突围与放量。同时，今世缘利用“缘”文化优势，不断精耕与下沉江苏市场，在宴席市场获得新的增量。”白酒行业分析师、知趣咨询总经理蔡学飞对《证券日报》记者表示。 </p><p>营收、净利实现双位数增长 </p><p>2023年上半年，今世缘实现营收59.69亿元，同比增长28.47%；实现净利润20.5亿元，同比增长26.7%； 基本每股收益 1.6441元/股，同比增长26.69%。 </p><p>从产品来看，今世缘上半年特A+类、特A类、A类产品分别实现营收38.18亿元、17.58亿元、2.26亿元，同比增长25.56%、36.86%、28.34%，其他产品实现营收433.49万元，同比下滑20.21%。 </p><p>从区域来看，今世缘上半年省内省外市场营收均实现增长。其中，江苏省内市场营收54.98亿元，同比增长27.36%，仍是营收主力；省外市场营收4.39亿元，同比增加40.44%。 </p><p>从销售渠道来看，上半年，今世缘批发代理渠道销售收入为58.65亿元；直销（含团购）渠道收入0.73亿元。报告期末，经销商数量为1046个，增加65个，减少33个。 </p><p>受消费者培育及广告投入增加影响，今世缘销售费用同比增加59.69%；受陶坛储酒量增多损耗增加及薪酬增长、社保基数调整影响所致，管理费用同比增加36.76%。 </p><p>国联证券 在研报中表示，今世缘产品矩阵整体向上，产品结构持续提升；苏中苏南加速渗透，省外拓展表现卓越；毛利率近年同期最高，营销继续高举高打。 </p><p>市场动销不畅？ </p><p>随着白酒行业马太效应愈加突出，行业集中度继续提升，产销量基本呈现缓慢下降趋势，市场份额向品牌力、产品力、渠道力优势企业集中的趋势加快，并将最终回到“品牌+品质”这一白酒竞争的本质。 </p><p>《证券日报》记者注意到，2023年上半年，今世缘合同 负债 为11.29亿元，相比2022年同期的20.40亿元下降了44.68%，出现较大异动。今世缘在财报中表示：“主要系季节性因素导致预收款项的减少”。 </p><p>在白酒行业，合同负债被视为重要财务指标，通常代表着酒企的预收款项，数额越大，往往意味着产品的动销情况越好。“合同负债金额越大，说明经销商对品牌信心十足，积极支付预付款，同时也给经销商带来资金压力。”武汉京魁科技有限公司董事长肖竹青对《证券日报》记者表示。 </p><p>在蔡学飞看来，今世缘合同负债下降的直接原因是上半年渠道库存过高、市场动销不畅，在这一背景下，许多经销商的打款意愿明显不足。 </p><p>当下，白酒消费环境面临啤酒、葡萄酒、保健酒和果酒等替代品的挑战，白酒的消费量将有可能下降，市场需求存在一定程度的不确定性，经销商普遍更加谨慎，不愿意承担过多的库存风险。这种情况使得企业需要更加灵活地应对库存管理和销售策略，以确保供需平衡，提高资金的周转效率，同时也需要积极与经销商合作，协调双方的利益，寻找共赢的解决方案。 </p><p>今世缘在半年报提示可能面临的风险时表示，江苏仍是目前公司最重要的市场，如果江苏市场竞争加剧或对白酒的消费需求下降，且公司未能及时有效拓展其他市场，将对公司的生产经营活动产生不利，从而影响战略目标的实现。 </p><p>“存量市场环境下，地方酒企面临着全国与区域强势酒企渠道下沉的双重挤压，还是要积极拥抱新技术与新模式，从电商、体验营销等方面突围，围绕消费端实现价值重塑，从而获得差异化的发展路径。”蔡学飞表示。 </p><p>（编辑 袁元） </p>\n  材料中的今世缘是否处于亏损状态？\n 答案："
+
         }
-    ]
+    ],
+    "model": "windAlice",
+    "stream":false
 }

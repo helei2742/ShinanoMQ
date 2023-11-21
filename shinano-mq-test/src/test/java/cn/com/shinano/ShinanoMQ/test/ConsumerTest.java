@@ -2,6 +2,7 @@ package cn.com.shinano.ShinanoMQ.test;
 
 import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.consmer.ShinanoConsumerClient;
+import cn.com.shinano.ShinanoMQ.consmer.dto.ConsumeMessage;
 import cn.com.shinano.ShinanoMQ.consmer.listener.ConsumerOnMsgListener;
 import org.junit.jupiter.api.Test;
 
@@ -36,9 +37,15 @@ public class ConsumerTest {
         final int[] total = {0};
         consumerClient.onMessage("test-create1", "queue1", new ConsumerOnMsgListener() {
             @Override
-            public void successHandler(SaveMessage message) {
-                    total[0]++;
-                System.out.println(total[0]);
+            public void successHandler(ConsumeMessage message) {
+
+                total[0]++;
+                System.out.println(total[0] + "----" + message);
+//                try {
+//                    TimeUnit.SECONDS.sleep(1);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
             }
 
             @Override

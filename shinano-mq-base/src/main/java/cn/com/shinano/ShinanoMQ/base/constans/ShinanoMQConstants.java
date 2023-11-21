@@ -24,4 +24,14 @@ public class ShinanoMQConstants {
      * message对象池最大大小
      */
     public static final int MESSAGE_OBJ_POOL_MAX_SIZE = 1000;
+
+    /**
+     * broker发送给客户端响应的超时时间
+     */
+    public static final long BROKER_RESPONSE_TIME_LIMIT = 1000 * 10;
+
+    /**
+     * 清理客户端过期的消息回调的间隔时间
+     */
+    public static final long EXPIRE_CLIENT_HANDLER_CLEAR_INTERVAL = 4000;
 }

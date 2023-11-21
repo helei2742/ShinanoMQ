@@ -89,7 +89,6 @@ public class BrokerUtil {
         saveMessage.setTimestamp(System.currentTimeMillis());
         saveMessage.setStoreHost(BrokerConfig.BROKER_HOST);
         saveMessage.setOffset(offset);
-
 //        byte[] bytes = JSONObject.toJSONBytes(saveMessage);
         byte[] bytes = ProtostuffUtils.serialize(saveMessage);
         byte[] length = ByteBuffer.allocate(8).putInt(bytes.length).array();

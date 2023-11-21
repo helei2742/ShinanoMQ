@@ -1,10 +1,7 @@
 package cn.com.shinano.ShinanoMQ.consmer.manager;
 
 import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
-import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
-import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.Pair;
-import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.dto.TopicQueueData;
 import cn.com.shinano.ShinanoMQ.consmer.ShinanoConsumerClient;
 import cn.com.shinano.ShinanoMQ.consmer.config.ConsumerConfig;
@@ -12,6 +9,7 @@ import cn.com.shinano.ShinanoMQ.consmer.listener.ConsumerOnMsgListener;
 import lombok.extern.slf4j.Slf4j;
 
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -35,9 +33,9 @@ public class ConsumerQueueManager {
 
     /**
      * 添加消息到待消费的队列
-     * @param topic
-     * @param queue
-     * @param vo
+     * @param topic topic
+     * @param queue queue
+     * @param vo vo 从broker拉取到的一批消息
      */
     public void appendMessages(String topic, String queue, MessageListVO vo) {
         if (vo.getNextOffset() == -1) {
@@ -56,9 +54,9 @@ public class ConsumerQueueManager {
 
     /**
      * 添加收到消息后的监听
-     * @param topic
-     * @param queue
-     * @param listener
+     * @param topic topic
+     * @param queue queue
+     * @param listener listener,消息到达后，会执行相应的successHandler与failHandler方法
      */
     public void onMessageReceive(String topic, String queue, ConsumerOnMsgListener listener) {
         if (!consumerQueue.containsKey(topic) || !consumerQueue.get(topic).containsKey(queue)) {
@@ -74,7 +72,7 @@ public class ConsumerQueueManager {
 
     /**
      * 根据传入的consumerInfo初始化，对每个queue添加一个线程池任务用于拉取消息
-     * @param consumerInfo
+     * @param consumerInfo consumerInfo topicId:list(queue,offset)
      */
     public void initConsumerInfo(Map<String, TopicQueueData> consumerInfo) {
         if(consumerInfo == null) return;
@@ -108,11 +106,16 @@ public class ConsumerQueueManager {
             offsetManager.commitOffset(consumerClient.getClientId(),
                     queueData.getTopic(), queueData.getQueueName(), offset);
         } else {
-            //TODO 失败发送到重试的queue里
+            //TODO 执行失败，将消息发送到重试的queue里
             log.error("consume message fail, tsId[{}], offset[{}]", transactionId, offset);
         }
     }
 
+    /**
+     * 从broker拉取消息的任务，当QueueData里预取的消息数量不足是，会signal唤醒这个任务拉取。
+     * 每个QueueData都对应一个PullMessageTask对象,在ConsumerQueueManager初始化时，被创建并
+     * 放入线程池中运行，
+     */
     static class PullMessageTask extends Thread {
         private final String topic;
         private final QueueData queueData;
@@ -146,8 +149,8 @@ public class ConsumerQueueManager {
         }
 
         private void tryPrePullMessage() {
-            System.out.println("offset:"+queueData.getNextOffset());
-            log.debug("local need pull batch message, topic[{}]-queue[{}]", topic, queueData.getQueueName());
+            log.debug("local need pull batch message, topic[{}]-queue[{}]-offset[{}]",
+                    topic, queueData.getQueueName(),queueData.getNextOffset());
             consumerClient.pullMessageAfterOffset(topic, queueData.getQueueName(),
                     queueData.getNextOffset(), ConsumerConfig.PRE_PULL_MESSAGE_COUNT);
         }

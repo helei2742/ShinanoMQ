@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
 
 
 /**
@@ -17,16 +16,18 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LocalCommitLog {
-    private String topic;
-    private String queue;
-    private Long consumeOffset;
-    private byte[] batchOffset;
+    private int retryCount;
+    private long lastRetryTimestamp;
+    private RemotingCommand command;
 
     public LocalCommitLog(RemotingCommand command) {
-        this.topic = command.getTopic();
-        this.queue = command.getQueue();
-        this.consumeOffset = command.getExtFieldsLong(ExtFieldsConstants.CONSUMER_MIN_ACK_OFFSET_KEY);
-        this.batchOffset = command.getBody();
+        this.lastRetryTimestamp = -1;
+        this.retryCount = 0;
+        this.command = command;
+    }
+
+    public void incrementRetryCount() {
+        this.retryCount++;
     }
 }
 
