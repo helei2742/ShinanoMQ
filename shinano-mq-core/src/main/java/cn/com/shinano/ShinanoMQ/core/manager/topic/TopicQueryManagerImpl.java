@@ -14,6 +14,7 @@ import cn.com.shinano.ShinanoMQ.core.manager.AbstractBrokerManager;
 import cn.com.shinano.ShinanoMQ.core.manager.OffsetManager;
 import cn.com.shinano.ShinanoMQ.core.manager.TopicQueryManager;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
+import cn.com.shinano.ShinanoMQ.core.utils.StoreFileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -78,6 +79,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
                         count);
                 remotingCommand.addExtField(TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET_MESSAGE, String.valueOf(true));
                 remotingCommand.setBody(ProtostuffUtils.serialize(vo));
+                remotingCommand.setPayLoad(vo);
                 return remotingCommand;
             } catch (IOException e) {
                 log.error("query topic[{}] queue[{}] offset[{}] count[{}] get error", topic, offset, count, e);
@@ -108,11 +110,11 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
         }
 
 
-        Path path = Paths.get(BrokerUtil.getTopicQueueSaveDir(topic, queue));
+        Path path = Paths.get(StoreFileUtil.getTopicQueueSaveDir(topic, queue));
         if(!Files.exists(path)) return MessageListVO.empty();
 
         //获取数据文件里offset的插入点文件名
-        String filename = getIndexFileNameWithoutFix(path, logicOffset);
+        String filename = StoreFileUtil.getIndexFileNameWithoutFix(path, logicOffset);
 
         //跨文件获取
         MessageListVO res = null;
@@ -133,7 +135,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
 
             if(curNeed == 0) break; //获取完
 
-            String nextFileName = getIndexFileNameWithoutFix(path, curLogicNeed);
+            String nextFileName = StoreFileUtil.getIndexFileNameWithoutFix(path, curLogicNeed);
             if(nextFileName.equals(filename)) break; //没有下一个数据文件
             filename = nextFileName;
         }
@@ -254,37 +256,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
         return vo;
     }
 
-    /**
-     * 获取 logicOffset 这个逻辑偏移 在哪个文件之后
-     * @param path          数据文件的文件夹
-     * @param logicOffset   逻辑偏移
-     * @return              没有后缀的文件名
-     * @throws IOException
-     */
-    private String getIndexFileNameWithoutFix(Path path, long logicOffset) throws IOException {
 
-        List<Long> startOffsets = new ArrayList<>();
-        Files.walkFileTree(path, new SimpleFileVisitor<Path>(){
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if(file.toString().endsWith(".dat")) { //数据文件
-                    String str = file.getName(file.getNameCount() - 1).toString().replace(".dat", "");
-                    startOffsets.add(Long.parseLong(str));
-                }
-                return FileVisitResult.SKIP_SUBTREE;
-            }
-        });
-
-        if(startOffsets.size() == 0) throw new FileNotFoundException(path + " didn't have data file");
-
-        startOffsets.sort(Long::compareTo);
-        int index = Collections.binarySearch(startOffsets, logicOffset);
-
-        if(index < 0)
-            index = Math.abs(index) - 2;
-
-        return BrokerUtil.getSaveFileName(startOffsets.get(index));
-    }
 
     public static void main(String[] args) {
         List<Integer> list = new ArrayList<>();

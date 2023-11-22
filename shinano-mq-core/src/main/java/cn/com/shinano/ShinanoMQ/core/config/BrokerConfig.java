@@ -14,8 +14,22 @@ public class BrokerConfig {
      */
     public static final String PERSISTENT_FILE_LOCATION = System.getProperty("user.dir") + File.separator + "datalog";
 
+    public static final String BROKER_DLQ_MESSAGE_SAVE_PATH = System.getProperty("user.dir") + File.separator + "DLQ";
+    public static final String BROKER_DLQ_MESSAGE_SAVE_PATTERN = "%s_%s_%s.dat";
+
+    public static final String RETRY_LOG_SAVE_DIR = System.getProperty("user.dir") + File.separator + "retrylog";
+    public static final String RETRY_LOG_SAVE_FILE_PATTERN = "%s@%s~%s.dat";
 
     public static final byte[] PERSISTENT_FILE_END_MAGIC = ByteBuffer.allocate(8).putLong(1111111111111111111L).array();
+
+    /**
+     * broker刷新consumer 消费进度的间隔时间
+     */
+    public static final long BROKER_CONSUME_OFFSET_FLUSH_INTERVAL = 1000*10;
+
+    public static final int RETRY_CONSUME_MESSAGE_MAX_COUNT = 16;
+
+
     /**
      * 本broker的host
      */
@@ -24,7 +38,7 @@ public class BrokerConfig {
     /**
      * 处理BoostrapHandler的线程数
      */
-    public static final Integer BOOTSTRAP_HANDLER_THREAD = 3;
+    public static final int BOOTSTRAP_HANDLER_THREAD = 3;
 
     /**
      * 查询topic的消息时的线程数
@@ -34,12 +48,12 @@ public class BrokerConfig {
     /**
      * 单个数据文件大小，单位byte
      */
-    public static final Long PERSISTENT_FILE_SIZE = 1024 * 1024L;
+    public static final long PERSISTENT_FILE_SIZE = 1024 * 1024L;
 
     /**
      * 持久化时生成的索引文件等级， 4代表写入一条数据时1/2^3次方概率生成索引
      */
-    public static final Integer PERSISTENT_INDEX_LEVEL = 5;
+    public static final int PERSISTENT_INDEX_LEVEL = 5;
 
     /**
      * 操作系统一页的大小
@@ -49,12 +63,12 @@ public class BrokerConfig {
     /**
      * 判断客户端下线的时长，单位秒
      */
-    public static final Integer CLIENT_OFF_LINE_INTERVAL = 3000;
+    public static final int CLIENT_OFF_LINE_INTERVAL = 3000;
 
     /**
      * 持久化到本地需要时间限制
      */
-    public static final Integer LOCAL_PERSISTENT_WAIT_TIME_LIMIT = 60;
+    public static final int LOCAL_PERSISTENT_WAIT_TIME_LIMIT = 60;
     /**
      * 持久化到本地需要时间限制的单位
      */
@@ -62,7 +76,7 @@ public class BrokerConfig {
     /**
      * 超时后重试次数
      */
-    public static final Integer LOCAL_PERSISTENT_WAIT_TIME_OUT_RETRY = 3;
+    public static final int LOCAL_PERSISTENT_WAIT_TIME_OUT_RETRY = 3;
 
 //    static {
 //        try {

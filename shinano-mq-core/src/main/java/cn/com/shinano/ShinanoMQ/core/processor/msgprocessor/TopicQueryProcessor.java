@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.processor.msgprocessor;
 
+import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
 import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
@@ -74,9 +75,10 @@ public class TopicQueryProcessor implements RequestProcessor {
                 response.setCode(RemotingCommandCodeConstants.SUCCESS);
                 NettyChannelSendSupporter.sendMessage(response, channel);
 
-                if (clientId != null) {
-                    //TODO 返回的给ConsumeOffsetManager
-                    consumeOffsetManager.registryWaitAckOffset(clientId, topic, queue, new ArrayList<SaveMessage>());
+                Object payLoad = response.getPayLoad();
+                if (clientId != null && payLoad instanceof MessageListVO) {
+                    MessageListVO vo = (MessageListVO) payLoad;
+                    consumeOffsetManager.registryWaitAckOffset(clientId, topic, queue, vo.getMessages());
                 }
             }
         } catch (InterruptedException | ExecutionException e) {

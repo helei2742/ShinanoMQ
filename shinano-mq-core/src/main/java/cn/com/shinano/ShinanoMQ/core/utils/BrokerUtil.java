@@ -16,56 +16,12 @@ import java.util.stream.Collectors;
 
 public class BrokerUtil {
 
+    private static final String OFFSET_MAP_KEY_SEPARATOR = "!@!";
+
     public static String makeTopicQueueKey(String topic, String queue) {
         return topic + "-" + queue;
     }
 
-    public static String getTopicQueueSaveDir(String topic, String queue) {
-        return BrokerConfig.PERSISTENT_FILE_LOCATION + File.separator + topic + File.separator + queue;
-    }
-
-    public static String getSaveFileName(Long startOffset) {
-        return String.format("%020d", startOffset);
-    }
-
-    /**
-     * 获取topic下queue的offset
-     * @param topic
-     * @param queue
-     * @return
-     */
-    public static long getOffsetFromFile(String topic, String queue) {
-        File dirFile = new File(BrokerConfig.PERSISTENT_FILE_LOCATION + File.separator + topic + File.separator + queue);
-        if (!dirFile.exists()) return -1;//没有topic-queue，-1表示没有初始化
-
-        File[] dataLogs = dirFile.listFiles();
-
-        if (dataLogs == null || dataLogs.length == 0) {//没有topic-queue，-1表示没有初始化
-            return -1;
-        } else { //里面有历史消息
-
-            //通过offset最大的文件计算当前offset大小
-            File newest = getNewestPersistentFile(dataLogs);
-            long fileLogicStart = Long.parseLong(newest.getName().split("\\.")[0]);
-            long fileLength = newest.length();
-
-            return fileLogicStart + fileLength;
-        }
-    }
-
-    /**
-     * 获取files中最新的那个文件
-     * @param files 存储消息的持久化文件数组
-     * @return files里最新的
-     */
-    public static File getNewestPersistentFile(File[] files) {
-        List<File> sorted = Arrays.stream(files).filter(f->f.getName().endsWith(".dat")).sorted((f1, f2) -> {
-            return f2.getName().compareTo(f1.getName());
-        }).collect(Collectors.toList());
-
-        //通过offset最大的文件计算当前offset大小
-        return sorted.get(0);
-    }
 
     public static String getTransactionId(String transactionId) {
         if(transactionId == null) {
@@ -89,6 +45,8 @@ public class BrokerUtil {
         saveMessage.setTimestamp(System.currentTimeMillis());
         saveMessage.setStoreHost(BrokerConfig.BROKER_HOST);
         saveMessage.setOffset(offset);
+        saveMessage.setReconsumeTimes(message.getRetryTimes());
+        saveMessage.setProps(message.getProperties());
 //        byte[] bytes = JSONObject.toJSONBytes(saveMessage);
         byte[] bytes = ProtostuffUtils.serialize(saveMessage);
         byte[] length = ByteBuffer.allocate(8).putInt(bytes.length).array();
@@ -103,13 +61,14 @@ public class BrokerUtil {
     }
 
 
-    /**
-     * 移动topic的数据文件，
-     * @param topic
-     */
-    public static void moveTopicData(String topic) {
-        String dir = BrokerConfig.PERSISTENT_FILE_LOCATION + File.separator + topic;
-        new File(dir)
-                .renameTo(new File(dir +"_deleted_" + RandomUtil.randomNumbers(8)));
+
+
+
+    public static String getKey(String clientId, String topic, String queue) {
+        return clientId + OFFSET_MAP_KEY_SEPARATOR + topic + OFFSET_MAP_KEY_SEPARATOR + queue + OFFSET_MAP_KEY_SEPARATOR;
+    }
+
+    public static String[] getPropFromKey(String key) {
+        return key.split(OFFSET_MAP_KEY_SEPARATOR);
     }
 }

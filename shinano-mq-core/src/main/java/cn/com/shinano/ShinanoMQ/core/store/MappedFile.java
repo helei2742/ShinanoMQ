@@ -4,6 +4,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.config.TopicConfig;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
+import cn.com.shinano.ShinanoMQ.core.utils.StoreFileUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -134,7 +135,7 @@ public class MappedFile {
      * @return
      */
     private File newFile(Long startOffset) {
-        String pathname = this.fileDir + File.separator + BrokerUtil.getSaveFileName(startOffset) + ".dat";
+        String pathname = this.fileDir + File.separator + StoreFileUtil.getSaveFileName(startOffset) + ".dat";
         System.out.println("pathname:[]" + pathname);
         return new File(pathname);
     }
@@ -164,7 +165,7 @@ public class MappedFile {
                     if (dataLogs == null || dataLogs.length == 0) {//新的topic-queue
                         res = new MappedFile(0, 0, BrokerConfig.PERSISTENT_FILE_SIZE, dirFile);
                     } else { //里面有历史消息数据
-                        File newest = BrokerUtil.getNewestPersistentFile(dataLogs);
+                        File newest = StoreFileUtil.getNewestPersistentFile(dataLogs);
 
                         long fileLogicStart = Long.parseLong(newest.getName().split("\\.")[0]);
 
@@ -224,7 +225,7 @@ public class MappedFile {
             mappedByteBuffer.force();
 
             //保存索引文件
-            index.save(BrokerUtil.getSaveFileName(writePos));
+            index.save(StoreFileUtil.getSaveFileName(writePos));
 
             //新搞一个
             this.file = newFile(writePos);

@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -53,5 +54,15 @@ public class Message {
                 ", body=" + (body ==null ?"null" :new String(body, StandardCharsets.UTF_8)) +
                 ", transactionId='" + transactionId + '\'' +
                 '}';
+    }
+
+    public Integer getRetryTimes() {
+        if(properties == null) return null;
+        return Integer.valueOf(properties.get("retry"));
+    }
+
+    public void setRetryTimes(int times) {
+        if(properties == null) properties = new HashMap<>();
+        properties.put("retry", String.valueOf(times));
     }
 }

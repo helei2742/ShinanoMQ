@@ -82,4 +82,6 @@ public class ExtFieldsConstants {
      * consumer 消费完消息的批量ack的响应结果
      */
     public static final String CONSUMER_BATCH_ACK_RESULT = "consumer_batch_ack_result";
+
+    public static final String RETRY_COUNT_KEY = "retry_count";
 }

@@ -34,4 +34,13 @@ public class ShinanoMQConstants {
      * 清理客户端过期的消息回调的间隔时间
      */
     public static final long EXPIRE_CLIENT_HANDLER_CLEAR_INTERVAL = 4000;
+
+    /**
+     * 重试队列的开头
+     */
+    public static final String RETRY_QUEUE_NAME_PREFIX = "%RETRY%";
+    /**
+     * 死信队列的开头
+     */
+    public static final String DLQ_BANE_PREFIX = "%DLQ%";
 }

@@ -1,10 +1,10 @@
 package cn.com.shinano.ShinanoMQ.core.manager.topic;
 
+import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.core.dto.OffsetAndCount;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
-import lombok.AllArgsConstructor;
+import cn.com.shinano.ShinanoMQ.core.utils.StoreFileUtil;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,9 +44,13 @@ public class BrokerTopicInfo {
 
         Map<String, OffsetAndCount> queueInfo = topicInfo.getQueueInfo();
 
-        boolean f = true;
+        boolean f = false;
         for (String queue : queues) {
-            f &= queueInfo.putIfAbsent(queue, new OffsetAndCount(0L,0)) == null;
+            if(queueInfo.putIfAbsent(queue, new OffsetAndCount(0L,0)) != null) {
+                queueInfo.putIfAbsent(ShinanoMQConstants.RETRY_QUEUE_NAME_PREFIX + queue, new OffsetAndCount(0L, 0));
+                queueInfo.putIfAbsent(ShinanoMQConstants.DLQ_BANE_PREFIX + queue, new OffsetAndCount(0L, 0));
+                f = true;
+            }
         }
         return f;
     }
@@ -101,7 +105,7 @@ public class BrokerTopicInfo {
         synchronized (closedTopicsMap.get(topic)) {
             TopicInfo remove = closedTopicsMap.remove(topic);
             if(remove != null) {
-                BrokerUtil.moveTopicData(topic);
+                StoreFileUtil.moveTopicData(topic);
             }
             return true;
         }

@@ -45,7 +45,9 @@ public class ReadMessageTest {
             sleep++;
 
             for (SaveMessage message : messages) {
-                if(set.contains(message.getTransactionId())) System.out.println("---!!!!---"+message.getTransactionId());
+                System.out.println(ProtostuffUtils.deserialize(message.getBody(), RetryMessage.class));
+//                System.out.println(message.getBody());
+//                if(set.contains(message.getTransactionId())) System.out.println("---!!!!---"+message.getTransactionId());
                 set.add(message.getTransactionId());
             }
             System.out.println("total is "+total + ", cost time " + (System.currentTimeMillis() - start));
@@ -67,7 +69,7 @@ public class ReadMessageTest {
 
         request.setTransactionId(UUID.randomUUID().toString());
         request.addExtField(ExtFieldsConstants.TOPIC_KEY, "test-create1");
-        request.addExtField(ExtFieldsConstants.QUEUE_KEY, "queue1");
+        request.addExtField(ExtFieldsConstants.QUEUE_KEY, "%DLQ%queue1");
         request.addExtField(ExtFieldsConstants.OFFSET_KEY, String.valueOf(offset));
 
         final MessageListVO[] res = new MessageListVO[1];

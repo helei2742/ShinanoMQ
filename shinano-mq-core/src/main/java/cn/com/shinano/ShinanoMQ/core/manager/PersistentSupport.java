@@ -28,4 +28,7 @@ public interface PersistentSupport {
      * @return
      */
     PutMessageResult syncPutMessage(Message message);
+
+
+    boolean updateConsumeTimes(String topic, String queue, Long offset, Integer length, Integer retryTimes);
 }

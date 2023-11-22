@@ -1,10 +1,18 @@
 package cn.com.shinano.ShinanoMQ.consmer.manager;
 
 import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
+import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.Pair;
+import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.base.dto.TopicQueueData;
+import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.consmer.ShinanoConsumerClient;
 import cn.com.shinano.ShinanoMQ.consmer.config.ConsumerConfig;
+import cn.com.shinano.ShinanoMQ.consmer.dto.ConsumeMessage;
+import cn.com.shinano.ShinanoMQ.consmer.dto.ConsumeResultState;
 import cn.com.shinano.ShinanoMQ.consmer.listener.ConsumerOnMsgListener;
 import lombok.extern.slf4j.Slf4j;
 
@@ -77,11 +85,11 @@ public class ConsumerQueueManager {
     public void initConsumerInfo(Map<String, TopicQueueData> consumerInfo) {
         if(consumerInfo == null) return;
         consumerInfo.forEach((topic, tqd) -> {
-            ConcurrentMap<String, QueueData> value = tqd.getQueueInfoList().stream().collect(Collectors.toConcurrentMap(Pair::getKey,
-                    pair -> {
+            ConcurrentMap<String, QueueData> value = tqd.getQueueInfoList().stream().collect(Collectors.toConcurrentMap(TopicQueueData.QueueInfo::getQueue,
+                    queueInfo -> {
                         QueueData queueData = new QueueData(topic,
-                                pair.getKey(),
-                                pair.getValue(),
+                                queueInfo.getQueue(),
+                                queueInfo.getOffset(),
                                 new LinkedBlockingQueue<>());
 
                         PullMessageTask task = new PullMessageTask(topic, queueData, consumerClient);
@@ -96,18 +104,40 @@ public class ConsumerQueueManager {
 
     /**
      * 提交消费完消息的ack
-     * @param transactionId transactionId
-     * @param offset offset
-     * @param success success
+     * @param message message
+     * @param state state
      * @param queueData queueData
      */
-    public void commitConsumeACK(String transactionId, Long offset, boolean success, QueueData queueData) {
-        if (success) {
-            offsetManager.commitOffset(consumerClient.getClientId(),
-                    queueData.getTopic(), queueData.getQueueName(), offset);
-        } else {
-            //TODO 执行失败，将消息发送到重试的queue里
-            log.error("consume message fail, tsId[{}], offset[{}]", transactionId, offset);
+    public void commitConsumeACK(ConsumeMessage message, ConsumeResultState state, QueueData queueData) {
+        switch (state) {
+            case SUCCESS: //消费成功，发送ack
+                offsetManager.commitOffset(consumerClient.getClientId(),
+                        queueData.getTopic(), queueData.getQueueName(), message.getOffset());
+                break;
+            case FAIL: //消费失败，发送到重试消息queue里，
+                RemotingCommand command = new RemotingCommand();
+
+                command.setFlag(RemotingCommandFlagConstants.RETRY_CONSUME_MESSAGE);
+                command.addExtField(ExtFieldsConstants.TOPIC_KEY, queueData.getTopic());
+                command.addExtField(ExtFieldsConstants.QUEUE_KEY, queueData.getQueueName());
+
+                command.addExtField(ExtFieldsConstants.RETRY_COUNT_KEY, String.valueOf(message.getReconsumeTimes()));
+                command.addExtField(ExtFieldsConstants.OFFSET_KEY, String.valueOf(message.getOffset()));
+                command.addExtField(ExtFieldsConstants.SINGLE_MESSAGE_LENGTH_KEY, String.valueOf(message.getLength()));
+
+                boolean f = false;
+                try {
+                    f = consumerClient.sendMsg(command);
+                } catch (InterruptedException e) {
+                    log.error("send consume message into retry queue fail, {}", message);
+                }
+                if(f) {
+                    log.info("send consume message into retry queue success, {}", message);
+                }
+                break;
+            case RETRY: //需要重试，放回待消费队列
+                queueData.getQueue().add(message);
+                break;
         }
     }
 

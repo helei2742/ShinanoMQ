@@ -121,9 +121,10 @@ public abstract class AbstractNettyClient {
         if(remotingCommand.getTransactionId() == null) {
             remotingCommand.setTransactionId(UUID.randomUUID().toString());
         }
+        remotingCommand.setClientId(this.clientId);
         receiveMessageProcessor.addAckListener(remotingCommand.getTransactionId(), success, fail);
         NettyChannelSendSupporter.sendMessage(remotingCommand, channel);
-        log.debug("send remotingCommand [{}]", remotingCommand);
+//        log.debug("send remotingCommand [{}]", remotingCommand);
     }
 
     /**
@@ -135,7 +136,7 @@ public abstract class AbstractNettyClient {
     public boolean sendMsg(RemotingCommand remotingCommand) throws InterruptedException {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         AtomicBoolean success = new AtomicBoolean(true);
-        log.debug("send remotingCommand [{}]", remotingCommand);
+//        log.debug("send remotingCommand [{}]", remotingCommand);
         sendMsg(remotingCommand, result->{
             countDownLatch.countDown();
         },result->{

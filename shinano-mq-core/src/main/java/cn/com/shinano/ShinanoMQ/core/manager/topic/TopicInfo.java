@@ -17,12 +17,10 @@ import java.util.concurrent.ConcurrentMap;
 public class TopicInfo {
     private String topic;
     private Map<String, OffsetAndCount> queueInfo;
-//    private ConcurrentMap<String, Long> queueCount;
 
     public TopicInfo(String topic) {
         this.topic = topic;
         this.queueInfo = new ConcurrentHashMap<>();
-//        this.queueCount = new ConcurrentHashMap<>();
     }
 
     public Long getOffset(String queue) {
@@ -44,7 +42,6 @@ public class TopicInfo {
             queueInfo.compute(queue, (k, v) -> {
                 if (v != null) {
                     res.add(queue);
-//                    queueCount.remove(k);
                     return null;
                 }
                 return v;
@@ -52,6 +49,5 @@ public class TopicInfo {
         }
         return res;
     }
-
 
 }

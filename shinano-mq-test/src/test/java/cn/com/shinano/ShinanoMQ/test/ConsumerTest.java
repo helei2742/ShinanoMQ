@@ -2,10 +2,12 @@ package cn.com.shinano.ShinanoMQ.test;
 
 import cn.com.shinano.ShinanoMQ.consmer.ShinanoConsumerClient;
 import cn.com.shinano.ShinanoMQ.consmer.dto.ConsumeMessage;
+import cn.com.shinano.ShinanoMQ.consmer.dto.ConsumeResultState;
 import cn.com.shinano.ShinanoMQ.consmer.listener.ConsumerOnMsgListener;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConsumerTest {
 
@@ -33,18 +35,18 @@ public class ConsumerTest {
 
     @Test
     public void testOnMessage() throws InterruptedException {
-        final int[] total = {0};
+        final AtomicInteger total = new AtomicInteger(0);
         consumerClient.onMessage("test-create1", "queue1", new ConsumerOnMsgListener() {
             @Override
-            public void successHandler(ConsumeMessage message) {
+            public ConsumeResultState successHandler(ConsumeMessage message) {
 
-                total[0]++;
-                System.out.println(total[0] + "----" + message);
+                System.out.println(total.incrementAndGet() + "----" + message);
 //                try {
 //                    TimeUnit.SECONDS.sleep(1);
 //                } catch (InterruptedException e) {
 //                    e.printStackTrace();
 //                }
+                return ConsumeResultState.FAIL;
             }
 
             @Override
@@ -55,4 +57,5 @@ public class ConsumerTest {
 
         TimeUnit.SECONDS.sleep(4000);
     }
+
 }

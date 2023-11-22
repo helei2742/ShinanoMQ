@@ -2,11 +2,13 @@ package cn.com.shinano.ShinanoMQ.consmer.dto;
 
 import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author lhe.shinano
  * @date 2023/11/21
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class ConsumeMessage extends SaveMessage {
 
@@ -22,7 +24,16 @@ public class ConsumeMessage extends SaveMessage {
                 saveMessage.getTimestamp(),
                 saveMessage.getStoreHost(),
                 saveMessage.getReconsumeTimes(),
-                saveMessage.getBody());
+                saveMessage.getBody(),
+                saveMessage.getProps());
         this.nextOffset = nextOffset;
+    }
+
+    @Override
+    public String toString() {
+        return "ConsumeMessage{" +
+                "nextOffset=" + nextOffset +
+                super.toString() +
+                '}';
     }
 }

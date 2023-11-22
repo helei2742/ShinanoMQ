@@ -21,5 +21,5 @@ public interface ConsumeOffsetManager {
      */
     CompletableFuture<RemotingCommand> resolveConsumeOffset(String clientId, String topic, String queue, Long minOffset, List<Long> offsets);
 
-    void registryWaitAckOffset(String clientId, String topic, String queue, ArrayList<SaveMessage> saveMessages);
+    void registryWaitAckOffset(String clientId, String topic, String queue, List<SaveMessage> saveMessages);
 }

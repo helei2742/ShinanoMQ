@@ -58,7 +58,7 @@ public class CommitLocalSupport {
                                 log.warn("retry commit consume offset fail, tsId[{}] retry count [{}] out of limit, save into local file",
                                         commitLog.getCommand().getTransactionId(),commitLog.getRetryCount());
                                 saveInLocalFile(commitLog);
-                            } else {
+                            } else { //继续重试
                                 log.warn("retry commit consume offset fail, tsId[{}] retry count [{}]",
                                         commitLog.getCommand().getTransactionId(),commitLog.getRetryCount());
                                 queue.offer(commitLog);

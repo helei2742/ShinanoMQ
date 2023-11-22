@@ -1,7 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.manager.client;
 
 import cn.com.shinano.ShinanoMQ.base.VO.ConsumerInfoVO;
-import cn.com.shinano.ShinanoMQ.base.dto.Pair;
 import cn.com.shinano.ShinanoMQ.base.dto.TopicQueueData;
 import lombok.Data;
 
@@ -27,7 +26,7 @@ public class BrokerConsumerInfo {
             if(v == null) {
                 v = new TopicQueueData();
             }
-            v.addQueueInfo(new Pair<>(queue, 0L));
+            v.addQueueInfo(new TopicQueueData.QueueInfo(queue, 0L, 0));
             return v;
         });
     }
@@ -44,13 +43,27 @@ public class BrokerConsumerInfo {
         return consumerInfoMap.get(clientId).get(topic);
     }
 
-    public boolean updateConsumeOffset(String clientId, String topic, String queue, Long minACK) {
+    public boolean updateConsumeOffset(String clientId, String topic, String queue, Long newOffset) {
         TopicQueueData queueData = getQueueData(clientId, topic);
         if(queueData == null) return false;
         synchronized (queueData.getQueueInfoList()) {
-            for (Pair<String, Long> queue_Offset : queueData.getQueueInfoList()) {
-                if(queue_Offset.getKey().equals(queue)) {
-                    queue_Offset.setValue(minACK);
+            for (TopicQueueData.QueueInfo queueInfo : queueData.getQueueInfoList()) {
+                if(queueInfo.getQueue().equals(queue)) {
+                    queueInfo.setOffset(newOffset);
+//                    queueInfo.addConsumeIndex();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean isConsumerBindQueue(String clientId, String topic, String queue) {
+        TopicQueueData queueData = getQueueData(clientId, topic);
+        if(queueData == null) return false;
+        synchronized (queueData.getQueueInfoList()) {
+            for (TopicQueueData.QueueInfo queueInfo : queueData.getQueueInfoList()) {
+                if(queueInfo.getQueue().equals(queue)) {
                     return true;
                 }
             }

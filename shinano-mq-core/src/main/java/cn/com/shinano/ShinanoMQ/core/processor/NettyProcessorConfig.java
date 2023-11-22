@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.processor;
 
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
+import cn.com.shinano.ShinanoMQ.core.manager.topic.RetryTopicQueueManager;
 import cn.com.shinano.ShinanoMQ.core.processor.msgprocessor.*;
 import cn.com.shinano.ShinanoMQ.core.manager.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ public class NettyProcessorConfig {
     @Autowired
     private ConsumeOffsetManager consumeOffsetManager;
 
+    @Autowired
+    private RetryTopicQueueManager retryTopicQueueManager;
+
     @Bean("messageHandlerMap")
     public Map<Integer, RequestProcessor> messageHandlerMap() {
         Map<Integer, RequestProcessor> res = new HashMap<>();
@@ -43,6 +47,7 @@ public class NettyProcessorConfig {
         res.put(RemotingCommandFlagConstants.TOPIC_INFO_QUERY, new TopicQueryProcessor(topicQueryManager, consumeOffsetManager));
         res.put(RemotingCommandFlagConstants.PRODUCER_MESSAGE, new ProducerRequestProcessor(topicManager, dispatchMessageService, brokerAckManager));
         res.put(RemotingCommandFlagConstants.CONSUMER_MESSAGE, new ConsumerRequestProcessor(consumeOffsetManager));
+        res.put(RemotingCommandFlagConstants.RETRY_CONSUME_MESSAGE, new RetryConsumeMessageProcessor(retryTopicQueueManager));
         return res;
     }
 }

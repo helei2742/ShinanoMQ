@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,9 +16,8 @@ public class SaveMessage {
      */
     private Long offset;
 
-
     /**
-     * 长度 TODO broker存消息自定义才方便得到存入的长度
+     * 长度
      */
     private Integer length;
     /**
@@ -39,4 +40,6 @@ public class SaveMessage {
      * 消息内容
      */
     private byte[] body;
+
+    private Map<String, String> props;
 }

@@ -3,6 +3,7 @@ package cn.com.shinano.ShinanoMQ.consmer.manager;
 import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.consmer.config.ConsumerConfig;
 import cn.com.shinano.ShinanoMQ.consmer.dto.ConsumeMessage;
+import cn.com.shinano.ShinanoMQ.consmer.dto.ConsumeResultState;
 import cn.com.shinano.ShinanoMQ.consmer.listener.ConsumerOnMsgListener;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -78,7 +79,7 @@ public class QueueData {
         int fail = 0;
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                if(queue.size() < ConsumerConfig.PRE_PULL_MESSAGE_COUNT) prePullMessage();
+                if(queue.size() < ConsumerConfig.PRE_PULL_MESSAGE_COUNT/4) prePullMessage();
 
                 ConsumeMessage take = queue.poll(incrementInterval(ConsumerConfig.PRE_PULL_MESSAGE_INTERVAL, fail),
                         TimeUnit.MILLISECONDS);
@@ -92,17 +93,17 @@ public class QueueData {
                     //执行消息的逻辑使用其它线程池
                     messageHandlerExecutor.execute(()->{
                         log.debug("publish message event, topic[{}]-queue[{}], message[{}]", topic, queueName, take);
-                        boolean success = true;
+                        ConsumeResultState state;
                         try {
-                            msgListener.successHandler(take);
+                            state = msgListener.successHandler(take);
                             //成功ack
                         } catch (Exception e) {
                             msgListener.failHandler(e);
                             //失败ack
-                            success = false;
+                            state = ConsumeResultState.RETRY;
                         }
                         //给broker发送consume offset
-                        queueManager.commitConsumeACK(take.getTransactionId(), take.getOffset(), success, this);
+                        queueManager.commitConsumeACK(take, state,this);
                     });
                 }
             } catch (InterruptedException e) {

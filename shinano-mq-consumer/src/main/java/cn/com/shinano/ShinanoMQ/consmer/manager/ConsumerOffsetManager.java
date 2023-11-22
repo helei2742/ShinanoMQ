@@ -60,7 +60,7 @@ public class ConsumerOffsetManager {
                     });
                 }
             }
-        }, ConsumerConfig.PUSH_CONSUME_OFFSET_INTERVAL);
+        }, ConsumerConfig.PUSH_CONSUME_OFFSET_INTERVAL, ConsumerConfig.PUSH_CONSUME_OFFSET_INTERVAL);
     }
 
     /**
@@ -121,6 +121,7 @@ public class ConsumerOffsetManager {
             log.info("push consume offset result: [{}]", remotingCommand);
 
         }, remotingCommand -> {
+            //发ack失败，提交到本地尝试重试，一直失败最终落盘
             log.error("push batch consume offset to remote fail");
             commitLocalSupport.commitLocal(command);
         });

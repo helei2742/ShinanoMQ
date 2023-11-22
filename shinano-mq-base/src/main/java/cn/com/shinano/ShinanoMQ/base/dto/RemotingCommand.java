@@ -27,6 +27,7 @@ public class RemotingCommand {
 
     private byte[] body;
 
+    private Object payLoad;
 
     public String getTopic() {
         return getExtFieldsValue(ExtFieldsConstants.TOPIC_KEY);
@@ -42,6 +43,15 @@ public class RemotingCommand {
 
     public void setTransactionId(String tsId) {
         addExtField(ExtFieldsConstants.TRANSACTION_ID_KEY, tsId);
+    }
+
+
+    public String getClientId() {
+        return getExtFieldsValue(ExtFieldsConstants.CLIENT_ID_KEY);
+    }
+
+    public void setClientId(String clientId) {
+        addExtField(ExtFieldsConstants.CLIENT_ID_KEY, clientId);
     }
 
     public byte[] turnToBytes() {

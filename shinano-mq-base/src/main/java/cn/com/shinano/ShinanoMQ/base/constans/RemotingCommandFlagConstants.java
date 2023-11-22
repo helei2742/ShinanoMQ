@@ -33,6 +33,7 @@ public class RemotingCommandFlagConstants {
      * 生产者发消息的结果
      */
     public static final int PRODUCER_MESSAGE_RESULT = -3;
+
     /**
      * broker发送给客户端的ack
      */
@@ -74,4 +75,8 @@ public class RemotingCommandFlagConstants {
      * consumer 消息的响应
      */
     public static final int CONSUMER_MESSAGE_RESULT = -7;
+
+    public static final int RETRY_CONSUME_MESSAGE = 8;
+
+    public static final int RETRY_CONSUME_MESSAGE_RESULT = -8;
 }

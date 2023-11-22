@@ -2,6 +2,8 @@ package cn.com.shinano.ShinanoMQ.core.manager.impl;
 
 import cn.com.shinano.ShinanoMQ.base.constans.AckStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
+import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.store.AppendMessageResult;
 import cn.com.shinano.ShinanoMQ.core.store.AppendMessageStatus;
@@ -11,14 +13,19 @@ import cn.com.shinano.ShinanoMQ.core.dto.PutMessageResult;
 import cn.com.shinano.ShinanoMQ.core.dto.PutMessageStatus;
 import cn.com.shinano.ShinanoMQ.core.manager.topic.BrokerTopicInfo;
 import cn.com.shinano.ShinanoMQ.core.manager.*;
+import cn.com.shinano.ShinanoMQ.core.support.IndexLogBuildSupport;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
+import cn.com.shinano.ShinanoMQ.core.utils.StoreFileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -52,6 +59,9 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
 
     @Autowired
     private BrokerTopicInfo brokerTopicInfo;
+
+    @Autowired
+    private IndexLogBuildSupport indexLogBuildSupport;
 
     /**
      * 持久化消息，以topic-queue 为标识创建任务加入到线程池中执行。
@@ -109,6 +119,9 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                     case PUT_OK:
                         //更新offset
                         offsetManager.updateTopicQueueOffset(topic, queue, result.getWroteOffset());
+
+                        //TODO 构建indexLog
+//                        indexLogBuildSupport.buildIndexLog(topic, queue, result.getWroteOffset());
                         return putMessageResult.setStatus(PutMessageStatus.PUT_OK);
                     case END_OF_FILE:
                         mappedFile.loadNextFile(result.getWroteOffset());
@@ -138,7 +151,6 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
         return waiteForFutureResult(asyncPutMessage(message), message.getTransactionId(), 0);
     }
 
-
     private PutMessageResult waiteForFutureResult(CompletableFuture<PutMessageResult> future, String tsId, int count)  {
         try {
             return future.get(BrokerConfig.LOCAL_PERSISTENT_WAIT_TIME_LIMIT, BrokerConfig.LOCAL_PERSISTENT_WAIT_TIME_UNIT);
@@ -150,6 +162,34 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
             return new PutMessageResult(tsId, PutMessageStatus.UNKNOWN_ERROR);
         }
     }
+
+    @Override
+    public boolean updateConsumeTimes(String topic, String queue, Long offset, Integer length, Integer retryTimes) {
+        try {
+            File file = StoreFileUtil.getDataFileOfLogicOffset(topic, queue, offset);
+            RandomAccessFile accessFile = new RandomAccessFile(file, "rw");
+            accessFile.seek(offset);
+            byte[] len = new byte[8];
+            accessFile.read(len);
+
+            int trueLength = ByteBuffer.wrap(len).getInt();
+            if (trueLength + 8 != length) {
+                return false;
+            }
+            byte[] bytes = new byte[trueLength];
+            accessFile.read(bytes);
+
+            SaveMessage message = ProtostuffUtils.deserialize(bytes, SaveMessage.class);
+            message.setReconsumeTimes(retryTimes);
+            accessFile.seek(offset+8);
+            accessFile.write(ProtostuffUtils.serialize(message));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+
 
 
     /**
