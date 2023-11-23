@@ -15,6 +15,7 @@
         <module>shinano-mq-test</module>
         <module>shinano-mq-base</module>
         <module>shinano-mq-consumer</module>
+        <module>nameserver</module>
     </modules>
 
     <properties>

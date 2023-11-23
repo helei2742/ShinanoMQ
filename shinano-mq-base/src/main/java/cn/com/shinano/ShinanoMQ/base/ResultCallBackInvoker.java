@@ -112,4 +112,6 @@ public abstract class ResultCallBackInvoker {
             fail.accept(remotingCommand);
         }
     }
+
+    public void resolveBatchACK(RemotingCommand remotingCommand){}
 }

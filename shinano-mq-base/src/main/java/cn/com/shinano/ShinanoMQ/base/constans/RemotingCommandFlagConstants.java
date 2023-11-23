@@ -79,4 +79,10 @@ public class RemotingCommandFlagConstants {
     public static final int RETRY_CONSUME_MESSAGE = 8;
 
     public static final int RETRY_CONSUME_MESSAGE_RESULT = -8;
+
+
+
+
+    public static final int NAMESERVER_VOTE_MASTER = 101;
+    public static final int NAMESERVER_SET_MASTER = 102;
 }

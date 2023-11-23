@@ -40,7 +40,7 @@ public abstract class AbstractNettyClient {
 
     private NettyClientEventHandler eventHandler;
 
-    private ReceiveMessageProcessor receiveMessageProcessor;
+    private ResultCallBackInvoker resultCallBackInvoker;
 
     private ClientInitMsgProcessor clientInitMsgProcessor;
 
@@ -57,7 +57,7 @@ public abstract class AbstractNettyClient {
 
     public void init(String clientId,
                      Integer idleTimeSeconds,
-                     ReceiveMessageProcessor receiveMessageProcessor,
+                     ResultCallBackInvoker resultCallBackInvoker,
                      ClientInitMsgProcessor clientInitMsgProcessor,
                      AbstractNettyProcessorAdaptor nettyProcessorAdaptor,
                      NettyClientEventHandler eventHandler) {
@@ -65,12 +65,12 @@ public abstract class AbstractNettyClient {
         this.idleTimeSeconds = idleTimeSeconds;
         this.eventHandler = eventHandler;
 
-        this.receiveMessageProcessor = receiveMessageProcessor;
+        this.resultCallBackInvoker = resultCallBackInvoker;
         this.clientInitMsgProcessor = clientInitMsgProcessor;
         this.nettyProcessorAdaptor = nettyProcessorAdaptor;
 
-        this.receiveMessageProcessor.init();
-        this.nettyProcessorAdaptor.init(clientInitMsgProcessor, receiveMessageProcessor, eventHandler);
+        this.resultCallBackInvoker.init();
+        this.nettyProcessorAdaptor.init(clientInitMsgProcessor, resultCallBackInvoker, eventHandler);
     }
 
     public void run() throws InterruptedException {
@@ -105,7 +105,7 @@ public abstract class AbstractNettyClient {
                 group.shutdownGracefully();
                 closeFuture.channel().flush();
 
-                eventHandler.closeHandler();
+                eventHandler.closeHandler(channelFuture.channel());
             }
         });
     }
@@ -122,7 +122,7 @@ public abstract class AbstractNettyClient {
             remotingCommand.setTransactionId(UUID.randomUUID().toString());
         }
         remotingCommand.setClientId(this.clientId);
-        receiveMessageProcessor.addAckListener(remotingCommand.getTransactionId(), success, fail);
+        resultCallBackInvoker.addAckListener(remotingCommand.getTransactionId(), success, fail);
         NettyChannelSendSupporter.sendMessage(remotingCommand, channel);
 //        log.debug("send remotingCommand [{}]", remotingCommand);
     }
@@ -165,7 +165,7 @@ public abstract class AbstractNettyClient {
         }
 
         @Override
-        public void closeHandler() {
+        public void closeHandler(Channel channel) {
             switch (status) {
                 case CREATE_JUST:
                 case RUNNING:

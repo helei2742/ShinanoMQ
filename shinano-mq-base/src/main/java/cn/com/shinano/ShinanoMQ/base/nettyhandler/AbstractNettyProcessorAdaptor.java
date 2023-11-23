@@ -3,6 +3,7 @@ package cn.com.shinano.ShinanoMQ.base.nettyhandler;
 
 import cn.com.shinano.ShinanoMQ.base.AbstractNettyClient;
 import cn.com.shinano.ShinanoMQ.base.ReceiveMessageProcessor;
+import cn.com.shinano.ShinanoMQ.base.ResultCallBackInvoker;
 import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
@@ -20,7 +21,7 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
 
     private int heartbeatCount = 0;
 
-    protected ReceiveMessageProcessor receiveMessageProcessor;
+    protected ResultCallBackInvoker resultCallBackInvoker;
 
     protected ClientInitMsgProcessor clientInitMsgProcessor;
 
@@ -39,11 +40,11 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
     }
 
     public void init(ClientInitMsgProcessor clientInitMsgHandler,
-                     ReceiveMessageProcessor receiveMessageHandler,
+                     ResultCallBackInvoker receiveMessageHandler,
                      NettyClientEventHandler eventHandler) {
 
         this.eventHandler = eventHandler;
-        this.receiveMessageProcessor = receiveMessageHandler;
+        this.resultCallBackInvoker = receiveMessageHandler;
         this.clientInitMsgProcessor = clientInitMsgHandler;
     }
 
@@ -106,6 +107,15 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
      * @param ctx
      */
     protected void handleWriterIdle(ChannelHandlerContext ctx) {
+    }
+
+    /**
+     * 设备下线处理
+     * @param ctx
+     */
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        eventHandler.closeHandler(ctx.channel());
     }
 
     /**

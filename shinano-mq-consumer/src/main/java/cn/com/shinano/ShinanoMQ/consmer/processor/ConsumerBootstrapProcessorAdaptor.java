@@ -24,7 +24,7 @@ public class ConsumerBootstrapProcessorAdaptor extends AbstractNettyProcessorAda
             case RemotingCommandFlagConstants.TOPIC_INFO_QUERY_RESULT:
             case RemotingCommandFlagConstants.CONSUMER_MESSAGE_RESULT:
             case RemotingCommandFlagConstants.RETRY_CONSUME_MESSAGE_RESULT:
-                receiveMessageProcessor.invokeCallBack(remotingCommand.getTransactionId(), remotingCommand);
+                resultCallBackInvoker.invokeCallBack(remotingCommand.getTransactionId(), remotingCommand);
                 break;
         }
     }

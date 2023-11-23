@@ -84,4 +84,14 @@ public class ExtFieldsConstants {
     public static final String CONSUMER_BATCH_ACK_RESULT = "consumer_batch_ack_result";
 
     public static final String RETRY_COUNT_KEY = "retry_count";
+
+
+
+
+
+
+
+
+    public static final String NAMESERVER_VOTE_MASTER = "nameserver_vote_master";
+    public static final String NAMESERVER_START_TIMESTAMP = "nameserver_start_timestamp";
 }

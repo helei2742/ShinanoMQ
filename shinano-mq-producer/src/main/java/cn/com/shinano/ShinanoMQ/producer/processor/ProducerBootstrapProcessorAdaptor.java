@@ -29,10 +29,10 @@ public class ProducerBootstrapProcessorAdaptor extends AbstractNettyProcessorAda
                 break;
             case RemotingCommandFlagConstants.TOPIC_INFO_QUERY_RESULT:
             case RemotingCommandFlagConstants.PRODUCER_MESSAGE_RESULT:
-                receiveMessageProcessor.invokeCallBack(remotingCommand.getTransactionId(), remotingCommand);
+                resultCallBackInvoker.invokeCallBack(remotingCommand.getTransactionId(), remotingCommand);
                 break;
             case RemotingCommandFlagConstants.BROKER_MESSAGE_BATCH_ACK:
-                receiveMessageProcessor.resolveBatchACK(remotingCommand);
+                resultCallBackInvoker.resolveBatchACK(remotingCommand);
                 break;
         }
     }
