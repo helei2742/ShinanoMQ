@@ -46,7 +46,7 @@ public abstract class AbstractNettyClient {
 
     private AbstractNettyProcessorAdaptor nettyProcessorAdaptor;
 
-    private Channel channel;
+    public Channel channel;
 
 
     public AbstractNettyClient(String host, int port) {

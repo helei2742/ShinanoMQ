@@ -5,14 +5,13 @@ import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.nameserver.NameServerService;
 
-import cn.com.shinano.nameserver.dto.ClusterHost;
+import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.nameserver.dto.NameServerState;
 import cn.com.shinano.nameserver.dto.VoteInfo;
 import com.alibaba.fastjson.JSON;
 
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Optional;
 
 

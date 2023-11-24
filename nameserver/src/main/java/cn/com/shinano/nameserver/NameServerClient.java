@@ -1,12 +1,21 @@
 package cn.com.shinano.nameserver;
 
+import cn.com.shinano.ShinanoMQ.base.AbstractNettyClient;
+import cn.com.shinano.ShinanoMQ.base.ReceiveMessageProcessor;
 import cn.com.shinano.ShinanoMQ.base.RemotingCommandDecoder;
 import cn.com.shinano.ShinanoMQ.base.RemotingCommandEncoder;
+import cn.com.shinano.ShinanoMQ.base.VO.ConsumerInfoVO;
+import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
+import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
+import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.nameserver.config.NameServerConfig;
-import cn.com.shinano.nameserver.dto.ClusterHost;
+import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
+import cn.com.shinano.nameserver.dto.SendCommandResult;
+import cn.com.shinano.nameserver.processor.NameServerClientInitProcessor;
 import cn.com.shinano.nameserver.processor.NameServerClientProcessorAdaptor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;
 import io.netty.bootstrap.Bootstrap;
@@ -19,11 +28,12 @@ import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -33,13 +43,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @date 2023/11/23
  */
 @Slf4j
-public class NameServerClient {
+public class NameServerClient extends AbstractNettyClient {
     private String clientId;
 
     private final NameServerService nameServerService;
     private Bootstrap clientBootstrap;
-
-    public Channel channel;
 
     private ClusterHost clientHost;
 
@@ -49,14 +57,22 @@ public class NameServerClient {
 
     private final AtomicBoolean usable = new AtomicBoolean(false);
 
+    private NameServerClientProcessorAdaptor processorAdaptor;
+
     public NameServerClient(NameServerService nameServerService, ClusterHost connectHost) {
+        super(connectHost.getAddress(), connectHost.getPort());
+
         this.connectHost = connectHost;
         this.nameServerService = nameServerService;
         this.clientId = nameServerService.getClientId();
 
         this.clientHost = new ClusterHost(clientId, nameServerService.getHost(), nameServerService.getPort());
+        init();
+    }
 
-        NameServerClientProcessorAdaptor processorAdaptor = new NameServerClientProcessorAdaptor(nameServerService, new NettyClientEventHandler() {
+
+    public void init() {
+        NettyClientEventHandler eventHandler = new NettyClientEventHandler() {
             @Override
             public void activeHandler(ChannelHandlerContext ctx) {
                 ctx.channel().attr(NameServerConfig.NETTY_CHANNEL_CLIENT_ID_KEY).set(connectHost);
@@ -84,7 +100,7 @@ public class NameServerClient {
                 if (offLineHost != null) {
                     log.info("close [{}]", offLineHost);
                     usable.set(false);
-                    nameServerService.slaveOffLine(offLineHost);
+                    nameServerService.serverOffLine(offLineHost);
                     MasterManagerSupport.removeVoteInfo(offLineHost);
                 }
             }
@@ -103,10 +119,23 @@ public class NameServerClient {
             public void exceptionHandler(ChannelHandlerContext ctx, Throwable cause) {
                 log.error("error", cause);
             }
-        });
+        };
+        processorAdaptor = new NameServerClientProcessorAdaptor(nameServerService, eventHandler);
 
+        super.init(clientHost.getClientId(),
+                NameServerConfig.SERVICE_HEART_BEAT_TTL,
+                new ReceiveMessageProcessor(),
+                new NameServerClientInitProcessor(),
+                processorAdaptor,
+                eventHandler);
+
+    }
+
+
+    @Override
+    public void run() throws InterruptedException {
         try {
-             this.clientBootstrap = new Bootstrap()
+            this.clientBootstrap = new Bootstrap()
                     .group(new NioEventLoopGroup())
                     .channel(NioSocketChannel.class)
                     .handler(new ChannelInitializer<NioSocketChannel>() {
@@ -114,7 +143,7 @@ public class NameServerClient {
                         protected void initChannel(NioSocketChannel ch) throws Exception {
                             ch.pipeline().addLast(new IdleStateHandler(0, 0, NameServerConfig.SERVICE_HEART_BEAT_TTL));
 
-                            ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(ShinanoMQConstants.MAX_FRAME_LENGTH, 0, 4, 0, 4));
+                            ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(NameServerConfig.MAX_FRAME_LENGTH, 0, 4, 0, 4));
                             ch.pipeline().addLast(new LengthFieldPrepender(4));
 
                             ch.pipeline().addLast(new RemotingCommandEncoder());
@@ -124,25 +153,23 @@ public class NameServerClient {
                         }
                     });
 
-             tryConnectOther(0);
+            tryConnectOther(this,0);
         } catch (Exception e) {
             log.error("error", e);
         }
     }
 
 
-
-
     /**
      * 不断尝试链接集群其它节点
      */
-    private void tryConnectOther(int retry) {
+    private void tryConnectOther(NameServerClient client, int retry) {
         hashedWheelTimer.newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 try {
                     ChannelFuture channelFuture = clientBootstrap
-                            .connect(new InetSocketAddress(connectHost.getHost(), connectHost.getPort()));
+                            .connect(new InetSocketAddress(connectHost.getAddress(), connectHost.getPort()));
 
                     channelFuture.addListener(f->{
                         if (!f.isSuccess() && f.cause() instanceof ConnectException) {
@@ -151,11 +178,11 @@ public class NameServerClient {
                                 //超过重试次数，
                                 return;
                             }
-                            tryConnectOther(retry + 1);
+                            tryConnectOther(client,retry + 1);
                         } else {
                             usable.set(true);
                             log.info("[{}] connect to remote [{}] success", clientHost, connectHost);
-                            channel = channelFuture.sync().channel();
+                            client.channel = channelFuture.sync().channel();
                             hashedWheelTimer.stop();
                         }
                     });
@@ -165,5 +192,24 @@ public class NameServerClient {
                 }
             }
         }, 50, TimeUnit.MILLISECONDS);
+    }
+
+
+    public void sendVoteCommand() {
+        RemotingCommand command = MasterManagerSupport.voteRemoteMessageBuilder(nameServerService.getStartTime(), clientHost);
+        sendCommand(command);
+    }
+
+    public SendCommandResult sendCommand(RemotingCommand command) {
+        SendCommandResult result = null;
+        if(usable.get()) {
+            result = new SendCommandResult();
+            sendMsg(command, result::setResult, result::setResult);
+        } else {
+            log.warn("client [{}] send vote message to [{}] fail, channel closed",
+                    clientHost, channel.attr(NameServerConfig.NETTY_CHANNEL_CLIENT_ID_KEY).get());
+            return null;
+        }
+        return result;
     }
 }

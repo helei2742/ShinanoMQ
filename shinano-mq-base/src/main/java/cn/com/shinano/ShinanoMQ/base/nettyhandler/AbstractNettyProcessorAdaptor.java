@@ -19,6 +19,8 @@ import io.netty.handler.timeout.IdleStateEvent;
  */
 public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInboundHandler<RemotingCommand> implements NettyBaseHandler {
 
+    protected boolean useRemotingCommandPool = true;
+
     private int heartbeatCount = 0;
 
     protected ResultCallBackInvoker resultCallBackInvoker;
@@ -126,7 +128,12 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
     }
 
     protected void sendPingMsg(ChannelHandlerContext context) {
-        RemotingCommand remotingCommand = RemotingCommandPool.getObject();
+        RemotingCommand remotingCommand;
+        if(useRemotingCommandPool){
+            remotingCommand = RemotingCommandPool.getObject();
+        }else {
+            remotingCommand = new RemotingCommand();
+        }
         remotingCommand.setFlag(RemotingCommandFlagConstants.BROKER_PING);
         sendMsg(context, remotingCommand);
         printLog(String.format("send ping msg to [%s], hear beat count [%d]",
@@ -134,7 +141,12 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
     }
 
     protected void sendPongMsg(ChannelHandlerContext context) {
-        RemotingCommand remotingCommand = RemotingCommandPool.getObject();
+        RemotingCommand remotingCommand;
+        if(useRemotingCommandPool){
+            remotingCommand = RemotingCommandPool.getObject();
+        }else {
+            remotingCommand = new RemotingCommand();
+        }
         remotingCommand.setFlag(RemotingCommandFlagConstants.BROKER_PONG);
         sendMsg(context, remotingCommand);
         printLog(String.format("send pong msg to [%s], hear beat count [%d]",

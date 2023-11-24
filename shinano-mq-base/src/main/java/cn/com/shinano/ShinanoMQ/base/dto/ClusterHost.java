@@ -1,4 +1,4 @@
-package cn.com.shinano.nameserver.dto;
+package cn.com.shinano.ShinanoMQ.base.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode
 public class ClusterHost implements Comparable<ClusterHost>{
     private String clientId;
-    private String host;
+    private String address;
     private Integer port;
 
     @Override

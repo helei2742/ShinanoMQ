@@ -1,6 +1,6 @@
 package cn.com.shinano.nameserver.config;
 
-import cn.com.shinano.nameserver.dto.ClusterHost;
+import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import io.netty.util.AttributeKey;
 
 /**

@@ -1,11 +1,10 @@
 package cn.com.shinano.nameserver.dto;
 
+import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-
-import java.util.Objects;
 
 /**
  * @author lhe.shinano

@@ -81,8 +81,28 @@ public class RemotingCommandFlagConstants {
     public static final int RETRY_CONSUME_MESSAGE_RESULT = -8;
 
 
+    public static final int CLIENT_REGISTRY_SERVICE = 9;
+    public static final int CLIENT_REGISTRY_SERVICE_RESPONSE = -9;
 
 
+    /**
+     * nameserver 的投票选取master消息
+     */
     public static final int NAMESERVER_VOTE_MASTER = 101;
+    /**
+     * nameserver 设置master消息
+     */
     public static final int NAMESERVER_SET_MASTER = 102;
+
+    /**
+     * nameserver 服务注册消息
+     */
+    public static final int NAMESERVER_SERVICE_REGISTRY_BROADCAST = 103;
+    public static final int NAMESERVER_SERVICE_REGISTRY_BROADCAST_RESPONSE = -103;
+
+    /**
+     * slave 收到 注册消息后，转发给master
+     */
+    public static final int NAMESERVER_SERVICE_REGISTRY_FORWARD = 104;
+    public static final int NAMESERVER_SERVICE_REGISTRY_FORWARD_RESPONSE = -104;
 }

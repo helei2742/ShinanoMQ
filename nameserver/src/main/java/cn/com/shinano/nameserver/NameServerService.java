@@ -3,14 +3,18 @@ package cn.com.shinano.nameserver;
 
 import cn.com.shinano.ShinanoMQ.base.RemotingCommandDecoder;
 import cn.com.shinano.ShinanoMQ.base.RemotingCommandEncoder;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.nameserver.config.NameServerConfig;
-import cn.com.shinano.nameserver.dto.ClusterHost;
+import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.nameserver.dto.NameServerState;
+import cn.com.shinano.nameserver.dto.SendCommandResult;
+import cn.com.shinano.nameserver.dto.ServiceRegistryDTO;
 import cn.com.shinano.nameserver.dto.VoteInfo;
 import cn.com.shinano.nameserver.processor.NameServerProcessorAdaptor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;
+import cn.com.shinano.nameserver.support.ServiceRegistrySupport;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -24,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -87,6 +93,9 @@ public class NameServerService {
     }
 
     public void init() {
+
+        ServiceRegistrySupport.init(this);
+
         eventHandler = new NettyClientEventHandler() {
             @Override
             public void activeHandler(ChannelHandlerContext ctx) {
@@ -131,6 +140,11 @@ public class NameServerService {
         //与其它的nameserver建立链接
         for (ClusterHost clusterHost : clusterHosts) {
             NameServerClient serverClient = new NameServerClient(this, clusterHost);
+            try {
+                serverClient.run();
+            } catch (InterruptedException e) {
+                log.error("connect [{}] error", clusterHost);
+            }
             clusterConnectMap.put(clusterHost, serverClient);
         }
     }
@@ -148,9 +162,42 @@ public class NameServerService {
         });
     }
 
-    public void slaveOffLine(ClusterHost offLineHost) {
+    public void serverOffLine(ClusterHost offLineHost) {
         if (offLineHost.equals(master)) {
+            log.info("master offline start vote new master");
             state = NameServerState.VOTE;
+            clusterConnectMap.forEach((host, client)->{
+                client.sendVoteCommand();
+            });
         }
+    }
+
+    public Integer broadcastCommand(RemotingCommand command) {
+        List<SendCommandResult> results = new ArrayList<>();
+        for (ClusterHost clusterHost : clusterConnectMap.keySet()) {
+            NameServerClient slave = clusterConnectMap.get(clusterHost);
+            command.setTransactionId(UUID.randomUUID().toString());
+            SendCommandResult e = slave.sendCommand(command);
+            if(e != null) results.add(e);
+        }
+
+        int success = 0;
+        for (SendCommandResult result : results) {
+            try {
+                RemotingCommand remotingCommand = (RemotingCommand) result.getResult();
+                if(remotingCommand.getCode() == RemotingCommandCodeConstants.SUCCESS)
+                    success++;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return success;
+    }
+
+    public SendCommandResult sendToMaster(RemotingCommand command) {
+        if (master.equals(serverHost)) return null;
+
+        NameServerClient masterClient = clusterConnectMap.get(master);
+        return masterClient.sendCommand(command);
     }
 }
