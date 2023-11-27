@@ -127,7 +127,7 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
     protected void handleAllIdle(ChannelHandlerContext ctx) {
     }
 
-    protected void sendPingMsg(ChannelHandlerContext context) {
+    public void sendPingMsg(ChannelHandlerContext context) {
         RemotingCommand remotingCommand;
         if(useRemotingCommandPool){
             remotingCommand = RemotingCommandPool.getObject();
@@ -140,7 +140,7 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
                 context.channel().remoteAddress(), heartbeatCount++));
     }
 
-    protected void sendPongMsg(ChannelHandlerContext context) {
+    public void sendPongMsg(ChannelHandlerContext context) {
         RemotingCommand remotingCommand;
         if(useRemotingCommandPool){
             remotingCommand = RemotingCommandPool.getObject();
@@ -157,4 +157,5 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
     public void sendMsg(ChannelHandlerContext context, RemotingCommand remotingCommand) {
         NettyChannelSendSupporter.sendMessage(remotingCommand, context.channel());
     }
+
 }

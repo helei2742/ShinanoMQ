@@ -105,4 +105,10 @@ public class RemotingCommandFlagConstants {
      */
     public static final int NAMESERVER_SERVICE_REGISTRY_FORWARD = 104;
     public static final int NAMESERVER_SERVICE_REGISTRY_FORWARD_RESPONSE = -104;
+
+    /**
+     * 客户端服务发现的消息
+     */
+    public static final int CLIENT_DISCOVER_SERVICE = 105;
+    public static final int CLIENT_DISCOVER_SERVICE_RESPONSE = -105;
 }

@@ -1,14 +1,18 @@
-package cn.com.shinano.ShinanoMQ.test;
-
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import org.ansj.domain.Result;
+import org.ansj.domain.Term;
+import org.ansj.splitWord.analysis.DicAnalysis;
+import org.ansj.splitWord.analysis.NlpAnalysis;
 import org.junit.jupiter.api.Test;
+import org.nlpcn.commons.lang.tire.domain.Forest;
+import org.nlpcn.commons.lang.tire.library.Library;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -86,4 +90,5 @@ public class Check {
             e.printStackTrace();
         }
     }
+
 }

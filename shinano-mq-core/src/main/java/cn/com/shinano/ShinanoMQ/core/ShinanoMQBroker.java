@@ -36,6 +36,8 @@ public class ShinanoMQBroker implements ApplicationRunner {
     private BrokerMessageProcessorAdaptor brokerMessageProcessorAdaptor;
 
     public void init() {
+        //TODO 初始化name service client， 将自己祖册进去
+
         resolveMessageGroup = new DefaultEventLoopGroup(BrokerConfig.BOOTSTRAP_HANDLER_THREAD);
 
         channelFuture = new ServerBootstrap()

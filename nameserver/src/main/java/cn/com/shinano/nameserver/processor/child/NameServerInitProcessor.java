@@ -1,4 +1,4 @@
-package cn.com.shinano.nameserver.processor;
+package cn.com.shinano.nameserver.processor.child;
 
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgProcessor;
 

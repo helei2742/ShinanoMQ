@@ -10,7 +10,6 @@ import cn.com.shinano.nameserver.config.NameServerConfig;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.nameserver.dto.NameServerState;
 import cn.com.shinano.nameserver.dto.SendCommandResult;
-import cn.com.shinano.nameserver.dto.ServiceRegistryDTO;
 import cn.com.shinano.nameserver.dto.VoteInfo;
 import cn.com.shinano.nameserver.processor.NameServerProcessorAdaptor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;
@@ -29,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -50,7 +48,9 @@ public class NameServerService {
 
     private ChannelFuture nameserverChannelFuture;
 
-    private final ConcurrentMap<ClusterHost, NameServerClient> clusterConnectMap;
+    private ServerBootstrap serverBootstrap;
+
+    private final ConcurrentMap<ClusterHost, NameServerClusterService> clusterConnectMap;
 
     private NameServerState state;
 
@@ -110,7 +110,7 @@ public class NameServerService {
         NameServerProcessorAdaptor adaptor = new NameServerProcessorAdaptor(this, eventHandler);
 
 
-        nameserverChannelFuture = new ServerBootstrap()
+         serverBootstrap = new ServerBootstrap()
                 .group(new NioEventLoopGroup(), new NioEventLoopGroup())
                 .channel(NioServerSocketChannel.class)
                 .option(ChannelOption.SO_BACKLOG, 1024)
@@ -132,14 +132,15 @@ public class NameServerService {
 
                         ch.pipeline().addLast(adaptor);
                     }
-                }).bind(this.host, this.port);
+                });
+        nameserverChannelFuture = serverBootstrap.bind(this.host, this.port);
         connectNameServerCluster();
     }
 
     private void connectNameServerCluster() {
         //与其它的nameserver建立链接
         for (ClusterHost clusterHost : clusterHosts) {
-            NameServerClient serverClient = new NameServerClient(this, clusterHost);
+            NameServerClusterService serverClient = new NameServerClusterService(this, clusterHost);
             try {
                 serverClient.run();
             } catch (InterruptedException e) {
@@ -175,7 +176,7 @@ public class NameServerService {
     public Integer broadcastCommand(RemotingCommand command) {
         List<SendCommandResult> results = new ArrayList<>();
         for (ClusterHost clusterHost : clusterConnectMap.keySet()) {
-            NameServerClient slave = clusterConnectMap.get(clusterHost);
+            NameServerClusterService slave = clusterConnectMap.get(clusterHost);
             command.setTransactionId(UUID.randomUUID().toString());
             SendCommandResult e = slave.sendCommand(command);
             if(e != null) results.add(e);
@@ -197,7 +198,7 @@ public class NameServerService {
     public SendCommandResult sendToMaster(RemotingCommand command) {
         if (master.equals(serverHost)) return null;
 
-        NameServerClient masterClient = clusterConnectMap.get(master);
+        NameServerClusterService masterClient = clusterConnectMap.get(master);
         return masterClient.sendCommand(command);
     }
 }

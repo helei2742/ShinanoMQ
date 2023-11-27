@@ -9,6 +9,7 @@ import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.nameserver.NameServerService;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.nameserver.dto.NameServerState;
+import cn.com.shinano.nameserver.processor.child.NameServerClusterInitProcessor;
 import com.alibaba.fastjson.JSON;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -20,11 +21,11 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @ChannelHandler.Sharable
-public class NameServerClientProcessorAdaptor extends AbstractNettyProcessorAdaptor {
+public class NameServerClusterProcessorAdaptor extends AbstractNettyProcessorAdaptor {
     private NameServerService nameServerService;
 
-    public NameServerClientProcessorAdaptor(NameServerService nameServerService, NettyClientEventHandler eventHandler) {
-        super.init(new NameServerClientInitProcessor(), new ReceiveMessageProcessor(), eventHandler);
+    public NameServerClusterProcessorAdaptor(NameServerService nameServerService, NettyClientEventHandler eventHandler) {
+        super.init(new NameServerClusterInitProcessor(), new ReceiveMessageProcessor(), eventHandler);
         this.nameServerService = nameServerService;
         super.useRemotingCommandPool = false;
     }

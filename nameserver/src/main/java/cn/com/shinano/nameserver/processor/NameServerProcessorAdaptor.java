@@ -1,17 +1,23 @@
 package cn.com.shinano.nameserver.processor;
 
 import cn.com.shinano.ShinanoMQ.base.ReceiveMessageProcessor;
+import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.constant.LoadBalancePolicy;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.nameserver.NameServerService;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
+import cn.com.shinano.nameserver.NameServerServiceConnector;
 import cn.com.shinano.nameserver.dto.RegistryState;
 import cn.com.shinano.nameserver.dto.ServiceRegistryDTO;
+import cn.com.shinano.nameserver.processor.child.NameServerInitProcessor;
+import cn.com.shinano.nameserver.processor.child.ServiceDiscoverProcessor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;
 import cn.com.shinano.nameserver.support.ServiceRegistrySupport;
+import com.alibaba.fastjson.JSON;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +33,7 @@ import java.util.concurrent.ExecutionException;
 @ChannelHandler.Sharable
 public class NameServerProcessorAdaptor extends AbstractNettyProcessorAdaptor {
     private NameServerService nameServerService;
+    private ServiceDiscoverProcessor serviceDiscoverProcessor = new ServiceDiscoverProcessor();
 
     public NameServerProcessorAdaptor(NameServerService nameServerService, NettyClientEventHandler eventHandler) {
         super();
@@ -48,14 +55,15 @@ public class NameServerProcessorAdaptor extends AbstractNettyProcessorAdaptor {
         RemotingCommand response = null;
         CompletableFuture<RegistryState> result = null;
         switch (remotingCommand.getFlag()) {
-            case RemotingCommandFlagConstants.NAMESERVER_VOTE_MASTER:
+            case RemotingCommandFlagConstants.NAMESERVER_VOTE_MASTER:   //投票消息
                 ClusterHost voteMaster = MasterManagerSupport.tryVoteMaster(nameServerService, remotingCommand);
                 if (voteMaster != null) {
                     response = MasterManagerSupport.setMasterRemoteMessageBuilder(nameServerService.getMaster());
                     log.info("set master [{}]", response);
                 }
                 break;
-            case RemotingCommandFlagConstants.NAMESERVER_SERVICE_REGISTRY_FORWARD: //slave收到服务注册消息后，转发给master进行广播
+
+            case RemotingCommandFlagConstants.NAMESERVER_SERVICE_REGISTRY_FORWARD: //slave收到服务注册消息后，转发给master进行广播或者自己是master进行广播
                 result = ServiceRegistrySupport.clientServiceRegistry(remotingCommand);
                 response = new RemotingCommand();
                 response.setFlag(RemotingCommandFlagConstants.NAMESERVER_SERVICE_REGISTRY_FORWARD_RESPONSE);
@@ -63,9 +71,11 @@ public class NameServerProcessorAdaptor extends AbstractNettyProcessorAdaptor {
 
                 try {
                     RegistryState registryState = result.get();
-                    if (registryState == RegistryState.OK){
+                    if (registryState == RegistryState.OK) {
                         response.setCode(RemotingCommandCodeConstants.SUCCESS);
-                    } else {
+                    } else if(registryState == RegistryState.APPEND_LOCAL) { //只保存到了本地广播，转发或广播失败
+                        //TODO 重试
+                    }else {
                         response.setCode(RemotingCommandCodeConstants.FAIL);
                     }
                     log.debug("registry state [{}]", registryState);
@@ -75,6 +85,19 @@ public class NameServerProcessorAdaptor extends AbstractNettyProcessorAdaptor {
                 }
                 break;
 
+            case RemotingCommandFlagConstants.NAMESERVER_SERVICE_REGISTRY_BROADCAST: //收到master广播的服务注册消息，直接保存
+                response = new RemotingCommand();
+                response.setFlag(RemotingCommandFlagConstants.NAMESERVER_SERVICE_REGISTRY_BROADCAST_RESPONSE);
+                response.setTransactionId(tsId);
+
+                ServiceRegistryDTO dto = ServiceRegistrySupport.registryLocal(ServiceRegistrySupport.validateRegistryRequest(remotingCommand));
+                log.info("registry service result [{}]", dto);
+                if (dto.getRegistryState() == RegistryState.APPEND_LOCAL) {
+                    response.setCode(RemotingCommandCodeConstants.SUCCESS);
+                } else {
+                    response.setCode(RemotingCommandCodeConstants.FAIL);
+                }
+                break;
 
             case RemotingCommandFlagConstants.CLIENT_REGISTRY_SERVICE:  //收到客户端服务注册的请求
                 result = ServiceRegistrySupport.clientServiceRegistry(remotingCommand);
@@ -94,24 +117,17 @@ public class NameServerProcessorAdaptor extends AbstractNettyProcessorAdaptor {
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
                 }
-
                 break;
 
+            case RemotingCommandFlagConstants.CLIENT_DISCOVER_SERVICE:
+                String serviceId = remotingCommand.getExtFieldsValue(ExtFieldsConstants.NAMESERVER_DISCOVER_SERVICE_NAME);
+                LoadBalancePolicy policy = LoadBalancePolicy.valueOf(remotingCommand.getExtFieldsValue(ExtFieldsConstants.NAMESERVER_LOAD_BALANCE_POLICY));
 
-
-            case RemotingCommandFlagConstants.NAMESERVER_SERVICE_REGISTRY_BROADCAST: //收到master广播的服务注册消息，直接保存
                 response = new RemotingCommand();
-                response.setFlag(RemotingCommandFlagConstants.NAMESERVER_SERVICE_REGISTRY_BROADCAST_RESPONSE);
+                response.setFlag(RemotingCommandFlagConstants.CLIENT_DISCOVER_SERVICE_RESPONSE);
                 response.setTransactionId(tsId);
+                response.setBody(JSON.toJSONBytes(serviceDiscoverProcessor.discoverService(clientId, serviceId, policy)));
 
-                ServiceRegistryDTO dto = ServiceRegistrySupport.registryLocal(ServiceRegistrySupport.validateRegistryRequest(remotingCommand));
-                log.info("registry service result [{}]", dto);
-                if (dto.getRegistryState() == RegistryState.APPEND_LOCAL) {
-                    response.setCode(RemotingCommandCodeConstants.SUCCESS);
-                } else {
-                    response.setCode(RemotingCommandCodeConstants.FAIL);
-                }
-                break;
         }
 
         if(response != null) {

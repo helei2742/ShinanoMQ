@@ -88,10 +88,9 @@ public class ExtFieldsConstants {
 
 
 
-
-
-
-
     public static final String NAMESERVER_VOTE_MASTER = "nameserver_vote_master";
     public static final String NAMESERVER_START_TIMESTAMP = "nameserver_start_timestamp";
+
+    public static final String NAMESERVER_DISCOVER_SERVICE_NAME = "nameserver_discover_service_name";
+    public static final String NAMESERVER_LOAD_BALANCE_POLICY = "nameserver_load_balance_policy";
 }

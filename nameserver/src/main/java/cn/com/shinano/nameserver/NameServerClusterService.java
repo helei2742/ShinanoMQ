@@ -4,20 +4,15 @@ import cn.com.shinano.ShinanoMQ.base.AbstractNettyClient;
 import cn.com.shinano.ShinanoMQ.base.ReceiveMessageProcessor;
 import cn.com.shinano.ShinanoMQ.base.RemotingCommandDecoder;
 import cn.com.shinano.ShinanoMQ.base.RemotingCommandEncoder;
-import cn.com.shinano.ShinanoMQ.base.VO.ConsumerInfoVO;
-import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
-import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
-import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
-import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
-import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.nameserver.config.NameServerConfig;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.nameserver.dto.SendCommandResult;
-import cn.com.shinano.nameserver.processor.NameServerClientInitProcessor;
-import cn.com.shinano.nameserver.processor.NameServerClientProcessorAdaptor;
+import cn.com.shinano.nameserver.processor.NameServerClusterProcessorAdaptor;
+import cn.com.shinano.nameserver.processor.child.NameServerClusterInitProcessor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;
+import cn.com.shinano.nameserver.util.TimeWheelUtil;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -25,15 +20,12 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -43,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @date 2023/11/23
  */
 @Slf4j
-public class NameServerClient extends AbstractNettyClient {
+public class NameServerClusterService extends AbstractNettyClient {
     private String clientId;
 
     private final NameServerService nameServerService;
@@ -53,13 +45,12 @@ public class NameServerClient extends AbstractNettyClient {
 
     private ClusterHost connectHost;
 
-    private final HashedWheelTimer hashedWheelTimer = new HashedWheelTimer();
 
     private final AtomicBoolean usable = new AtomicBoolean(false);
 
-    private NameServerClientProcessorAdaptor processorAdaptor;
+    private NameServerClusterProcessorAdaptor processorAdaptor;
 
-    public NameServerClient(NameServerService nameServerService, ClusterHost connectHost) {
+    public NameServerClusterService(NameServerService nameServerService, ClusterHost connectHost) {
         super(connectHost.getAddress(), connectHost.getPort());
 
         this.connectHost = connectHost;
@@ -120,12 +111,12 @@ public class NameServerClient extends AbstractNettyClient {
                 log.error("error", cause);
             }
         };
-        processorAdaptor = new NameServerClientProcessorAdaptor(nameServerService, eventHandler);
+        processorAdaptor = new NameServerClusterProcessorAdaptor(nameServerService, eventHandler);
 
         super.init(clientHost.getClientId(),
                 NameServerConfig.SERVICE_HEART_BEAT_TTL,
                 new ReceiveMessageProcessor(),
-                new NameServerClientInitProcessor(),
+                new NameServerClusterInitProcessor(),
                 processorAdaptor,
                 eventHandler);
 
@@ -163,8 +154,8 @@ public class NameServerClient extends AbstractNettyClient {
     /**
      * 不断尝试链接集群其它节点
      */
-    private void tryConnectOther(NameServerClient client, int retry) {
-        hashedWheelTimer.newTimeout(new TimerTask() {
+    private void tryConnectOther(NameServerClusterService client, int retry) {
+        TimeWheelUtil.newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 try {
@@ -183,7 +174,6 @@ public class NameServerClient extends AbstractNettyClient {
                             usable.set(true);
                             log.info("[{}] connect to remote [{}] success", clientHost, connectHost);
                             client.channel = channelFuture.sync().channel();
-                            hashedWheelTimer.stop();
                         }
                     });
                     channelFuture.await();
