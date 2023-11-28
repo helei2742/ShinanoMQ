@@ -181,7 +181,7 @@ public class NameServerClusterService extends AbstractNettyClient {
                     e.printStackTrace();
                 }
             }
-        }, 50, TimeUnit.MILLISECONDS);
+        }, 1000, TimeUnit.MILLISECONDS);
     }
 
 

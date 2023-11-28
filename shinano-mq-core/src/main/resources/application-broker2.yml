@@ -1,5 +1,5 @@
 server:
-  port: 8888
+  port: 8889
 
 spring:
   application:
@@ -14,8 +14,8 @@ shinano:
         - localhost:10003
       serviceId: shinano-mq-broker
       address: localhost
-      clientId: broker-1
-      port: 10022
+      clientId: broker-2
+      port: 10023
       producer-commit-ack-type: async
       producer-commit-ack-batch-size: 100
       producer-commit-ack-ttl: 300

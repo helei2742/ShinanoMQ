@@ -9,6 +9,13 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "shinano.mq.broker")
 public class BrokerSpringConfig {
 
+    private String[] nameserver;
+
+    private String serviceId;
+
+    private String clientId;
+
+    private String address;
     /**
      * 端口
      */

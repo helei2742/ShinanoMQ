@@ -2,12 +2,11 @@ import cn.com.shinano.ShinanoMQ.base.RemotingCommandDecoder;
 import cn.com.shinano.ShinanoMQ.base.RemotingCommandEncoder;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
-import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.nameserver.NameServerService;
-import cn.com.shinano.nameserver.dto.ServiceRegistryDTO;
+import cn.com.shinano.ShinanoMQ.base.dto.ServiceRegistryDTO;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -90,7 +89,7 @@ public class Test {
                         });
                     }
                 })
-                .connect(new InetSocketAddress("127.0.0.1", 10002));
+                .connect(new InetSocketAddress("127.0.0.1", 10001));
 
 
         Channel channel = channelFuture.sync().channel();

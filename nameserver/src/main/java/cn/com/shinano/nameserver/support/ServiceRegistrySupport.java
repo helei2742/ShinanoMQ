@@ -6,11 +6,11 @@ import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.nameserver.NameServerClusterService;
 import cn.com.shinano.nameserver.NameServerServiceConnector;
 import cn.com.shinano.nameserver.dto.SendCommandResult;
-import cn.com.shinano.nameserver.dto.ServiceRegistryDTO;
+import cn.com.shinano.ShinanoMQ.base.dto.ServiceRegistryDTO;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.nameserver.NameServerService;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
-import cn.com.shinano.nameserver.dto.RegistryState;
+import cn.com.shinano.ShinanoMQ.base.dto.RegistryState;
 import cn.com.shinano.nameserver.util.FileUtil;
 import cn.com.shinano.nameserver.util.TimeWheelUtil;
 import io.netty.util.Timeout;
@@ -48,7 +48,7 @@ public class ServiceRegistrySupport {
             for (String serviceId : registeredService.keySet()) {
                 Set<ClusterHost> hosts = registeredService.get(serviceId);
                 for (ClusterHost host : hosts) {
-                    NameServerServiceConnector.tryConnectService(host);
+                    NameServerServiceConnector.registryConnectListener(host);
                 }
             }
         } catch (IOException e) {
@@ -123,7 +123,7 @@ public class ServiceRegistrySupport {
                 }
 
 
-                NameServerServiceConnector.tryConnectService(clusterHost);
+                NameServerServiceConnector.registryConnectListener(clusterHost);
 
                 return registryDTO;
             case PARAM_ERROR:
@@ -132,15 +132,6 @@ public class ServiceRegistrySupport {
         }
     }
 
-    private static void addServiceHeartBeatCheck(String serviceId, ClusterHost clusterHost) {
-        TimeWheelUtil.newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                NameServerClusterService client = nameServerService.getClusterConnectMap().get(clusterHost);
-
-            }
-        }, 500, TimeUnit.MICROSECONDS);
-    }
 
     public static ServiceRegistryDTO broadCastOrForward(ServiceRegistryDTO registryDTO) {
         //如果当前不是master转发给master

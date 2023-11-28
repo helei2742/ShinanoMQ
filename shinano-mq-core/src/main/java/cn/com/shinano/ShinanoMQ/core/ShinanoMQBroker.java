@@ -4,7 +4,11 @@ import cn.com.shinano.ShinanoMQ.base.RemotingCommandDecoder;
 import cn.com.shinano.ShinanoMQ.base.RemotingCommandEncoder;
 import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
+import cn.com.shinano.ShinanoMQ.core.config.BrokerSpringConfig;
+import cn.com.shinano.ShinanoMQ.core.manager.NameServerManager;
 import cn.com.shinano.ShinanoMQ.core.processor.BrokerMessageProcessorAdaptor;
+import cn.com.shinano.nameserverclient.NameServerClient;
+import cn.hutool.core.util.RandomUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -29,14 +33,20 @@ public class ShinanoMQBroker implements ApplicationRunner {
 
     private ChannelFuture channelFuture;
 
-    @Value("${shinano.mq.broker.port}")
-    private Integer port;
+    @Autowired
+    private BrokerSpringConfig brokerSpringConfig;
 
     @Autowired
     private BrokerMessageProcessorAdaptor brokerMessageProcessorAdaptor;
 
+    @Autowired
+    private NameServerManager nameServerManager;
+
     public void init() {
-        //TODO 初始化name service client， 将自己祖册进去
+
+        nameServerManager.init();
+
+        nameServerManager.serviceDiscover(brokerSpringConfig.getServiceId());
 
         resolveMessageGroup = new DefaultEventLoopGroup(BrokerConfig.BOOTSTRAP_HANDLER_THREAD);
 
@@ -52,7 +62,7 @@ public class ShinanoMQBroker implements ApplicationRunner {
                 .childHandler(new ChannelInitializer<NioSocketChannel>() {
                     @Override
                     protected void initChannel(NioSocketChannel ch) throws Exception {
-                        ch.pipeline().addLast(new IdleStateHandler(BrokerConfig.CLIENT_OFF_LINE_INTERVAL,0, 0));
+                        ch.pipeline().addLast(new IdleStateHandler(BrokerConfig.CLIENT_OFF_LINE_INTERVAL, 0, 0));
 
                         ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(ShinanoMQConstants.MAX_FRAME_LENGTH, 0, 4, 0, 4));
                         ch.pipeline().addLast(new LengthFieldPrepender(4));
@@ -62,10 +72,11 @@ public class ShinanoMQBroker implements ApplicationRunner {
 
                         ch.pipeline().addLast(resolveMessageGroup, "bootstrapHandler", brokerMessageProcessorAdaptor);
                     }
-                }).bind(this.port);
+                }).bind(brokerSpringConfig.getPort());
 
-        log.info("shinano mq broker start port {}", port);
+        log.info("shinano mq broker start port {}", brokerSpringConfig.getPort());
     }
+
 
     @Override
     public void run(ApplicationArguments args) throws Exception {

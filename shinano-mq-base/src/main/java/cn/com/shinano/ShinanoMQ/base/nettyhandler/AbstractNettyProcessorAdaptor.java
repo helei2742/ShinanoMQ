@@ -1,8 +1,6 @@
 package cn.com.shinano.ShinanoMQ.base.nettyhandler;
 
 
-import cn.com.shinano.ShinanoMQ.base.AbstractNettyClient;
-import cn.com.shinano.ShinanoMQ.base.ReceiveMessageProcessor;
 import cn.com.shinano.ShinanoMQ.base.ResultCallBackInvoker;
 import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
@@ -21,7 +19,7 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
 
     protected boolean useRemotingCommandPool = true;
 
-    private int heartbeatCount = 0;
+    protected int heartbeatCount = 0;
 
     protected ResultCallBackInvoker resultCallBackInvoker;
 
@@ -58,15 +56,25 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
     @Override
     protected void channelRead0(ChannelHandlerContext context, RemotingCommand remotingCommand) throws Exception {
         Integer opt = remotingCommand.getFlag();
-        if(opt.equals(RemotingCommandFlagConstants.BROKER_PING)) {
-            sendPongMsg(context);
-        } else if (opt.equals(RemotingCommandFlagConstants.BROKER_PONG)){
-            printLog(String.format("get pong msg from [%s][%s] ",
-                    context.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get(),
-                    context.channel().remoteAddress()));
-        }else {
+        if (opt.equals(RemotingCommandFlagConstants.BROKER_PING)) {
+            handlePing(context, remotingCommand);
+        } else if (opt.equals(RemotingCommandFlagConstants.BROKER_PONG)) {
+            handlePong(context, remotingCommand);
+        } else {
             handlerMessage(context, remotingCommand);
         }
+    }
+
+    protected void handlePing(ChannelHandlerContext context, RemotingCommand remotingCommand) {
+        sendPongMsg(context);
+    }
+
+
+
+    protected void handlePong(ChannelHandlerContext context, RemotingCommand remotingCommand) {
+        printLog(String.format("get pong msg from [%s][%s] ",
+                context.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get(),
+                context.channel().remoteAddress()));
     }
 
     protected abstract void handlerMessage(ChannelHandlerContext context, RemotingCommand remotingCommand);
@@ -99,6 +107,7 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
 
     /**
      * 超过限定时间channel没有读时触发
+     *
      * @param ctx
      */
     protected void handleReaderIdle(ChannelHandlerContext ctx) {
@@ -106,6 +115,7 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
 
     /**
      * 超过限定时间channel没有写时触发
+     *
      * @param ctx
      */
     protected void handleWriterIdle(ChannelHandlerContext ctx) {
@@ -113,6 +123,7 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
 
     /**
      * 设备下线处理
+     *
      * @param ctx
      */
     @Override
@@ -122,6 +133,7 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
 
     /**
      * 超过限定时间channel没有读写时触发
+     *
      * @param ctx
      */
     protected void handleAllIdle(ChannelHandlerContext ctx) {
@@ -129,9 +141,9 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
 
     public void sendPingMsg(ChannelHandlerContext context) {
         RemotingCommand remotingCommand;
-        if(useRemotingCommandPool){
+        if (useRemotingCommandPool) {
             remotingCommand = RemotingCommandPool.getObject();
-        }else {
+        } else {
             remotingCommand = new RemotingCommand();
         }
         remotingCommand.setFlag(RemotingCommandFlagConstants.BROKER_PING);
@@ -142,9 +154,9 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
 
     public void sendPongMsg(ChannelHandlerContext context) {
         RemotingCommand remotingCommand;
-        if(useRemotingCommandPool){
+        if (useRemotingCommandPool) {
             remotingCommand = RemotingCommandPool.getObject();
-        }else {
+        } else {
             remotingCommand = new RemotingCommand();
         }
         remotingCommand.setFlag(RemotingCommandFlagConstants.BROKER_PONG);

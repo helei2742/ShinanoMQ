@@ -30,17 +30,17 @@ public class LocalTopicInfoPersistentJob {
 
     @Scheduled(cron = "0/10 * * * * *")
     public void persistentInfo() {
-        log.info("start persistent topic info");
+        log.debug("start persistent topic info");
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(BrokerConfig.BROKER_TOPIC_INFO_SAVE_PATH))){
             bw.write(JSON.toJSONString(brokerTopicInfo));
-            log.info("persistent topic info success");
+            log.debug("persistent topic info success");
         } catch (IOException e) {
             log.error("persistent topic info error",e);
         }
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(BrokerConfig.BROKER_CONSUMER_INFO_SAVE_PATH))){
             bw.write(JSON.toJSONString(brokerConsumerInfo));
-            log.info("persistent consumer info success");
+            log.debug("persistent consumer info success");
         } catch (IOException e) {
             log.error("persistent consumer info error",e);
         }

@@ -1,6 +1,7 @@
 package cn.com.shinano.nameserver.processor;
 
 import cn.com.shinano.ShinanoMQ.base.ReceiveMessageProcessor;
+import cn.com.shinano.ShinanoMQ.base.VO.ServiceInstanceVO;
 import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
@@ -8,11 +9,12 @@ import cn.com.shinano.ShinanoMQ.base.constant.LoadBalancePolicy;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
+import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.nameserver.NameServerService;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
+import cn.com.shinano.ShinanoMQ.base.dto.RegistryState;
+import cn.com.shinano.ShinanoMQ.base.dto.ServiceRegistryDTO;
 import cn.com.shinano.nameserver.NameServerServiceConnector;
-import cn.com.shinano.nameserver.dto.RegistryState;
-import cn.com.shinano.nameserver.dto.ServiceRegistryDTO;
 import cn.com.shinano.nameserver.processor.child.NameServerInitProcessor;
 import cn.com.shinano.nameserver.processor.child.ServiceDiscoverProcessor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;
@@ -22,6 +24,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -33,6 +36,7 @@ import java.util.concurrent.ExecutionException;
 @ChannelHandler.Sharable
 public class NameServerProcessorAdaptor extends AbstractNettyProcessorAdaptor {
     private NameServerService nameServerService;
+
     private ServiceDiscoverProcessor serviceDiscoverProcessor = new ServiceDiscoverProcessor();
 
     public NameServerProcessorAdaptor(NameServerService nameServerService, NettyClientEventHandler eventHandler) {
@@ -125,14 +129,34 @@ public class NameServerProcessorAdaptor extends AbstractNettyProcessorAdaptor {
 
                 response = new RemotingCommand();
                 response.setFlag(RemotingCommandFlagConstants.CLIENT_DISCOVER_SERVICE_RESPONSE);
+                response.setCode(RemotingCommandCodeConstants.SUCCESS);
                 response.setTransactionId(tsId);
-                response.setBody(JSON.toJSONBytes(serviceDiscoverProcessor.discoverService(clientId, serviceId, policy)));
+                List<ClusterHost> hosts = serviceDiscoverProcessor.discoverService(clientId, serviceId, policy);
+                response.setBody(ProtostuffUtils.serialize(new ServiceInstanceVO(hosts)));
 
         }
 
         if(response != null) {
             context.channel().writeAndFlush(response);
         }
+    }
+
+
+    @Override
+    protected void handlePing(ChannelHandlerContext context, RemotingCommand remotingCommand) {
+        log.debug("get ping message [{}] from [{}]", remotingCommand, context.channel().remoteAddress());
+        //客户端的ping
+        if(remotingCommand.getBody() != null && remotingCommand.getBody().length > 0) {
+            ClusterHost host = ProtostuffUtils.deserialize(remotingCommand.getBody(), ClusterHost.class);
+            NameServerServiceConnector.refreshConnectChannel(host, context.channel());
+        }
+
+        super.handlePing(context, remotingCommand);
+    }
+
+    @Override
+    protected void handlePong(ChannelHandlerContext context, RemotingCommand remotingCommand) {
+        super.handlePong(context, remotingCommand);
     }
 
     @Override

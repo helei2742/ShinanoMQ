@@ -26,7 +26,7 @@ public class FlushMappedFileJob {
     public void flushMappedFile2() {
         Map<String, MappedChannelPersistentManager.PersistentTask> map = persistentService.getPersistentTask();
 
-        log.info("start flush mapped file");
+        log.debug("start flush mapped file");
         for (String key : map.keySet()) {
             MappedFile mappedFile = map.get(key).getMappedFile();
             if(mappedFile == null) continue;
@@ -44,7 +44,7 @@ public class FlushMappedFileJob {
 
     @Scheduled(cron = "0/10 * * * * *")
     public void flushMappedFile() {
-        log.info("start flush mapped file");
+        log.debug("start flush mapped file");
         try {
             MappedFile.flushMappedFiles();
         } catch (IOException e) {

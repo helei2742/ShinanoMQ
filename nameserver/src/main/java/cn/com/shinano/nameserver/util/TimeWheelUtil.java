@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 public class TimeWheelUtil {
 
     private final static HashedWheelTimer hashedWheelTimer =
-            new HashedWheelTimer(Executors.defaultThreadFactory(), 100L, TimeUnit.MILLISECONDS, 512, true,-1L,Executors.newFixedThreadPool(1));
+            new HashedWheelTimer(Executors.defaultThreadFactory(), 1000L, TimeUnit.MILLISECONDS, 512, true,-1L,Executors.newFixedThreadPool(1));
 
     public static HashedWheelTimer getTimer() {
         return hashedWheelTimer;
