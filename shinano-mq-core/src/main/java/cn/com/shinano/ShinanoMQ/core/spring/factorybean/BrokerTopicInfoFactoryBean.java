@@ -31,7 +31,7 @@ public class BrokerTopicInfoFactoryBean extends AbstractFactoryBean<BrokerTopicI
 
     @Override
     protected BrokerTopicInfo createInstance() throws Exception {
-        Path path = Paths.get(System.getProperty("user.dir") + File.separator + BrokerConfig.BROKER_TOPIC_INFO_SAVE_PATH);
+        Path path = Paths.get(BrokerConfig.BROKER_TOPIC_INFO_SAVE_PATH);
         BrokerTopicInfo bean;
         if(Files.exists(path)) {
             log.info("exist broker topic info json file, start with it");

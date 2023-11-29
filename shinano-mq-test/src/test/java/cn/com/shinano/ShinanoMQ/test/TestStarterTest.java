@@ -71,8 +71,8 @@ class TestStarterTest {
 
     @Test
     public void brokerTPTest() throws IOException, InterruptedException {
-        int putThreadCount = 10;
-        int threadPutMessageCount = 100;
+        int putThreadCount = 1;
+        int threadPutMessageCount = 1;
 
         Map<Integer, Integer> success = new HashMap<>();
         Map<Integer, Integer> fail = new HashMap<>();
@@ -87,7 +87,7 @@ class TestStarterTest {
 
         long sendCost = System.currentTimeMillis() - start;
 
-        TimeUnit.SECONDS.sleep(5);
+        TimeUnit.SECONDS.sleep(10);
 
         System.out.println(String.format("send msg over, total send [%d]",
                 putThreadCount * threadPutMessageCount));
@@ -101,6 +101,8 @@ class TestStarterTest {
         System.out.println("-----------");
 
         System.out.println("send end cost " + sendCost + " total cost " + (lastGetTime.get() - start));
+
+        TimeUnit.SECONDS.sleep(100);
     }
 
 

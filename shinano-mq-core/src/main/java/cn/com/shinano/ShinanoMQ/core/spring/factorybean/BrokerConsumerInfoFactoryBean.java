@@ -30,7 +30,7 @@ public class BrokerConsumerInfoFactoryBean extends AbstractFactoryBean<BrokerCon
 
     @Override
     protected BrokerConsumerInfo createInstance() throws Exception {
-        Path path = Paths.get(System.getProperty("user.dir") + File.separator + BrokerConfig.BROKER_CONSUMER_INFO_SAVE_PATH);
+        Path path = Paths.get(BrokerConfig.BROKER_CONSUMER_INFO_SAVE_PATH);
         BrokerConsumerInfo bean;
         if(Files.exists(path)) {
             log.info("exist broker consumer info json file, start with it");

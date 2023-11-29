@@ -6,18 +6,18 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 public class BrokerConfig {
-    public static final String BROKER_TOPIC_INFO_SAVE_PATH = "shinano-mq-core"+ File.separator+"BrokerTopicInfo.json";
+    public static String BROKER_TOPIC_INFO_SAVE_PATH = "shinano-mq-core"+ File.separator+"BrokerTopicInfo.json";
 
-    public static final String BROKER_CONSUMER_INFO_SAVE_PATH = "shinano-mq-core"+ File.separator+"BrokerConsumerInfo.json";
+    public static String BROKER_CONSUMER_INFO_SAVE_PATH = "shinano-mq-core"+ File.separator+"BrokerConsumerInfo.json";
     /**
      * 持久化文件目录
      */
-    public static final String PERSISTENT_FILE_LOCATION = System.getProperty("user.dir") + File.separator + "datalog";
+    public static String PERSISTENT_FILE_LOCATION = System.getProperty("user.dir") + File.separator + "datalog";
 
-    public static final String BROKER_DLQ_MESSAGE_SAVE_PATH = System.getProperty("user.dir") + File.separator + "DLQ";
-    public static final String BROKER_DLQ_MESSAGE_SAVE_PATTERN = "%s_%s_%s.dat";
+    public static String BROKER_DLQ_MESSAGE_SAVE_PATH = System.getProperty("user.dir") + File.separator + "DLQ";
+    public static String BROKER_DLQ_MESSAGE_SAVE_PATTERN = "%s_%s_%s.dat";
 
-    public static final String RETRY_LOG_SAVE_DIR = System.getProperty("user.dir") + File.separator + "retrylog";
+    public static String RETRY_LOG_SAVE_DIR = System.getProperty("user.dir") + File.separator + "retrylog";
     public static final String RETRY_LOG_SAVE_FILE_PATTERN = "%s@%s~%s.dat";
 
     public static final byte[] PERSISTENT_FILE_END_MAGIC = ByteBuffer.allocate(8).putLong(1111111111111111111L).array();

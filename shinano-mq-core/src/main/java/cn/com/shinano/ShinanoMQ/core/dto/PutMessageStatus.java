@@ -2,10 +2,11 @@ package cn.com.shinano.ShinanoMQ.core.dto;
 
 public enum PutMessageStatus {
         PUT_OK,
+        APPEND_LOCAL,
         FLUSH_DISK_TIMEOUT,
-        SERVICE_NOT_AVAILABLE,
         CREATE_MAPPED_FILE_FAILED,
         PROPERTIES_SIZE_EXCEEDED,
         UNKNOWN_ERROR,
-        PERSISTENT_MESSAGE_FAIL
+        REMOTE_SAVE_SUCCESS,
+        REMOTE_SAVE_FAIL
 }

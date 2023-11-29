@@ -122,13 +122,13 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
 
                         //TODO 构建indexLog
 //                        indexLogBuildSupport.buildIndexLog(topic, queue, result.getWroteOffset());
-                        return putMessageResult.setStatus(PutMessageStatus.PUT_OK);
+                        return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
                     case END_OF_FILE:
                         mappedFile.loadNextFile(result.getWroteOffset());
 
                         result = mappedFile.append(message);
                         if (AppendMessageStatus.PUT_OK.equals(result.getStatus())) {
-                            return putMessageResult.setStatus(PutMessageStatus.PUT_OK);
+                            return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
                         }
                         break;
                     case MESSAGE_SIZE_EXCEEDED:

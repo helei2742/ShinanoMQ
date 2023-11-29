@@ -45,7 +45,11 @@ public class NettyProcessorConfig {
         res.put(RemotingCommandFlagConstants.BROKER_INFO_QUERY, new BrokerInfoQueryProcessor(brokerQueryManager));
         res.put(RemotingCommandFlagConstants.CLIENT_CONNECT, new ClientConnectProcessor(connectManager));
         res.put(RemotingCommandFlagConstants.TOPIC_INFO_QUERY, new TopicQueryProcessor(topicQueryManager, consumeOffsetManager));
-        res.put(RemotingCommandFlagConstants.PRODUCER_MESSAGE, new ProducerRequestProcessor(topicManager, dispatchMessageService, brokerAckManager));
+
+        ProducerRequestProcessor producerRequestProcessor = new ProducerRequestProcessor(topicManager, dispatchMessageService, brokerAckManager);
+        res.put(RemotingCommandFlagConstants.PRODUCER_MESSAGE, producerRequestProcessor);
+        res.put(RemotingCommandFlagConstants.BROKER_ONLY_SAVE_MESSAGE, producerRequestProcessor);
+
         res.put(RemotingCommandFlagConstants.CONSUMER_MESSAGE, new ConsumerRequestProcessor(consumeOffsetManager));
         res.put(RemotingCommandFlagConstants.RETRY_CONSUME_MESSAGE, new RetryConsumeMessageProcessor(retryTopicQueueManager));
         return res;

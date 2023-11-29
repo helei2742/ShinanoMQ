@@ -16,6 +16,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ServiceRegistryDTO extends ClusterHost {
     private String serviceId;
-
+    private String type;
     private RegistryState registryState;
 }

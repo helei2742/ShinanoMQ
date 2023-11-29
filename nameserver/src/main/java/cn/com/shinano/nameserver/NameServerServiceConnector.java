@@ -3,6 +3,8 @@ package cn.com.shinano.nameserver;
 
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.nameserver.config.NameServerConfig;
+import cn.com.shinano.nameserver.config.NameServerConstants;
+import cn.com.shinano.nameserver.dto.RegisteredHost;
 import cn.com.shinano.nameserver.util.TimeWheelUtil;
 import io.netty.channel.*;
 import io.netty.util.Timeout;
@@ -27,10 +29,13 @@ import java.util.concurrent.*;
 @Slf4j
 public class NameServerServiceConnector {
 
-    public static Map<ClusterHost, ConnectEntry> channelMap = new ConcurrentHashMap<>();
+    public static Map<RegisteredHost, ConnectEntry> channelMap = new ConcurrentHashMap<>();
 
-
-    private static void setExpireTimerToCheck(ClusterHost host) {
+    /**
+     * 设置延时任务，验证host 对应的 channel是否可用
+     * @param host
+     */
+    private static void setExpireTimerToCheck(RegisteredHost host) {
         //延时，检查是否收到pong 或 ping
         TimeWheelUtil.newTimeout(new TimerTask() {
             @Override
@@ -47,32 +52,57 @@ public class NameServerServiceConnector {
                     return v;
                 });
             }
-        }, NameServerConfig.SERVICE_HEART_BEAT_TTL * 2, TimeUnit.SECONDS);
+        }, NameServerConfig.SERVICE_HEART_BEAT_TTL/3, TimeUnit.SECONDS);
     }
 
-
-    public static void registryConnectListener(ClusterHost host) {
+    /**
+     * 注册host
+     * @param host
+     */
+    public static void registryConnectListener(RegisteredHost host) {
         channelMap.computeIfAbsent(host, k->{
             setExpireTimerToCheck(host);
-            return new ConnectEntry(null, false, -1L);
+            String type = "slave";
+            if (host.getProps()!=null) {
+                String s = host.getProps().get(NameServerConstants.REGISTERED_HOST_TYPE_KEY);
+                type = s == null?type:s;
+            }
+            return new ConnectEntry(null, false, -1L, type);
         });
     }
 
-    public static void refreshConnectChannel(ClusterHost host, Channel channel) {
+    /**
+     * 刷新链接
+     * @param host
+     * @param channel
+     */
+    public static void refreshConnectChannel(RegisteredHost host, Channel channel) {
         log.debug("refresh connect channel, service host [{}]", host);
         channelMap.computeIfPresent(host, (k,v)->{
             if (v.channel == null) {
                 v.channel = channel;
-                v.channel.attr(NameServerConfig.NETTY_CHANNEL_CLIENT_ID_KEY).set(host);
+                v.channel.attr(NameServerConfig.NETTY_CHANNEL_CLIENT_ID_KEY).set(host.getHost());
             }
             v.usable = true;
             v.lastPongTimeStamp = System.currentTimeMillis();
-
+            if (host.getProps() != null) {
+               v.type = host.getProps().get(NameServerConstants.REGISTERED_HOST_TYPE_KEY);
+            }
             setExpireTimerToCheck(host);
             return v;
         });
     }
 
+    /**
+     * 判断host是否可用
+     * @param host
+     * @return
+     */
+    public static boolean isHostAlive(RegisteredHost  host) {
+        ConnectEntry connectEntry = channelMap.get(host);
+        if(connectEntry == null) return false;
+        return connectEntry.usable;
+    }
 
     @Data
     @AllArgsConstructor
@@ -81,5 +111,6 @@ public class NameServerServiceConnector {
         private Channel channel;
         private boolean usable;
         private long lastPongTimeStamp;
+        private String type;
     }
 }

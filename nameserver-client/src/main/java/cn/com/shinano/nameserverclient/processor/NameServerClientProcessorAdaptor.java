@@ -1,5 +1,6 @@
 package cn.com.shinano.nameserverclient.processor;
 
+import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
@@ -16,13 +17,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class NameServerClientProcessorAdaptor extends AbstractNettyProcessorAdaptor {
 
-    private String serviceId;
-
     private ClusterHost clusterHost;
 
+    private ServiceRegistryDTO serviceRegistryDTO;
+
     public NameServerClientProcessorAdaptor(ServiceRegistryDTO serviceRegistryDTO) {
-        this.serviceId = serviceRegistryDTO.getServiceId();
         this.clusterHost = new ClusterHost(serviceRegistryDTO.getClientId(), serviceRegistryDTO.getAddress(), serviceRegistryDTO.getPort());
+        this.serviceRegistryDTO = serviceRegistryDTO;
     }
 
     @Override
@@ -40,7 +41,7 @@ public class NameServerClientProcessorAdaptor extends AbstractNettyProcessorAdap
 
     @Override
     public void printLog(String logStr) {
-        log.info(logStr);
+        log.debug(logStr);
     }
 
     @Override
@@ -52,7 +53,7 @@ public class NameServerClientProcessorAdaptor extends AbstractNettyProcessorAdap
     public void sendPingMsg(ChannelHandlerContext context) {
         RemotingCommand remotingCommand = new RemotingCommand();
         remotingCommand.setFlag(RemotingCommandFlagConstants.BROKER_PING);
-        remotingCommand.setBody(ProtostuffUtils.serialize(this.clusterHost));
+        remotingCommand.setBody(ProtostuffUtils.serialize(this.serviceRegistryDTO));
         sendMsg(context, remotingCommand);
         printLog(String.format("send ping msg [%s] to [%s], hear beat count [%d]",
                 context.channel().remoteAddress(), remotingCommand, super.heartbeatCount++));

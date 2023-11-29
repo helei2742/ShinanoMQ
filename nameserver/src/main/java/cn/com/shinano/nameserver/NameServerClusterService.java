@@ -8,7 +8,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.nameserver.config.NameServerConfig;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
-import cn.com.shinano.nameserver.dto.SendCommandResult;
+import cn.com.shinano.ShinanoMQ.base.dto.SendCommandResult;
 import cn.com.shinano.nameserver.processor.NameServerClusterProcessorAdaptor;
 import cn.com.shinano.nameserver.processor.child.NameServerClusterInitProcessor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;

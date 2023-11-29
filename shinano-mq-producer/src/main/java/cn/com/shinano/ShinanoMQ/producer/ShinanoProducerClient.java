@@ -42,7 +42,7 @@ public class ShinanoProducerClient extends AbstractNettyClient {
         init();
     }
 
-    public void run()  {
+    public void run() {
         switch (this.status) {
             case CREATE_JUST:
             case START_FAILED:
@@ -68,7 +68,7 @@ public class ShinanoProducerClient extends AbstractNettyClient {
                 new ReceiveMessageProcessor(),
                 new ProducerClientInitProcessor(),
                 new ProducerBootstrapProcessorAdaptor(),
-                new DefaultNettyEventClientHandler(){
+                new DefaultNettyEventClientHandler() {
                     @Override
                     protected void sendInitMessage(ChannelHandlerContext ctx) {
                         RemotingCommand remotingCommand = new RemotingCommand();
@@ -100,15 +100,17 @@ public class ShinanoProducerClient extends AbstractNettyClient {
     public void sendMessage(RemotingCommand remotingCommand, Consumer<RemotingCommand> success) {
 
         super.sendMsg(remotingCommand, success, remotingCommand1 -> {
-                    String transactionId = remotingCommand1.getTransactionId();
-                    int count = retryTimesMap.getOrDefault(transactionId, 0) + 1;
-                    if (count > ProducerConfig.SEND_MESSAGE_RETRY_TIMES) {
-                        retryTimesMap.remove(transactionId);
-                        log.error("message [{}] retry times out of limit", remotingCommand);
-                    } else {
-                        retryTimesMap.put(transactionId, count);
-                        sendMessage(remotingCommand, success);
-                    }
-                });
+            if (remotingCommand1 != null) {
+                String transactionId = remotingCommand1.getTransactionId();
+                int count = retryTimesMap.getOrDefault(transactionId, 0) + 1;
+                if (count > ProducerConfig.SEND_MESSAGE_RETRY_TIMES) {
+                    retryTimesMap.remove(transactionId);
+                    log.error("message [{}] retry times out of limit", remotingCommand);
+                } else {
+                    retryTimesMap.put(transactionId, count);
+                    sendMessage(remotingCommand, success);
+                }
+            }
+        });
     }
 }

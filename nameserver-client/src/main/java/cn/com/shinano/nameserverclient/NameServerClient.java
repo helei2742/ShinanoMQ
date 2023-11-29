@@ -50,8 +50,8 @@ public class NameServerClient extends AbstractNettyClient {
         this.refreshInstancesTimer = new HashedWheelTimer(Executors.defaultThreadFactory(), 1L, TimeUnit.SECONDS, 512, true,-1L,Executors.newFixedThreadPool(1));
     }
 
-    public void init(String serviceId, String clientId, String address, int port) {
-        ServiceRegistryDTO serviceRegistryDTO = new ServiceRegistryDTO(serviceId, null);
+    public void init(String serviceId, String type, String clientId, String address, int port) {
+        ServiceRegistryDTO serviceRegistryDTO = new ServiceRegistryDTO(serviceId, type, null);
         serviceRegistryDTO.setClientId(clientId);
         serviceRegistryDTO.setAddress(address);
         serviceRegistryDTO.setPort(port);
@@ -79,7 +79,7 @@ public class NameServerClient extends AbstractNettyClient {
         RemotingCommand remotingCommand = new RemotingCommand();
         remotingCommand.setFlag(RemotingCommandFlagConstants.CLIENT_REGISTRY_SERVICE);
         remotingCommand.setBody(ProtostuffUtils.serialize(serviceRegistryDTO));
-
+        System.out.println(serviceRegistryDTO);
         sendMsg(remotingCommand, success->{
             log.info("service registry success, result command [{}]", success);
         }, fail->{

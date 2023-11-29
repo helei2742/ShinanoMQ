@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.processor.msgprocessor;
 
 import cn.com.shinano.ShinanoMQ.base.constans.AckStatus;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.pool.MessagePool;
@@ -35,7 +36,6 @@ public class ProducerRequestProcessor implements RequestProcessor {
 
     @Override
     public void handlerMessage(ChannelHandlerContext ctx, RemotingCommand remotingCommand, Channel channel) {
-
         Message message = MessagePool.getObject();
         message.setTransactionId(remotingCommand.getTransactionId());
         message.setTopic(remotingCommand.getTopic());
@@ -48,11 +48,13 @@ public class ProducerRequestProcessor implements RequestProcessor {
             return;
         }
 
+        boolean isSyncMsgToCluster = !(remotingCommand.getFlag() == RemotingCommandFlagConstants.BROKER_ONLY_SAVE_MESSAGE);
+
         //设置该消息的响应ACK状态
 //        brokerAckManager.setAckFlag(messageId, channel);
 //        交给下游处理
 //        dispatchMessageService.addMessageIntoQueue(brokerMessage);
-        RemotingCommand response = dispatchMessageService.saveMessage(message, channel);
+        RemotingCommand response = dispatchMessageService.saveMessage(message, channel, isSyncMsgToCluster);
         if(response != null) {
             channel.writeAndFlush(response);
         }

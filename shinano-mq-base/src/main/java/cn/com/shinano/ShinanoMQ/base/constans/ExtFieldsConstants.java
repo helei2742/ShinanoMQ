@@ -93,4 +93,6 @@ public class ExtFieldsConstants {
 
     public static final String NAMESERVER_DISCOVER_SERVICE_NAME = "nameserver_discover_service_name";
     public static final String NAMESERVER_LOAD_BALANCE_POLICY = "nameserver_load_balance_policy";
+
+    public static final String BROKER_TYPE = "broker_type";
 }

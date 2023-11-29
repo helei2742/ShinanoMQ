@@ -5,11 +5,11 @@ import cn.com.shinano.ShinanoMQ.core.config.BrokerSpringConfig;
 import cn.com.shinano.ShinanoMQ.core.manager.NameServerManager;
 import cn.com.shinano.nameserverclient.NameServerClient;
 import cn.hutool.core.util.RandomUtil;
-import io.netty.util.HashedWheelTimer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -36,7 +36,7 @@ public class ShinanoNameServerManager implements NameServerManager {
 
             String[] split = nameserver.split(":");
             NameServerClient nameServerClient = new NameServerClient(brokerSpringConfig.getClientId(), split[0], Integer.parseInt(split[1]));
-            nameServerClient.init(brokerSpringConfig.getServiceId(), brokerSpringConfig.getClientId(),
+            nameServerClient.init(brokerSpringConfig.getServiceId(), brokerSpringConfig.getType(), brokerSpringConfig.getClientId(),
                     brokerSpringConfig.getAddress(), brokerSpringConfig.getPort());
             try {
                 nameServerClient.run();
@@ -72,5 +72,10 @@ public class ShinanoNameServerManager implements NameServerManager {
         //TODO 客户端负载均衡
 
         return instance.get(RandomUtil.randomInt(instance.size()));
+    }
+
+    @Override
+    public List<ClusterHost> getInstanceList(String serviceName) {
+        return new ArrayList<>(nameServerClients[0].getInstance(serviceName));
     }
 }

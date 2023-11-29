@@ -1,4 +1,4 @@
-package cn.com.shinano.nameserver.dto;
+package cn.com.shinano.ShinanoMQ.base.dto;
 
 
 /**

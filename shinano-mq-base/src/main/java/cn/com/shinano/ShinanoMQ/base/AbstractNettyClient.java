@@ -1,8 +1,10 @@
 package cn.com.shinano.ShinanoMQ.base;
 
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.constant.ClientStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+import cn.com.shinano.ShinanoMQ.base.dto.SendCommandResult;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgProcessor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
@@ -124,7 +126,7 @@ public abstract class AbstractNettyClient {
         remotingCommand.setClientId(this.clientId);
         resultCallBackInvoker.addAckListener(remotingCommand.getTransactionId(), success, fail);
         NettyChannelSendSupporter.sendMessage(remotingCommand, channel);
-//        log.debug("send remotingCommand [{}]", remotingCommand);
+        log.debug("send remotingCommand [{}]", remotingCommand);
     }
 
     /**
@@ -134,17 +136,11 @@ public abstract class AbstractNettyClient {
      * @throws InterruptedException
      */
     public boolean sendMsg(RemotingCommand remotingCommand) throws InterruptedException {
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        AtomicBoolean success = new AtomicBoolean(true);
-//        log.debug("send remotingCommand [{}]", remotingCommand);
-        sendMsg(remotingCommand, result->{
-            countDownLatch.countDown();
-        },result->{
-            countDownLatch.countDown();
-            success.set(false);
-        });
-        countDownLatch.await();
-        return success.get();
+        SendCommandResult result = new SendCommandResult();
+
+        sendMsg(remotingCommand, result::setResult, result::setResult);
+        Object o = result.getResult();
+        return o != null && ((RemotingCommand) o).getCode() != RemotingCommandCodeConstants.FAIL;
     }
 
 

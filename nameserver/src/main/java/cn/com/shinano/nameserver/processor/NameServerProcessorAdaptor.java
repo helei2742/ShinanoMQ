@@ -15,6 +15,8 @@ import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.ShinanoMQ.base.dto.RegistryState;
 import cn.com.shinano.ShinanoMQ.base.dto.ServiceRegistryDTO;
 import cn.com.shinano.nameserver.NameServerServiceConnector;
+import cn.com.shinano.nameserver.config.NameServerConstants;
+import cn.com.shinano.nameserver.dto.RegisteredHost;
 import cn.com.shinano.nameserver.processor.child.NameServerInitProcessor;
 import cn.com.shinano.nameserver.processor.child.ServiceDiscoverProcessor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;
@@ -24,6 +26,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -148,7 +151,11 @@ public class NameServerProcessorAdaptor extends AbstractNettyProcessorAdaptor {
         //客户端的ping
         if(remotingCommand.getBody() != null && remotingCommand.getBody().length > 0) {
             ClusterHost host = ProtostuffUtils.deserialize(remotingCommand.getBody(), ClusterHost.class);
-            NameServerServiceConnector.refreshConnectChannel(host, context.channel());
+            RegisteredHost registeredHost = new RegisteredHost(host, new HashMap<>());
+
+            registeredHost.getProps().put(NameServerConstants.REGISTERED_HOST_TYPE_KEY,
+                    remotingCommand.getExtFieldsValue(ExtFieldsConstants.BROKER_TYPE));
+            NameServerServiceConnector.refreshConnectChannel(registeredHost, context.channel());
         }
 
         super.handlePing(context, remotingCommand);

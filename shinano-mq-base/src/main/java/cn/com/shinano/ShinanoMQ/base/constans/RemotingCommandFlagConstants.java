@@ -86,6 +86,12 @@ public class RemotingCommandFlagConstants {
 
 
     /**
+     * broker发送给集群其它broker的消息，让其保存Message，不进行转发
+     */
+    public static final int BROKER_ONLY_SAVE_MESSAGE = 10;
+    public static final int BROKER_ONLY_SAVE_MESSAGE_RESPONSE = -10;
+
+    /**
      * nameserver 的投票选取master消息
      */
     public static final int NAMESERVER_VOTE_MASTER = 101;

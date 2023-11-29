@@ -98,7 +98,7 @@ public class Test {
 
         RemotingCommand remotingCommand = new RemotingCommand();
 
-        ServiceRegistryDTO serviceRegistryDTO = new ServiceRegistryDTO("test-mq", null);
+        ServiceRegistryDTO serviceRegistryDTO = new ServiceRegistryDTO("test-mq", null,null);
         serviceRegistryDTO.setClientId("broker-1");
         serviceRegistryDTO.setAddress("localhost");
         serviceRegistryDTO.setPort(8888);

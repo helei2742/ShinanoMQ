@@ -1,27 +1,23 @@
 package cn.com.shinano.nameserver.support;
 
+import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
-import cn.com.shinano.nameserver.NameServerClusterService;
 import cn.com.shinano.nameserver.NameServerServiceConnector;
-import cn.com.shinano.nameserver.dto.SendCommandResult;
+import cn.com.shinano.ShinanoMQ.base.dto.SendCommandResult;
 import cn.com.shinano.ShinanoMQ.base.dto.ServiceRegistryDTO;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.nameserver.NameServerService;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.ShinanoMQ.base.dto.RegistryState;
+import cn.com.shinano.nameserver.config.NameServerConstants;
+import cn.com.shinano.nameserver.dto.RegisteredHost;
 import cn.com.shinano.nameserver.util.FileUtil;
-import cn.com.shinano.nameserver.util.TimeWheelUtil;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -33,7 +29,7 @@ public class ServiceRegistrySupport {
 
     private static final ExecutorService executor = Executors.newFixedThreadPool(2);
 
-    private static ConcurrentMap<String, Set<ClusterHost>> registeredService;
+    private static ConcurrentMap<String, Set<RegisteredHost>> registeredService;
 
     private static NameServerService nameServerService;
 
@@ -46,8 +42,8 @@ public class ServiceRegistrySupport {
             registeredService = FileUtil.loadRegistryInfoFromDisk();
             //添加心跳检测
             for (String serviceId : registeredService.keySet()) {
-                Set<ClusterHost> hosts = registeredService.get(serviceId);
-                for (ClusterHost host : hosts) {
+                Set<RegisteredHost> hosts = registeredService.get(serviceId);
+                for (RegisteredHost host : hosts) {
                     NameServerServiceConnector.registryConnectListener(host);
                 }
             }
@@ -59,6 +55,7 @@ public class ServiceRegistrySupport {
 
     /**
      * nemeserver 的使用者进行服务注册
+     *
      * @param request
      * @return
      */
@@ -70,7 +67,7 @@ public class ServiceRegistrySupport {
                 .handle(((serviceRegistryDTO, throwable) -> {
                     if (throwable != null) {
                         if (serviceRegistryDTO.getRegistryState() == RegistryState.APPEND_LOCAL) {
-                           return RegistryState.APPEND_LOCAL;
+                            return RegistryState.APPEND_LOCAL;
                         }
                         return RegistryState.UNKNOW_ERROR;
                     }
@@ -109,12 +106,17 @@ public class ServiceRegistrySupport {
     public static ServiceRegistryDTO registryLocal(ServiceRegistryDTO registryDTO) {
         switch (registryDTO.getRegistryState()) {
             case VALIDATE_ACCESS:
-                Set<ClusterHost> set = registeredService.getOrDefault(registryDTO.getServiceId(), new HashSet<>());
+                Set<RegisteredHost> set = registeredService.getOrDefault(registryDTO.getServiceId(), new HashSet<>());
                 ClusterHost clusterHost = new ClusterHost(registryDTO.getClientId(), registryDTO.getAddress(), registryDTO.getPort());
-                set.add(clusterHost);
+                RegisteredHost registeredHost = new RegisteredHost(clusterHost, new HashMap<>());
+                registeredHost.getProps().put(NameServerConstants.REGISTERED_HOST_TYPE_KEY, registryDTO.getType());
+
+                set.remove(registeredHost);
+                set.add(registeredHost);
+
                 registeredService.put(registryDTO.getServiceId(), set);
                 registryDTO.setRegistryState(RegistryState.APPEND_LOCAL);
-                
+
                 //持久化
                 try {
                     FileUtil.saveRegistryInfoToDisk(registeredService);
@@ -123,7 +125,7 @@ public class ServiceRegistrySupport {
                 }
 
 
-                NameServerServiceConnector.registryConnectListener(clusterHost);
+                NameServerServiceConnector.registryConnectListener(registeredHost);
 
                 return registryDTO;
             case PARAM_ERROR:
@@ -190,8 +192,12 @@ public class ServiceRegistrySupport {
 
     public static List<ClusterHost> getRegisteredServiceById(String serviceId) {
         ArrayList<ClusterHost> clusterHosts = new ArrayList<>();
-        registeredService.computeIfPresent(serviceId, (k,v)->{
-            clusterHosts.addAll(v);
+        registeredService.computeIfPresent(serviceId, (k, v) -> {
+            for (RegisteredHost host : v) {
+                if (NameServerServiceConnector.isHostAlive(host)) {
+                    clusterHosts.add(host.getHost());
+                }
+            }
             return v;
         });
         return clusterHosts;

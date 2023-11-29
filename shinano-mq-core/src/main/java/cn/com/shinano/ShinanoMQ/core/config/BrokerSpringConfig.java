@@ -13,9 +13,12 @@ public class BrokerSpringConfig {
 
     private String serviceId;
 
+    private String type;
+
     private String clientId;
 
     private String address;
+
     /**
      * 端口
      */

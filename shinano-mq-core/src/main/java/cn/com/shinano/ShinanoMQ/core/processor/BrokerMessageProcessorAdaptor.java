@@ -53,7 +53,7 @@ public class BrokerMessageProcessorAdaptor extends AbstractNettyProcessorAdaptor
     @Override
     protected void handlerMessage(ChannelHandlerContext ctx, RemotingCommand remotingCommand) {
         Channel channel = ctx.channel();
-//        log.info("get an message [{}]", message);
+        log.info("get an message [{}]", remotingCommand);
         //根据消息的类型从map中取出对应的handler处理
         RequestProcessor requestProcessor = messageHandlerMap.get(remotingCommand.getFlag());
         if(requestProcessor != null) {
