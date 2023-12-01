@@ -12,7 +12,6 @@ import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
 import cn.com.shinano.ShinanoMQ.core.dto.PutMessageResult;
 import cn.com.shinano.ShinanoMQ.core.dto.PutMessageStatus;
 import cn.com.shinano.ShinanoMQ.core.manager.cluster.MessageInstanceSyncSupport;
-import cn.com.shinano.ShinanoMQ.core.processor.msgprocessor.ProducerRequestProcessor;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +38,7 @@ public class DispatchMessageService {
     private BrokerAckManager brokerAckManager;
 
     @Autowired
-    private BrokerSpringConfig brokerSpringConfig;
+    public BrokerSpringConfig brokerSpringConfig;
 
     @Autowired
     private MessageInstanceSyncSupport messageInstanceSyncSupport;
@@ -84,9 +83,10 @@ public class DispatchMessageService {
                     }
                 }
 
-                RemotingCommand response = handlePutMessageResult(putMessageResult);
+                RemotingCommand response = putMessageResult.handlePutMessageResult(isSyncMsgToCluster);
+
                 if(!isSyncMsgToCluster) {
-                    response.setFlag(RemotingCommandFlagConstants.BROKER_ONLY_SAVE_MESSAGE_RESPONSE);
+                    response.setFlag(RemotingCommandFlagConstants.BROKER_SYNC_SAVE_MESSAGE_RESPONSE);
                 }
 
                 NettyChannelSendSupporter.sendMessage(response, channel);
@@ -95,39 +95,10 @@ public class DispatchMessageService {
         } else {
             result = persistentSupport.syncPutMessage(message);
 
-           return handlePutMessageResult(result);
+           return result.handlePutMessageResult(isSyncMsgToCluster);
         }
     }
 
-    public RemotingCommand handlePutMessageResult(PutMessageResult result) {
-        String tsId = result.getTransactionId();
-        RemotingCommand response = RemotingCommandPool.getObject();
-        response.setFlag(RemotingCommandFlagConstants.PRODUCER_MESSAGE_RESULT);
-        response.setTransactionId(tsId);
-
-        switch (result.getStatus()) {
-            case REMOTE_SAVE_SUCCESS:
-                response.setCode(RemotingCommandCodeConstants.SUCCESS);
-                response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.PUT_OK.name());
-                break;
-            case APPEND_LOCAL:
-            case REMOTE_SAVE_FAIL:
-                response.setCode(RemotingCommandCodeConstants.CHECK);
-                response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.REMOTE_SAVE_FAIL.name());
-                break;
-            case FLUSH_DISK_TIMEOUT:
-            case CREATE_MAPPED_FILE_FAILED:
-            case PROPERTIES_SIZE_EXCEEDED:
-            case UNKNOWN_ERROR:
-                response.setCode(RemotingCommandCodeConstants.FAIL);
-                response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, result.getStatus().name());
-                break;
-            default:
-                response.setCode(RemotingCommandCodeConstants.FAIL);
-                response.addExtField(ExtFieldsConstants.PRODUCER_PUT_MESSAGE_RESULT_KEY, PutMessageStatus.UNKNOWN_ERROR.name());
-        }
-        return response;
-    }
 
 
 

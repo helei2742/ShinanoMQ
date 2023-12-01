@@ -4,7 +4,7 @@ import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.constant.ClientStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
-import cn.com.shinano.ShinanoMQ.base.dto.SendCommandResult;
+import cn.com.shinano.ShinanoMQ.base.dto.SendCommandFuture;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgProcessor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
@@ -20,8 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static cn.com.shinano.ShinanoMQ.base.constant.ClientStatus.CREATE_JUST;
@@ -136,11 +134,23 @@ public abstract class AbstractNettyClient {
      * @throws InterruptedException
      */
     public boolean sendMsg(RemotingCommand remotingCommand) throws InterruptedException {
-        SendCommandResult result = new SendCommandResult();
+        SendCommandFuture result = new SendCommandFuture();
 
         sendMsg(remotingCommand, result::setResult, result::setResult);
         Object o = result.getResult();
         return o != null && ((RemotingCommand) o).getCode() != RemotingCommandCodeConstants.FAIL;
+    }
+
+    /**
+     * 发送消息，返回Future
+     * @param remotingCommand
+     * @return
+     */
+    public SendCommandFuture sendMsgFuture(RemotingCommand remotingCommand) {
+        SendCommandFuture result = new SendCommandFuture();
+
+        sendMsg(remotingCommand, result::setResult, result::setResult);
+        return result;
     }
 
 

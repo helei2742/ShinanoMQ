@@ -1,5 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.manager;
 
+import cn.com.shinano.ShinanoMQ.core.manager.topic.TopicInfo;
+
 import java.util.List;
 import java.util.Map;
 
@@ -38,7 +40,7 @@ public interface TopicManager {
      * @param topic
      * @return
      */
-    Map<String, Object> getTopicInfo(String topic);
+    TopicInfo getTopicInfo(String topic);
 
     /**
      * 关闭topic

@@ -1,8 +1,7 @@
 package cn.com.shinano.nameserver.util;
 
-import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.nameserver.config.NameServerConfig;
-import cn.com.shinano.nameserver.dto.RegisteredHost;
+import cn.com.shinano.ShinanoMQ.base.dto.RegisteredHost;
 import com.alibaba.fastjson.JSON;
 
 import java.io.*;

@@ -59,10 +59,9 @@ public class BrokerTopicInfo {
         return new ArrayList<>(activeTopicsMap.keySet());
     }
 
-    public Map<String, Object> getTopicInfo(String topic) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("info", activeTopicsMap.get(topic));
-        return map;
+    public TopicInfo getTopicInfo(String topic) {
+
+        return  activeTopicsMap.get(topic);
     }
 
     public void updateOffset(String topic, String queue, long offset) {

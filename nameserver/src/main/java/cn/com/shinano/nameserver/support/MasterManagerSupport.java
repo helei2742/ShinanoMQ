@@ -24,14 +24,12 @@ public class MasterManagerSupport {
     private static final HashSet<VoteInfo> voteSet = new HashSet<>();
 
 
-    public synchronized static ClusterHost tryVoteMaster(NameServerService nameServerService, RemotingCommand command) {
+    public synchronized static ClusterHost tryVoteMaster(NameServerService nameServerService, VoteInfo voteInfo) {
         ClusterHost master = null;
         switch (nameServerService.getState()) {
             case VOTE:
             case JUST_START:
-                ClusterHost selected = JSON.parseObject(command.getExtFieldsValue(ExtFieldsConstants.NAMESERVER_VOTE_MASTER), ClusterHost.class);
-                Long startTimeStamp = command.getExtFieldsLong(ExtFieldsConstants.NAMESERVER_START_TIMESTAMP);
-                VoteInfo voteInfo = new VoteInfo(startTimeStamp, selected);
+
                 voteSet.add(voteInfo);
                 voteSet.add(new VoteInfo(nameServerService.getStartTime(), nameServerService.getServerHost()));
 

@@ -43,4 +43,8 @@ public class ShinanoMQConstants {
      * 死信队列的开头
      */
     public static final String DLQ_BANE_PREFIX = "%DLQ%";
+    /**
+     * 暂存消息的topic前缀
+     */
+    public static final String TEMP_TOPIC_PREFIX = "%TEMP%";
 }

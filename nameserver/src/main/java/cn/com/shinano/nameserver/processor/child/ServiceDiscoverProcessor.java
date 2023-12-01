@@ -1,7 +1,7 @@
 package cn.com.shinano.nameserver.processor.child;
 
 import cn.com.shinano.ShinanoMQ.base.constant.LoadBalancePolicy;
-import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
+import cn.com.shinano.ShinanoMQ.base.dto.RegisteredHost;
 import cn.com.shinano.nameserver.loadbalance.LoadBalanceSupport;
 import cn.com.shinano.nameserver.loadbalance.RandomLoadBalanceSupport;
 import cn.com.shinano.nameserver.support.ServiceRegistrySupport;
@@ -24,7 +24,7 @@ public class ServiceDiscoverProcessor {
     }
 
 
-    public List<ClusterHost> discoverService(String clientId, String serviceId, LoadBalancePolicy policy) {
+    public List<RegisteredHost> discoverService(String clientId, String serviceId, LoadBalancePolicy policy) {
         return ServiceRegistrySupport.getRegisteredServiceById(serviceId);
     }
 }

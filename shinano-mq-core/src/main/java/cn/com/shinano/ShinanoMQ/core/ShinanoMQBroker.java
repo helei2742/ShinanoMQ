@@ -17,12 +17,18 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
@@ -32,6 +38,9 @@ public class ShinanoMQBroker implements ApplicationRunner {
     private EventLoopGroup resolveMessageGroup;
 
     private ChannelFuture channelFuture;
+
+    private HashedWheelTimer wheelTimer =
+            new HashedWheelTimer(Executors.defaultThreadFactory(), 1000L, TimeUnit.MILLISECONDS, 600, true,-1L,Executors.newFixedThreadPool(1));
 
     @Autowired
     private BrokerSpringConfig brokerSpringConfig;
@@ -46,7 +55,12 @@ public class ShinanoMQBroker implements ApplicationRunner {
 
         nameServerManager.init();
 
-        nameServerManager.serviceDiscover(brokerSpringConfig.getServiceId());
+        wheelTimer.newTimeout(new TimerTask() {
+            @Override
+            public void run(Timeout timeout) throws Exception {
+                nameServerManager.serviceDiscover(brokerSpringConfig.getServiceId());
+            }
+        }, 4000, TimeUnit.MILLISECONDS);
 
         resolveMessageGroup = new DefaultEventLoopGroup(BrokerConfig.BOOTSTRAP_HANDLER_THREAD);
 

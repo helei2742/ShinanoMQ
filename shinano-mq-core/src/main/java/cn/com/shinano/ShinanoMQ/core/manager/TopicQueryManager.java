@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.manager;
 
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+import io.netty.channel.Channel;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -20,4 +21,12 @@ public interface TopicQueryManager {
      * @param count
      */
     CompletableFuture<RemotingCommand> queryTopicQueueOffsetMsg(String topic, String queue, long offset, int count);
+
+    /**
+     * 直接获取offset之后的byte
+     * @param offset
+     * @param channel
+     * @return
+     */
+    CompletableFuture<RemotingCommand> queryTopicQueueBytesAfterOffset(String topic, String queue, Long offset, Channel channel);
 }

@@ -2,6 +2,8 @@ package cn.com.shinano.ShinanoMQ.base.dto;
 
 import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.LanguageCode;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,6 +20,20 @@ import java.util.HashMap;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RemotingCommand {
+
+    public final static RemotingCommand TIME_OUT_COMMAND;
+    public static final RemotingCommand PARAMS_ERROR;
+
+    static {
+        TIME_OUT_COMMAND = new RemotingCommand();
+        TIME_OUT_COMMAND.setFlag(RemotingCommandFlagConstants.TIME_OUT_EXCEPTION);
+        TIME_OUT_COMMAND.setCode(RemotingCommandCodeConstants.FAIL);
+
+        PARAMS_ERROR = new RemotingCommand();
+        PARAMS_ERROR.setFlag(RemotingCommandFlagConstants.PARAMS_ERROR);
+        PARAMS_ERROR.setCode(RemotingCommandCodeConstants.FAIL);
+    }
+
     private Integer flag;
     private Integer code;
     private LanguageCode language = LanguageCode.JAVA;

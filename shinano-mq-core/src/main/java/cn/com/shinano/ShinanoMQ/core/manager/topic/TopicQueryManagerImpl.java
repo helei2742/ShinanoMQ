@@ -1,5 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.manager.topic;
 
+import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
 import cn.com.shinano.ShinanoMQ.base.VO.MessageListVO;
 import cn.com.shinano.ShinanoMQ.base.constans.TopicQueryConstants;
@@ -15,6 +17,7 @@ import cn.com.shinano.ShinanoMQ.core.manager.OffsetManager;
 import cn.com.shinano.ShinanoMQ.core.manager.TopicQueryManager;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 import cn.com.shinano.ShinanoMQ.core.utils.StoreFileUtil;
+import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +28,6 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -88,6 +90,36 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
             return remotingCommand;
         }, executor);
     }
+
+    @Override
+    public CompletableFuture<RemotingCommand> queryTopicQueueBytesAfterOffset(String topic, String queue, Long offset, Channel channel) {
+        return CompletableFuture.supplyAsync(()->{
+            try {
+                File dataFile = StoreFileUtil.getDataFileOfLogicOffset(topic, queue, offset);
+
+                long currentOffset = offsetManager.queryTopicQueueOffset(topic, queue);
+
+                byte[] bytes = new byte[Math.min((int) (currentOffset-offset), BrokerConfig.SYNC_PULL_MAX_LENGTH)];
+
+                RandomAccessFile accessFile = new RandomAccessFile(dataFile, "r");
+                accessFile.seek(offset);
+                int read = accessFile.read(bytes);
+
+                RemotingCommand response = new RemotingCommand();
+                response.setFlag(RemotingCommandFlagConstants.BROKER_SYNC_PULL_MESSAGE_RESPONSE);
+                response.addExtField(ExtFieldsConstants.OFFSET_KEY, String.valueOf(offset + read));
+                response.setCode(RemotingCommandCodeConstants.SUCCESS);
+                response.setBody(bytes);
+
+                channel.writeAndFlush(response);
+                return response;
+            } catch (IOException e) {
+                log.error("sync [{}][{}][{}] message from master error", topic, queue, offset, e);
+            }
+            return null;
+        }, executor);
+    }
+
 
 
     /**
@@ -259,17 +291,21 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
 
 
     public static void main(String[] args) {
-        List<Integer> list = new ArrayList<>();
-        list.add(2);
-        list.add(3);
-        list.add(4);
-        list.add(6);
-        list.add(8);
-        list.add(10);
-        System.out.println(Collections.binarySearch(list, 1));
-        System.out.println(Collections.binarySearch(list, 5));
-        System.out.println(Collections.binarySearch(list, 7));
-        System.out.println(Collections.binarySearch(list, 8));
-        System.out.println(Collections.binarySearch(list, 11));
+//        List<Integer> list = new ArrayList<>();
+//        list.add(2);
+//        list.add(3);
+//        list.add(4);
+//        list.add(6);
+//        list.add(8);
+//        list.add(10);
+//        System.out.println(Collections.binarySearch(list, 1));
+//        System.out.println(Collections.binarySearch(list, 5));
+//        System.out.println(Collections.binarySearch(list, 7));
+//        System.out.println(Collections.binarySearch(list, 8));
+//        System.out.println(Collections.binarySearch(list, 11));
+
+
+        File file = new File("D:\\develop\\git\\data\\ShinanoMQ\\broker1\\datalog\\test-create1\\queue1\\00000000000000000000.idx");
+        System.out.println(file.getName().split("\\.")[0]);
     }
 }

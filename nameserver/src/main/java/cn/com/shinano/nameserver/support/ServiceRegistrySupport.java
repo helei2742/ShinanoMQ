@@ -1,18 +1,17 @@
 package cn.com.shinano.nameserver.support;
 
-import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.nameserver.NameServerServiceConnector;
-import cn.com.shinano.ShinanoMQ.base.dto.SendCommandResult;
+import cn.com.shinano.ShinanoMQ.base.dto.SendCommandFuture;
 import cn.com.shinano.ShinanoMQ.base.dto.ServiceRegistryDTO;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.nameserver.NameServerService;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.ShinanoMQ.base.dto.RegistryState;
 import cn.com.shinano.nameserver.config.NameServerConstants;
-import cn.com.shinano.nameserver.dto.RegisteredHost;
+import cn.com.shinano.ShinanoMQ.base.dto.RegisteredHost;
 import cn.com.shinano.nameserver.util.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -167,7 +166,7 @@ public class ServiceRegistrySupport {
                 command.setFlag(RemotingCommandFlagConstants.NAMESERVER_SERVICE_REGISTRY_FORWARD);
                 command.setBody(ProtostuffUtils.serialize(registryDTO));
 
-                SendCommandResult result = nameServerService.sendToMaster(command);
+                SendCommandFuture result = nameServerService.sendToMaster(command);
                 try {
                     Object o = result.getResult();
                     if (o != null) {
@@ -190,12 +189,12 @@ public class ServiceRegistrySupport {
         return registryDTO;
     }
 
-    public static List<ClusterHost> getRegisteredServiceById(String serviceId) {
-        ArrayList<ClusterHost> clusterHosts = new ArrayList<>();
+    public static List<RegisteredHost> getRegisteredServiceById(String serviceId) {
+        ArrayList<RegisteredHost> clusterHosts = new ArrayList<>();
         registeredService.computeIfPresent(serviceId, (k, v) -> {
             for (RegisteredHost host : v) {
                 if (NameServerServiceConnector.isHostAlive(host)) {
-                    clusterHosts.add(host.getHost());
+                    clusterHosts.add(host);
                 }
             }
             return v;

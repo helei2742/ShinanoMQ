@@ -6,12 +6,8 @@ import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgProcessor;
-import cn.com.shinano.ShinanoMQ.core.config.BrokerSpringConfig;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
@@ -39,11 +35,11 @@ public class BrokerClusterConnector extends AbstractNettyClient {
                     protected void handlerMessage(ChannelHandlerContext context, RemotingCommand remotingCommand) {
                         log.info("get message [{}] from [{}]", remotingCommand, context.channel().remoteAddress());
                         switch (remotingCommand.getFlag()) {
-                            case RemotingCommandFlagConstants.BROKER_ONLY_SAVE_MESSAGE_RESPONSE:
+                            case RemotingCommandFlagConstants.BROKER_SYNC_SAVE_MESSAGE_RESPONSE:
+                            case RemotingCommandFlagConstants.BROKER_SYNC_PULL_MESSAGE_RESPONSE:
                                 resultCallBackInvoker.invokeCallBack(remotingCommand.getTransactionId(), remotingCommand);
                                 break;
                             default:
-
                         }
                     }
                     @Override

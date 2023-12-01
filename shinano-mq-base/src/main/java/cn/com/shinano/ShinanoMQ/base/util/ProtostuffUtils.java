@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.base.util;
 
+import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import io.protostuff.LinkedBuffer;
 import io.protostuff.ProtobufIOUtil;
 import io.protostuff.Schema;
@@ -43,6 +44,12 @@ public class ProtostuffUtils {
         return data;
     }
 
+    public static void main(String[] args) {
+        SaveMessage saveMessage = new SaveMessage();
+        saveMessage.setOffset(123L);
+        saveMessage.setStoreHost("awdaw");
+        System.out.println(new String(serialize(saveMessage)));
+    }
     /**
      * 反序列化方法，将字节数组反序列化成指定Class类型
      *

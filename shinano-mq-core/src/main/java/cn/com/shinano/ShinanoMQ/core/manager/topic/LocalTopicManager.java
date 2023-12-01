@@ -51,7 +51,7 @@ public class LocalTopicManager implements TopicManager {
     }
 
     @Override
-    public Map<String, Object> getTopicInfo(String topic) {
+    public TopicInfo getTopicInfo(String topic) {
         return brokerTopicInfo.getTopicInfo(topic);
     }
 

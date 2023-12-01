@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.processor;
 
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
+import cn.com.shinano.ShinanoMQ.core.manager.cluster.MessageInstanceSyncSupport;
 import cn.com.shinano.ShinanoMQ.core.manager.topic.RetryTopicQueueManager;
 import cn.com.shinano.ShinanoMQ.core.processor.msgprocessor.*;
 import cn.com.shinano.ShinanoMQ.core.manager.*;
@@ -38,6 +39,9 @@ public class NettyProcessorConfig {
     @Autowired
     private RetryTopicQueueManager retryTopicQueueManager;
 
+    @Autowired
+    private MessageInstanceSyncSupport messageInstanceSyncSupport;
+
     @Bean("messageHandlerMap")
     public Map<Integer, RequestProcessor> messageHandlerMap() {
         Map<Integer, RequestProcessor> res = new HashMap<>();
@@ -46,12 +50,16 @@ public class NettyProcessorConfig {
         res.put(RemotingCommandFlagConstants.CLIENT_CONNECT, new ClientConnectProcessor(connectManager));
         res.put(RemotingCommandFlagConstants.TOPIC_INFO_QUERY, new TopicQueryProcessor(topicQueryManager, consumeOffsetManager));
 
-        ProducerRequestProcessor producerRequestProcessor = new ProducerRequestProcessor(topicManager, dispatchMessageService, brokerAckManager);
-        res.put(RemotingCommandFlagConstants.PRODUCER_MESSAGE, producerRequestProcessor);
-        res.put(RemotingCommandFlagConstants.BROKER_ONLY_SAVE_MESSAGE, producerRequestProcessor);
+        res.put(RemotingCommandFlagConstants.BROKER_SYNC_PULL_MESSAGE, new ClusterSyncProcessor(topicQueryManager));
+
+        SaveMessageRequestProcessor saveMessageRequestProcessor = new SaveMessageRequestProcessor(topicManager,
+                dispatchMessageService, messageInstanceSyncSupport, brokerAckManager);
+        res.put(RemotingCommandFlagConstants.PRODUCER_MESSAGE, saveMessageRequestProcessor);
+        res.put(RemotingCommandFlagConstants.BROKER_SYNC_SAVE_MESSAGE, saveMessageRequestProcessor);
 
         res.put(RemotingCommandFlagConstants.CONSUMER_MESSAGE, new ConsumerRequestProcessor(consumeOffsetManager));
         res.put(RemotingCommandFlagConstants.RETRY_CONSUME_MESSAGE, new RetryConsumeMessageProcessor(retryTopicQueueManager));
+
         return res;
     }
 }

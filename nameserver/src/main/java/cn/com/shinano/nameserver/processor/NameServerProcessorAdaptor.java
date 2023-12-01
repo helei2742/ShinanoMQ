@@ -16,7 +16,8 @@ import cn.com.shinano.ShinanoMQ.base.dto.RegistryState;
 import cn.com.shinano.ShinanoMQ.base.dto.ServiceRegistryDTO;
 import cn.com.shinano.nameserver.NameServerServiceConnector;
 import cn.com.shinano.nameserver.config.NameServerConstants;
-import cn.com.shinano.nameserver.dto.RegisteredHost;
+import cn.com.shinano.ShinanoMQ.base.dto.RegisteredHost;
+import cn.com.shinano.nameserver.dto.VoteInfo;
 import cn.com.shinano.nameserver.processor.child.NameServerInitProcessor;
 import cn.com.shinano.nameserver.processor.child.ServiceDiscoverProcessor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;
@@ -63,7 +64,15 @@ public class NameServerProcessorAdaptor extends AbstractNettyProcessorAdaptor {
         CompletableFuture<RegistryState> result = null;
         switch (remotingCommand.getFlag()) {
             case RemotingCommandFlagConstants.NAMESERVER_VOTE_MASTER:   //投票消息
-                ClusterHost voteMaster = MasterManagerSupport.tryVoteMaster(nameServerService, remotingCommand);
+
+                ClusterHost selected = JSON.parseObject(remotingCommand.getExtFieldsValue(ExtFieldsConstants.NAMESERVER_VOTE_MASTER), ClusterHost.class);
+                Long startTimeStamp = remotingCommand.getExtFieldsLong(ExtFieldsConstants.NAMESERVER_START_TIMESTAMP);
+                VoteInfo voteInfo = new VoteInfo(startTimeStamp, selected);
+
+                nameServerService.freshClusterService(selected);
+
+                ClusterHost voteMaster = MasterManagerSupport.tryVoteMaster(nameServerService, voteInfo);
+
                 if (voteMaster != null) {
                     response = MasterManagerSupport.setMasterRemoteMessageBuilder(nameServerService.getMaster());
                     log.info("set master [{}]", response);
@@ -134,7 +143,7 @@ public class NameServerProcessorAdaptor extends AbstractNettyProcessorAdaptor {
                 response.setFlag(RemotingCommandFlagConstants.CLIENT_DISCOVER_SERVICE_RESPONSE);
                 response.setCode(RemotingCommandCodeConstants.SUCCESS);
                 response.setTransactionId(tsId);
-                List<ClusterHost> hosts = serviceDiscoverProcessor.discoverService(clientId, serviceId, policy);
+                List<RegisteredHost> hosts = serviceDiscoverProcessor.discoverService(clientId, serviceId, policy);
                 response.setBody(ProtostuffUtils.serialize(new ServiceInstanceVO(hosts)));
 
         }

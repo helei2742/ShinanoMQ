@@ -5,7 +5,7 @@ package cn.com.shinano.ShinanoMQ.base.dto;
  * @author lhe.shinano
  * @date 2023/11/24
  */
-public class SendCommandResult {
+public class SendCommandFuture {
     private volatile boolean isDone = false;
     private Object res = null;
 

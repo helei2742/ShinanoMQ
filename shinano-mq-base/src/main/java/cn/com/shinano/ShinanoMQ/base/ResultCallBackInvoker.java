@@ -10,6 +10,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 /**
@@ -40,7 +41,7 @@ public abstract class ResultCallBackInvoker {
                         Consumer<RemotingCommand> fail = failCallbackMap.remove(tsId);
                         if(fail != null) {
                             log.debug("handler expire, invoke fail handler, tsId[{}]", tsId);
-                            fail.accept(null);
+                            fail.accept(RemotingCommand.TIME_OUT_COMMAND);
                         }
                     }
                 }

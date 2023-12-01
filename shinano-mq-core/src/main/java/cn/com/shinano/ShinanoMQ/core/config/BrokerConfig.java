@@ -51,6 +51,12 @@ public class BrokerConfig {
     public static final long PERSISTENT_FILE_SIZE = 1024 * 1024L;
 
     /**
+     * 同步拉取消息时一次最大长度
+     */
+    public static final int SYNC_PULL_MAX_LENGTH = 1024 * 1024;
+
+
+    /**
      * 持久化时生成的索引文件等级， 4代表写入一条数据时1/2^3次方概率生成索引
      */
     public static final int PERSISTENT_INDEX_LEVEL = 5;

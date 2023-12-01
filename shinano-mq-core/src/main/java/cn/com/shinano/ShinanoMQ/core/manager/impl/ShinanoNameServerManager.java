@@ -1,6 +1,9 @@
 package cn.com.shinano.ShinanoMQ.core.manager.impl;
 
+import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
+import cn.com.shinano.ShinanoMQ.base.dto.RegisteredHost;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerSpringConfig;
 import cn.com.shinano.ShinanoMQ.core.manager.NameServerManager;
 import cn.com.shinano.nameserverclient.NameServerClient;
@@ -11,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author lhe.shinano
@@ -61,21 +65,40 @@ public class ShinanoNameServerManager implements NameServerManager {
     }
 
 
-
+    /**
+     * 拉取master
+     * @param serviceName
+     * @return
+     */
     @Override
-    public ClusterHost getInstance(String serviceName) {
-        List<ClusterHost> instance = nameServerClients[0].getInstance(serviceName);
+    public ClusterHost getMaster(String serviceName) {
+        List<RegisteredHost> instance = nameServerClients[0].getInstance(serviceName);
         if (instance == null) {
            return null;
         }
         log.debug("service [{}] have instance list [{}]", serviceName, instance);
-        //TODO 客户端负载均衡
-
-        return instance.get(RandomUtil.randomInt(instance.size()));
+        return instance.stream().filter(registeredHost -> {
+            if(registeredHost.getProps() != null) {
+                return "master".equals(registeredHost.getProps().get(ExtFieldsConstants.BROKER_TYPE));
+            }
+            return false;
+        }).limit(1).collect(Collectors.toList()).get(0).getHost();
     }
 
+    /**
+     * 获取slave节点们
+     * @param serviceName
+     * @return
+     */
     @Override
-    public List<ClusterHost> getInstanceList(String serviceName) {
-        return new ArrayList<>(nameServerClients[0].getInstance(serviceName));
+    public List<ClusterHost> getSlaveList(String serviceName) {
+        List<RegisteredHost> instance = nameServerClients[0].getInstance(serviceName);
+        //只拿从节点
+        return instance.stream().filter(registeredHost -> {
+            if(registeredHost.getProps() != null) {
+                return "slave".equals(registeredHost.getProps().get("host_type"));
+            }
+            return true;
+        }).map(RegisteredHost::getHost).collect(Collectors.toList());
     }
 }

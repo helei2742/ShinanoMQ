@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.base.VO;
 
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
+import cn.com.shinano.ShinanoMQ.base.dto.RegisteredHost;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,5 +16,5 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ServiceInstanceVO {
-    private List<ClusterHost> instances;
+    private List<RegisteredHost> instances;
 }

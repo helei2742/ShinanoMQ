@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.core.web.service.impl;
 
 import cn.com.shinano.ShinanoMQ.core.manager.TopicManager;
+import cn.com.shinano.ShinanoMQ.core.manager.topic.TopicInfo;
 import cn.com.shinano.ShinanoMQ.core.web.dto.Result;
 import cn.com.shinano.ShinanoMQ.core.web.dto.BrokerRequestDTO;
 import cn.com.shinano.ShinanoMQ.core.web.service.TopicManagerService;
@@ -48,8 +49,8 @@ public class TopicManagerServiceImpl implements TopicManagerService {
         if(StrUtil.isBlank(topic)) {
             return Result.fail(Result.ResultCode.PARAMS_ERROR);
         }
-        Map<String, Object> map = topicManager.getTopicInfo(topic);
-        return Result.ok(map);
+        TopicInfo info = topicManager.getTopicInfo(topic);
+        return Result.ok(info);
     }
 
     @Override

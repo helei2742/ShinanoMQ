@@ -8,7 +8,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.nameserver.config.NameServerConfig;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
-import cn.com.shinano.ShinanoMQ.base.dto.SendCommandResult;
+import cn.com.shinano.ShinanoMQ.base.dto.SendCommandFuture;
 import cn.com.shinano.nameserver.processor.NameServerClusterProcessorAdaptor;
 import cn.com.shinano.nameserver.processor.child.NameServerClusterInitProcessor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;
@@ -190,10 +190,10 @@ public class NameServerClusterService extends AbstractNettyClient {
         sendCommand(command);
     }
 
-    public SendCommandResult sendCommand(RemotingCommand command) {
-        SendCommandResult result = null;
+    public SendCommandFuture sendCommand(RemotingCommand command) {
+        SendCommandFuture result = null;
         if(usable.get()) {
-            result = new SendCommandResult();
+            result = new SendCommandFuture();
             sendMsg(command, result::setResult, result::setResult);
         } else {
             log.warn("client [{}] send vote message to [{}] fail, channel closed",
@@ -201,5 +201,10 @@ public class NameServerClusterService extends AbstractNettyClient {
             return null;
         }
         return result;
+    }
+
+    public void active() {
+        this.usable.set(true);
+        tryConnectOther(this, 0);
     }
 }

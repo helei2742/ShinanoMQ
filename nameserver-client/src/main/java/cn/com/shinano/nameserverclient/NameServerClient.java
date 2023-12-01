@@ -7,6 +7,7 @@ import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.constant.LoadBalancePolicy;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
+import cn.com.shinano.ShinanoMQ.base.dto.RegisteredHost;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.dto.ServiceRegistryDTO;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
@@ -39,7 +40,7 @@ public class NameServerClient extends AbstractNettyClient {
 
     private ServiceRegistryDTO serviceRegistryDTO;
 
-    private ConcurrentMap<String, List<ClusterHost>> serviceInstances;
+    private ConcurrentMap<String, List<RegisteredHost>> serviceInstances;
 
     private HashedWheelTimer refreshInstancesTimer;
 
@@ -125,7 +126,7 @@ public class NameServerClient extends AbstractNettyClient {
         });
     }
 
-    public List<ClusterHost> getInstance(String serviceId) {
+    public List<RegisteredHost> getInstance(String serviceId) {
         return serviceInstances.get(serviceId);
     }
 }

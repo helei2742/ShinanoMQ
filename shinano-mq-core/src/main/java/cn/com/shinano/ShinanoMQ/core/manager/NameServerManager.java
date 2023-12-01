@@ -13,7 +13,7 @@ public interface NameServerManager {
 
     void serviceDiscover(String serviceName);
 
-    ClusterHost getInstance(String serviceName);
+    ClusterHost getMaster(String serviceName);
 
-    List<ClusterHost> getInstanceList(String serviceName);
+    List<ClusterHost> getSlaveList(String serviceName);
 }

@@ -1,10 +1,9 @@
 package cn.com.shinano.nameserver;
 
 
-import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.nameserver.config.NameServerConfig;
 import cn.com.shinano.nameserver.config.NameServerConstants;
-import cn.com.shinano.nameserver.dto.RegisteredHost;
+import cn.com.shinano.ShinanoMQ.base.dto.RegisteredHost;
 import cn.com.shinano.nameserver.util.TimeWheelUtil;
 import io.netty.channel.*;
 import io.netty.util.Timeout;
@@ -15,10 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 
-import java.net.ConnectException;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.*;
 
 

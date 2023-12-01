@@ -9,7 +9,7 @@ import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.nameserver.config.NameServerConfig;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.nameserver.dto.NameServerState;
-import cn.com.shinano.ShinanoMQ.base.dto.SendCommandResult;
+import cn.com.shinano.ShinanoMQ.base.dto.SendCommandFuture;
 import cn.com.shinano.nameserver.dto.VoteInfo;
 import cn.com.shinano.nameserver.processor.NameServerProcessorAdaptor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;
@@ -174,16 +174,16 @@ public class NameServerService {
     }
 
     public Integer broadcastCommand(RemotingCommand command) {
-        List<SendCommandResult> results = new ArrayList<>();
+        List<SendCommandFuture> results = new ArrayList<>();
         for (ClusterHost clusterHost : clusterConnectMap.keySet()) {
             NameServerClusterService slave = clusterConnectMap.get(clusterHost);
             command.setTransactionId(UUID.randomUUID().toString());
-            SendCommandResult e = slave.sendCommand(command);
+            SendCommandFuture e = slave.sendCommand(command);
             if(e != null) results.add(e);
         }
 
         int success = 0;
-        for (SendCommandResult result : results) {
+        for (SendCommandFuture result : results) {
             try {
                 RemotingCommand remotingCommand = (RemotingCommand) result.getResult();
                 if(remotingCommand.getCode() == RemotingCommandCodeConstants.SUCCESS)
@@ -195,10 +195,18 @@ public class NameServerService {
         return success;
     }
 
-    public SendCommandResult sendToMaster(RemotingCommand command) {
+    public SendCommandFuture sendToMaster(RemotingCommand command) {
         if (master.equals(serverHost)) return null;
 
         NameServerClusterService masterClient = clusterConnectMap.get(master);
         return masterClient.sendCommand(command);
+    }
+
+    public void freshClusterService(ClusterHost host) {
+        log.debug("fresh cluster service [{}]", host);
+        NameServerClusterService clusterService = clusterConnectMap.get(host);
+        if (clusterService != null) {
+            clusterService.active();
+        }
     }
 }

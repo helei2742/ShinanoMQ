@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -23,6 +24,8 @@ import java.util.Map;
 @Component
 @ChannelHandler.Sharable
 public class BrokerMessageProcessorAdaptor extends AbstractNettyProcessorAdaptor {
+
+    private AtomicInteger connectNum;
 
     @Autowired
     @Qualifier("messageHandlerMap")
@@ -38,11 +41,12 @@ public class BrokerMessageProcessorAdaptor extends AbstractNettyProcessorAdaptor
                 log.error("broker got an exception, ", cause);
             }
         });
+        this.connectNum = new AtomicInteger(0);
     }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-        log.info("client on line, channel id：[{}]", ctx.channel().id().asLongText());
+        log.info("client on line, channel id：[{}], current connect count [{}]", ctx.channel().id().asLongText(), connectNum.incrementAndGet());
     }
 
     /**
@@ -81,9 +85,10 @@ public class BrokerMessageProcessorAdaptor extends AbstractNettyProcessorAdaptor
      */
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) {
-        log.info("client:{}, [{}] off line",
+        log.info("client:{}, [{}] off line, current connect count [{}]",
                 ctx.channel().id().asLongText(),
-                ctx.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY));
+                ctx.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY),
+                connectNum.decrementAndGet());
 
         // 获取channel中id
         String id = ctx.channel().attr(ShinanoMQConstants.ATTRIBUTE_KEY).get();

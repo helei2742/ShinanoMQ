@@ -4,6 +4,10 @@ public class RemotingCommandFlagConstants {
 
     public static final String REQUEST_ERROR = "request_error";
 
+    public static final int TIME_OUT_EXCEPTION = 501;
+    public static final int PARAMS_ERROR = 502;
+
+
     /**
      * broker ping
      */
@@ -88,8 +92,15 @@ public class RemotingCommandFlagConstants {
     /**
      * broker发送给集群其它broker的消息，让其保存Message，不进行转发
      */
-    public static final int BROKER_ONLY_SAVE_MESSAGE = 10;
-    public static final int BROKER_ONLY_SAVE_MESSAGE_RESPONSE = -10;
+    public static final int BROKER_SYNC_SAVE_MESSAGE = 10;
+    public static final int BROKER_SYNC_SAVE_MESSAGE_RESPONSE = -10;
+
+    /**
+     * broker向其它broker发起同步拉取数据的请求
+     */
+    public static final int BROKER_SYNC_PULL_MESSAGE = 11;
+    public static final int BROKER_SYNC_PULL_MESSAGE_RESPONSE = -11;
+
 
     /**
      * nameserver 的投票选取master消息
@@ -117,4 +128,5 @@ public class RemotingCommandFlagConstants {
      */
     public static final int CLIENT_DISCOVER_SERVICE = 105;
     public static final int CLIENT_DISCOVER_SERVICE_RESPONSE = -105;
+
 }
