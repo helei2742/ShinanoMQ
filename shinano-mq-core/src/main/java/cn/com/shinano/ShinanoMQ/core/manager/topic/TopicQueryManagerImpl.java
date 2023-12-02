@@ -107,7 +107,9 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
 
                 RemotingCommand response = new RemotingCommand();
                 response.setFlag(RemotingCommandFlagConstants.BROKER_SYNC_PULL_MESSAGE_RESPONSE);
-                response.addExtField(ExtFieldsConstants.OFFSET_KEY, String.valueOf(offset + read));
+                response.addExtField(ExtFieldsConstants.SAVE_FILE_NAME, dataFile.getName());
+                response.addExtField(ExtFieldsConstants.OFFSET_KEY, String.valueOf(offset));
+                response.addExtField(ExtFieldsConstants.BODY_LENGTH, String.valueOf(read));
                 response.setCode(RemotingCommandCodeConstants.SUCCESS);
                 response.setBody(bytes);
 

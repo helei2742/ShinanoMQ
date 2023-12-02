@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -144,6 +145,26 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
 
             return putMessageResult.setStatus(PutMessageStatus.UNKNOWN_ERROR);
         }, executor);
+    }
+
+    @Override
+    public PutMessageStatus persistentBytes(String fileName,
+                                            String topic,
+                                            String queue,
+                                            long startOffset,
+                                            byte[] bytes) {
+        String saveDir = StoreFileUtil.getTopicQueueSaveDir(topic, queue);
+        File dataFile = new File(saveDir, fileName);
+        try {
+            RandomAccessFile accessFile = new RandomAccessFile(dataFile, "rw");
+            accessFile.seek(startOffset);
+            accessFile.write(bytes);
+        } catch (IOException e) {
+            log.error("persistent [{}], topic [{}], queue [{}], startOffset [{}] error",
+                    fileName, topic, queue, saveDir);
+            return PutMessageStatus.UNKNOWN_ERROR;
+        }
+        return PutMessageStatus.APPEND_LOCAL;
     }
 
     @Override

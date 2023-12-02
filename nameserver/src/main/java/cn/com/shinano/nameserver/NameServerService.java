@@ -5,6 +5,7 @@ import cn.com.shinano.ShinanoMQ.base.RemotingCommandDecoder;
 import cn.com.shinano.ShinanoMQ.base.RemotingCommandEncoder;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+import cn.com.shinano.ShinanoMQ.base.idmaker.DistributeIdMaker;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.nameserver.config.NameServerConfig;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
@@ -14,6 +15,7 @@ import cn.com.shinano.nameserver.dto.VoteInfo;
 import cn.com.shinano.nameserver.processor.NameServerProcessorAdaptor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;
 import cn.com.shinano.nameserver.support.ServiceRegistrySupport;
+import cn.hutool.core.net.NetUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -177,7 +179,7 @@ public class NameServerService {
         List<SendCommandFuture> results = new ArrayList<>();
         for (ClusterHost clusterHost : clusterConnectMap.keySet()) {
             NameServerClusterService slave = clusterConnectMap.get(clusterHost);
-            command.setTransactionId(UUID.randomUUID().toString());
+            command.setTransactionId(DistributeIdMaker.DEFAULT.nextId());
             SendCommandFuture e = slave.sendCommand(command);
             if(e != null) results.add(e);
         }

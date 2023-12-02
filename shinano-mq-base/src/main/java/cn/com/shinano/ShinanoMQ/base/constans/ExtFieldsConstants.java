@@ -95,4 +95,6 @@ public class ExtFieldsConstants {
     public static final String NAMESERVER_LOAD_BALANCE_POLICY = "nameserver_load_balance_policy";
 
     public static final String BROKER_TYPE = "broker_type";
+    public static final String SAVE_FILE_NAME = "save_file_name";
+    public static final String BODY_LENGTH = "body_length";
 }

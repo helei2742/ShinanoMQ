@@ -148,6 +148,8 @@ public class MessageInstanceSyncSupport implements InitializingBean {
 
     class SyncMessageTask implements Runnable{
 
+        private final String topic;
+        private final String queue;
         private final String key;
 
         private final ClusterHost target;
@@ -157,6 +159,9 @@ public class MessageInstanceSyncSupport implements InitializingBean {
 
         public SyncMessageTask(String key, ClusterHost target, long startOffset, long endOffset) {
             this.key = key;
+            String[] split = key.split("-");
+            this.topic = split[0];
+            this.queue = split[1];
             this.target = target;
             this.startOffset = startOffset;
             this.endOffset = endOffset;
@@ -177,13 +182,18 @@ public class MessageInstanceSyncSupport implements InitializingBean {
                     RemotingCommand response;
 
                     if (obj != null && !(response = (RemotingCommand) obj).equals(RemotingCommand.TIME_OUT_COMMAND)) {
-                        Long endOffset = response.getExtFieldsLong(ExtFieldsConstants.OFFSET_KEY);
-                        if (endOffset == null) {
+                        Long offset = response.getExtFieldsLong(ExtFieldsConstants.OFFSET_KEY);
+                        String fileName = response.getExtFieldsValue(ExtFieldsConstants.SAVE_FILE_NAME);
+                        Integer length = response.getExtFieldsInt(ExtFieldsConstants.BODY_LENGTH);
+                        if (offset == null) {
                             log.error("response of sync msg from [{}] didn't have offset field", target);
                             break;
                         }
-                        if (endOffset > currentOffset) {
-                            currentOffset = endOffset;
+                        if (length == 0) break;
+
+                        if (offset == currentOffset) {
+                            persistentSupport.persistentBytes(fileName, topic, queue, offset, response.getBody());
+                            currentOffset += length;
                         } else if(currentOffset == endOffset) {
                             break;
                         }
@@ -193,7 +203,7 @@ public class MessageInstanceSyncSupport implements InitializingBean {
 
             log.warn("sync [{}] message from [{}] finish, start offset [{}], end offset [{}], target end offset [{}]",
                     key, target, startOffset, currentOffset, endOffset);
-
+            //TODO 期间暂存的消息写入
             syncingQueueMap.remove(key);
         }
 

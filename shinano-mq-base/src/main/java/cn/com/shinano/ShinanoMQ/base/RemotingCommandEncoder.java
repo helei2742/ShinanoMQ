@@ -2,6 +2,7 @@ package cn.com.shinano.ShinanoMQ.base;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+import cn.com.shinano.ShinanoMQ.base.protocol.Serializer;
 import cn.com.shinano.ShinanoMQ.base.util.MessageUtil;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import io.netty.buffer.ByteBuf;
@@ -27,7 +28,7 @@ public class RemotingCommandEncoder extends MessageToByteEncoder<RemotingCommand
 
     @Override
     protected void encode(ChannelHandlerContext ctx, RemotingCommand remotingCommand, ByteBuf out)throws Exception{
-        out.writeBytes(remotingCommand.turnToBytes());
+        out.writeBytes(Serializer.Algorithm.Protostuff.serialize(remotingCommand));
         remotingCommand.release();
     }
 }

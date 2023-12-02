@@ -5,6 +5,8 @@ import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.constant.ClientStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.dto.SendCommandFuture;
+import cn.com.shinano.ShinanoMQ.base.idmaker.DistributeIdMaker;
+import cn.com.shinano.ShinanoMQ.base.idmaker.SnowFlakeShortUrl;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgProcessor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
@@ -79,6 +81,7 @@ public abstract class AbstractNettyClient {
         ChannelFuture channelFuture = new Bootstrap()
                 .group(group)
                 .channel(NioSocketChannel.class)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
                 .handler(new ChannelInitializer<NioSocketChannel>() {
                     @Override//链接建立后被调用，进行初始化
                     protected void initChannel(NioSocketChannel ch) throws Exception {
@@ -119,7 +122,7 @@ public abstract class AbstractNettyClient {
      */
     public void sendMsg(RemotingCommand remotingCommand, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
         if(remotingCommand.getTransactionId() == null) {
-            remotingCommand.setTransactionId(UUID.randomUUID().toString());
+            remotingCommand.setTransactionId(DistributeIdMaker.DEFAULT.nextId());
         }
         remotingCommand.setClientId(this.clientId);
         resultCallBackInvoker.addAckListener(remotingCommand.getTransactionId(), success, fail);

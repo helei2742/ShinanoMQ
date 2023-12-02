@@ -70,10 +70,6 @@ public class RemotingCommand {
         addExtField(ExtFieldsConstants.CLIENT_ID_KEY, clientId);
     }
 
-    public byte[] turnToBytes() {
-        return turnToBytes(this);
-    }
-
     public String getExtFieldsValue(String extFieldsKey) {
         if(extFields == null) return null;
         return extFields.get(extFieldsKey);
@@ -98,13 +94,6 @@ public class RemotingCommand {
         this.extFields.put(key, value);
     }
 
-    public static byte[] turnToBytes(RemotingCommand remotingCommand) {
-        return ProtostuffUtils.serialize(remotingCommand);
-    }
-
-    public static RemotingCommand turnToRemotingCommand(byte[] bytes) {
-        return ProtostuffUtils.deserialize(bytes, RemotingCommand.class);
-    }
 
     public void release(){}
 

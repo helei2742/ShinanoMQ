@@ -2,6 +2,7 @@ package cn.com.shinano.ShinanoMQ.core.manager;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.core.dto.PutMessageResult;
+import cn.com.shinano.ShinanoMQ.core.dto.PutMessageStatus;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -21,6 +22,9 @@ public interface PersistentSupport {
      * @return
      */
     CompletableFuture<PutMessageResult> asyncPutMessage(Message message);
+
+
+    PutMessageStatus persistentBytes(String fileName, String topic, String queue, long startOffset, byte[] bytes);
 
     /**
      * 同步保存消息

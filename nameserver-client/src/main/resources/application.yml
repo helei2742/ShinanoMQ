@@ -1,0 +1,4 @@
+shinano:
+  mq:
+    broker:
+      serviceId: producer-1

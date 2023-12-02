@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.base;
 
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
+import cn.com.shinano.ShinanoMQ.base.protocol.Serializer;
 import cn.com.shinano.ShinanoMQ.base.util.ByteBufPool;
 import cn.com.shinano.ShinanoMQ.base.util.MessageUtil;
 import io.netty.buffer.ByteBuf;
@@ -58,7 +59,7 @@ public class RemotingCommandDecoder extends ByteToMessageDecoder {
         if(in.readableBytes() >= 0) {
             byte[] bytes = new byte[in.readableBytes()];
             in.readBytes(bytes);
-            out.add(RemotingCommand.turnToRemotingCommand(bytes));
+            out.add(Serializer.Algorithm.Protostuff.deserialize(bytes, RemotingCommand.class));
         }
     }
 }
