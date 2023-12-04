@@ -1,25 +1,28 @@
 package cn.com.shinano.ShinanoMQ.core.utils;
 
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.Pair;
 import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
+import cn.com.shinano.ShinanoMQ.base.protocol.Serializer;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.hutool.core.util.RandomUtil;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class BrokerUtil {
 
-    private static final String OFFSET_MAP_KEY_SEPARATOR = "!@!";
+    private static final String KEY_SEPARATOR = "!@!";
 
     public static String makeTopicQueueKey(String topic, String queue) {
-        return topic + "-" + queue;
+        return topic + KEY_SEPARATOR + queue;
+    }
+
+    public static Pair<String, String> getTopicQueueFromKey(String key) {
+        String[] split = key.split(KEY_SEPARATOR);
+        return new Pair<>(split[0], split[1]);
     }
 
 
@@ -48,7 +51,7 @@ public class BrokerUtil {
         saveMessage.setReconsumeTimes(message.getRetryTimes());
         saveMessage.setProps(message.getProperties());
 //        byte[] bytes = JSONObject.toJSONBytes(saveMessage);
-        byte[] bytes = ProtostuffUtils.serialize(saveMessage);
+        byte[] bytes = Serializer.Algorithm.Protostuff.serialize(saveMessage);
         byte[] length = ByteBuffer.allocate(8).putInt(bytes.length).array();
         byte[] res = new byte[bytes.length + length.length];
         System.arraycopy(length, 0, res, 0, length.length);
@@ -57,7 +60,7 @@ public class BrokerUtil {
     }
 
     public static SaveMessage brokerSaveBytesTurnMessage(byte[] msgBytes) {
-        return ProtostuffUtils.deserialize(msgBytes, SaveMessage.class);
+        return Serializer.Algorithm.Protostuff.deserialize(msgBytes, SaveMessage.class);
     }
 
 
@@ -65,10 +68,10 @@ public class BrokerUtil {
 
 
     public static String getKey(String clientId, String topic, String queue) {
-        return clientId + OFFSET_MAP_KEY_SEPARATOR + topic + OFFSET_MAP_KEY_SEPARATOR + queue + OFFSET_MAP_KEY_SEPARATOR;
+        return clientId + KEY_SEPARATOR + topic + KEY_SEPARATOR + queue + KEY_SEPARATOR;
     }
 
     public static String[] getPropFromKey(String key) {
-        return key.split(OFFSET_MAP_KEY_SEPARATOR);
+        return key.split(KEY_SEPARATOR);
     }
 }

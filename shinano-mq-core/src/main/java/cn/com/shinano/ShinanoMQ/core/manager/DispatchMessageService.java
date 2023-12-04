@@ -1,10 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.manager;
 
-import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
-import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
-import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
-import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerSpringConfig;
@@ -29,7 +25,7 @@ import java.util.concurrent.*;
 public class DispatchMessageService {
     private final Map<String, LinkedBlockingQueue<BrokerMessage>> dispatchMap = new ConcurrentHashMap<>();
 
-    private static final ExecutorService executor = Executors.newFixedThreadPool(2);
+    private static final ExecutorService executor = Executors.newFixedThreadPool(10);
 
     @Autowired
     private PersistentSupport persistentSupport;
@@ -69,28 +65,38 @@ public class DispatchMessageService {
     public RemotingCommand saveMessage(Message message, Channel channel, boolean isSyncMsgToCluster) {
         PutMessageResult result;
         if(brokerSpringConfig.getAsyncSendEnable()) {
+
             CompletableFuture<PutMessageResult> localFuture = persistentSupport.asyncPutMessage(message);
-            localFuture.thenAcceptAsync(putMessageResult ->{
-                // 保存到其它broker
-                if (putMessageResult.getStatus() == PutMessageStatus.APPEND_LOCAL && isSyncMsgToCluster) {
-                    CompletableFuture<PutMessageStatus> future = messageInstanceSyncSupport.syncMsgToInstance(message);
-                    try {
-                        PutMessageStatus syncToClusterResult = future.get();
 
-                        putMessageResult.setStatus(syncToClusterResult);
-                    } catch (InterruptedException | ExecutionException e) {
-                        log.error("get sync message result error", e);
+            if (isSyncMsgToCluster) {
+                localFuture.thenAcceptAsync(putMessageResult ->{
+                    // 保存到其它broker
+                    if (putMessageResult.getStatus() == PutMessageStatus.APPEND_LOCAL) {
+
+                        CompletableFuture<PutMessageStatus> future = messageInstanceSyncSupport.syncMsgToInstance(message.getTopic(),
+                                message.getQueue(), message.getTransactionId(), putMessageResult.getContent(), putMessageResult.getOffset());
+
+                        try {
+                            PutMessageStatus syncToClusterResult = future.get();
+
+                            putMessageResult.setStatus(syncToClusterResult);
+                        } catch (InterruptedException | ExecutionException e) {
+                            log.error("get sync message result error", e);
+                        }
                     }
-                }
 
-                RemotingCommand response = putMessageResult.handlePutMessageResult(isSyncMsgToCluster);
+                    RemotingCommand response = putMessageResult.handlePutMessageResult(true);
 
-                if(!isSyncMsgToCluster) {
-                    response.setFlag(RemotingCommandFlagConstants.BROKER_SYNC_SAVE_MESSAGE_RESPONSE);
-                }
+                    NettyChannelSendSupporter.sendMessage(response, channel);
+                }, executor);
+            } else {
+                localFuture.whenComplete(((putMessageResult, throwable) -> {
+                    RemotingCommand response = putMessageResult.handlePutMessageResult(false);
 
-                NettyChannelSendSupporter.sendMessage(response, channel);
-            }, executor);
+                    NettyChannelSendSupporter.sendMessage(response, channel);
+                }));
+            }
+
             return null;
         } else {
             result = persistentSupport.syncPutMessage(message);
@@ -99,7 +105,11 @@ public class DispatchMessageService {
         }
     }
 
-
+    public void saveMessage(String topic, String queue, String tsId, Long offset, byte[] body, Channel channel) {
+        PutMessageResult result = persistentSupport.doPutMessage(topic, queue, tsId, offset, body, null);
+        RemotingCommand response = result.handlePutMessageResult(false);
+//        NettyChannelSendSupporter.sendMessage(response, channel);
+    }
 
 
     /**
@@ -110,4 +120,6 @@ public class DispatchMessageService {
     public LinkedBlockingQueue<BrokerMessage> getTopicMessageBlockingQueue(String topic) {
         return dispatchMap.get(topic);
     }
+
+
 }

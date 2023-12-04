@@ -63,9 +63,12 @@ public class ShinanoProducerClient extends AbstractNettyClient {
     }
 
     public void init() {
+        ReceiveMessageProcessor resultCallBackInvoker = new ReceiveMessageProcessor();
+        resultCallBackInvoker.setExpireSeconds(ProducerConfig.SEND_MESSAGE_TIME_OUT_LIMIT);
+
         super.init(clientId,
                 ProducerConfig.IDLE_TIME_SECONDS,
-                new ReceiveMessageProcessor(),
+                resultCallBackInvoker,
                 new ProducerClientInitProcessor(),
                 new ProducerBootstrapProcessorAdaptor(),
                 new DefaultNettyEventClientHandler() {

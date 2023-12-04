@@ -89,6 +89,7 @@ public class MappedFile {
 
     public AtomicLong counter = new AtomicLong();
 
+
     /**
      * 向文件中追加内容
      *
@@ -96,6 +97,7 @@ public class MappedFile {
      * @return
      * @throws IOException
      */
+    @Deprecated
     public AppendMessageResult append(Message message) {
         int filePos = FILE_POSITION_UPDATER.get(this);
         long writePos = WRITE_POSITION_UPDATER.get(this);
@@ -125,9 +127,43 @@ public class MappedFile {
         filePos = FILE_POSITION_UPDATER.addAndGet(this, bytes.length);
 
         return new AppendMessageResult(AppendMessageStatus.PUT_OK, writePos, bytes.length,
-                null, message.getTransactionId(), System.currentTimeMillis());
+                bytes, message.getTransactionId(), System.currentTimeMillis());
     }
 
+    public AppendMessageResult append(byte[] bytes, long startOffset) {
+        int filePos = FILE_POSITION_UPDATER.get(this);
+        long writePos = WRITE_POSITION_UPDATER.get(this);
+
+        if(startOffset != writePos) {
+            return new AppendMessageResult(AppendMessageStatus.WRITE_POSITION_ERROR, writePos,
+                    bytes.length, null, null, System.currentTimeMillis());
+        }
+
+        if(bytes.length > TopicConfig.SINGLE_MESSAGE_LENGTH) {
+            return new AppendMessageResult(AppendMessageStatus.MESSAGE_SIZE_EXCEEDED, writePos,
+                    bytes.length, null, null, System.currentTimeMillis());
+        }
+
+        if (filePos + bytes.length >
+                mappedByteBuffer.capacity() - BrokerConfig.PERSISTENT_FILE_END_MAGIC.length) {
+            return new AppendMessageResult(AppendMessageStatus.END_OF_FILE,
+                    writePos,
+                    bytes.length,
+                    bytes,
+                    null,
+                    System.currentTimeMillis());
+        }
+
+        this.mappedByteBuffer.put(bytes);
+        //更新内存中的索引
+        index.updateIndex(writePos, filePos);
+
+        writePos = WRITE_POSITION_UPDATER.addAndGet(this, bytes.length);
+        filePos = FILE_POSITION_UPDATER.addAndGet(this, bytes.length);
+
+        return new AppendMessageResult(AppendMessageStatus.PUT_OK, writePos, bytes.length,
+                bytes, null, System.currentTimeMillis());
+    }
     /**
      * 新创建一个File对象
      *
@@ -243,5 +279,9 @@ public class MappedFile {
 
     public void writeUnlock() {
         writeLock.unlock();
+    }
+
+    public long getWritePos() {
+        return WRITE_POSITION_UPDATER.get(this);
     }
 }

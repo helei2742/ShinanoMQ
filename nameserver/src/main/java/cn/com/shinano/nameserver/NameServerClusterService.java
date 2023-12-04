@@ -20,6 +20,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,7 @@ public class NameServerClusterService extends AbstractNettyClient {
     private String clientId;
 
     private final NameServerService nameServerService;
+
     private Bootstrap clientBootstrap;
 
     private ClusterHost clientHost;
@@ -49,6 +51,8 @@ public class NameServerClusterService extends AbstractNettyClient {
     private final AtomicBoolean usable = new AtomicBoolean(false);
 
     private NameServerClusterProcessorAdaptor processorAdaptor;
+
+    private HashedWheelTimer hashedWheelTimer;
 
     public NameServerClusterService(NameServerService nameServerService, ClusterHost connectHost) {
         super(connectHost.getAddress(), connectHost.getPort());
@@ -155,7 +159,11 @@ public class NameServerClusterService extends AbstractNettyClient {
      * 不断尝试链接集群其它节点
      */
     private void tryConnectOther(NameServerClusterService client, int retry) {
-        TimeWheelUtil.newTimeout(new TimerTask() {
+        if (hashedWheelTimer == null) {
+           hashedWheelTimer =  TimeWheelUtil.newTimeout();
+        }
+
+        hashedWheelTimer.newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 try {

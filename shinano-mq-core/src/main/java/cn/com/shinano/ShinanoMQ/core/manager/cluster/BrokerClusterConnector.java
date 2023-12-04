@@ -22,9 +22,11 @@ public class BrokerClusterConnector extends AbstractNettyClient {
     public BrokerClusterConnector(String clientId, String host, int port) throws InterruptedException {
         super(host, port);
 
+        ReceiveMessageProcessor resultCallBackInvoker = new ReceiveMessageProcessor();
+        resultCallBackInvoker.setExpireSeconds(60);
         super.init(clientId,
                 Integer.MAX_VALUE,
-                new ReceiveMessageProcessor(),
+                resultCallBackInvoker,
                 new ClientInitMsgProcessor() {
                     @Override
                     public boolean initClient(Map<String, String> prop) {

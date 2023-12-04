@@ -179,7 +179,7 @@ public class NameServerService {
         List<SendCommandFuture> results = new ArrayList<>();
         for (ClusterHost clusterHost : clusterConnectMap.keySet()) {
             NameServerClusterService slave = clusterConnectMap.get(clusterHost);
-            command.setTransactionId(DistributeIdMaker.DEFAULT.nextId());
+            command.setTransactionId(DistributeIdMaker.DEFAULT.nextId(clientId));
             SendCommandFuture e = slave.sendCommand(command);
             if(e != null) results.add(e);
         }

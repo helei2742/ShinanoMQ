@@ -23,6 +23,7 @@ public interface PersistentSupport {
      */
     CompletableFuture<PutMessageResult> asyncPutMessage(Message message);
 
+    PutMessageResult doPutMessage(String topic, String queue, String tsId, Long slaveOffset, byte[] body, Message message);
 
     PutMessageStatus persistentBytes(String fileName, String topic, String queue, long startOffset, byte[] bytes);
 
@@ -32,7 +33,6 @@ public interface PersistentSupport {
      * @return
      */
     PutMessageResult syncPutMessage(Message message);
-
 
     boolean updateConsumeTimes(String topic, String queue, Long offset, Integer length, Integer retryTimes);
 }

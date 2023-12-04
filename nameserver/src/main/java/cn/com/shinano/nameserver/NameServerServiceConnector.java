@@ -6,6 +6,7 @@ import cn.com.shinano.nameserver.config.NameServerConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RegisteredHost;
 import cn.com.shinano.nameserver.util.TimeWheelUtil;
 import io.netty.channel.*;
+import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import lombok.AllArgsConstructor;
@@ -27,28 +28,43 @@ public class NameServerServiceConnector {
 
     public static Map<RegisteredHost, ConnectEntry> channelMap = new ConcurrentHashMap<>();
 
+
     /**
      * 设置延时任务，验证host 对应的 channel是否可用
      * @param host
      */
     private static void setExpireTimerToCheck(RegisteredHost host) {
+        ConnectEntry connectEntry = channelMap.get(host);
+        HashedWheelTimer hashedWheelTimer;
+
+        if (connectEntry == null) {
+            return;
+        } else if (connectEntry.getTimer() != null) {
+            hashedWheelTimer = connectEntry.getTimer();
+        } else {
+            hashedWheelTimer = TimeWheelUtil.newTimeout();
+            connectEntry.setTimer(hashedWheelTimer);
+        }
+
         //延时，检查是否收到pong 或 ping
-        TimeWheelUtil.newTimeout(new TimerTask() {
+        hashedWheelTimer.newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                channelMap.computeIfPresent(host, (k, v)->{
-                    if (System.currentTimeMillis() - v.getLastPongTimeStamp() >= NameServerConfig.SERVICE_HEART_BEAT_TTL*1000) {
+                channelMap.computeIfPresent(host, (k, v) -> {
+                    if (System.currentTimeMillis() - v.getLastPongTimeStamp() >= NameServerConfig.SERVICE_HEART_BEAT_TTL * 1000) {
                         log.warn("host [{}] long time no ping/pong since [{}] set shut down it", host, v.getLastPongTimeStamp());
                         v.usable = false;
-                        if(v.channel != null) {
+                        if (v.channel != null) {
 //                            v.channel.close();
                             v.channel = null;
                         }
-                    };
+                    } else {
+                        setExpireTimerToCheck(host);
+                    }
                     return v;
                 });
             }
-        }, NameServerConfig.SERVICE_HEART_BEAT_TTL/3, TimeUnit.SECONDS);
+        }, NameServerConfig.SERVICE_HEART_BEAT_TTL + 5, TimeUnit.SECONDS);
     }
 
     /**
@@ -63,7 +79,7 @@ public class NameServerServiceConnector {
                 String s = host.getProps().get(NameServerConstants.REGISTERED_HOST_TYPE_KEY);
                 type = s == null?type:s;
             }
-            return new ConnectEntry(null, false, -1L, type);
+            return new ConnectEntry(null, false, -1L, type, null);
         });
     }
 
@@ -108,5 +124,6 @@ public class NameServerServiceConnector {
         private boolean usable;
         private long lastPongTimeStamp;
         private String type;
+        private HashedWheelTimer timer;
     }
 }

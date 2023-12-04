@@ -23,10 +23,10 @@ import org.springframework.stereotype.Component;
 
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -45,7 +45,7 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
     /**
      * 执行持久化任务的线程池
      */
-    private final ExecutorService executor = Executors.newFixedThreadPool(5);
+    private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
     @Autowired
     @Lazy
@@ -95,57 +95,69 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
 
     @Override
     public CompletableFuture<PutMessageResult> asyncPutMessage(Message message) {
-
         return CompletableFuture.supplyAsync(() -> {
-            String topic = message.getTopic();
-            String queue = message.getQueue();
-
-            PutMessageResult putMessageResult = new PutMessageResult();
-            putMessageResult.setTransactionId(message.getTransactionId());
-            Long startOffset = brokerTopicInfo.queryTopicQueueOffset(topic, queue);
-
-            MappedFile mappedFile = null;
-            try {
-                mappedFile = MappedFile.getMappedFile(topic, queue, startOffset);
-            } catch (IOException e) {
-                log.error("create mapped file got an error", e);
-                return putMessageResult.setStatus(PutMessageStatus.CREATE_MAPPED_FILE_FAILED);
-            }
-
-            mappedFile.writeLock();
-            try {
-                AppendMessageResult result = mappedFile.append(message);
-
-                switch (result.getStatus()) {
-                    case PUT_OK:
-                        //更新offset
-                        offsetManager.updateTopicQueueOffset(topic, queue, result.getWroteOffset());
-
-                        //TODO 构建indexLog
-//                        indexLogBuildSupport.buildIndexLog(topic, queue, result.getWroteOffset());
-                        return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
-                    case END_OF_FILE:
-                        mappedFile.loadNextFile(result.getWroteOffset());
-
-                        result = mappedFile.append(message);
-                        if (AppendMessageStatus.PUT_OK.equals(result.getStatus())) {
-                            return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
-                        }
-                        break;
-                    case MESSAGE_SIZE_EXCEEDED:
-                    case PROPERTIES_SIZE_EXCEEDED:
-                        return putMessageResult.setStatus(PutMessageStatus.PROPERTIES_SIZE_EXCEEDED);
-                }
-            }catch (Exception e) {
-                log.error("write message got unknown error", e);
-                return putMessageResult.setStatus(PutMessageStatus.UNKNOWN_ERROR);
-            }finally {
-                mappedFile.writeUnlock();
-            }
-
-            return putMessageResult.setStatus(PutMessageStatus.UNKNOWN_ERROR);
+            return doPutMessage(message.getTopic(), message.getQueue(), message.getTransactionId(), null, null, message);
         }, executor);
     }
+
+    @Override
+    public PutMessageResult doPutMessage(String topic, String queue, String tsId, Long appendOffset, byte[] body, Message message) {
+
+        PutMessageResult putMessageResult = new PutMessageResult();
+        putMessageResult.setTransactionId(tsId);
+        Long startOffset = brokerTopicInfo.queryTopicQueueOffset(topic, queue);
+
+        MappedFile mappedFile = null;
+        try {
+            mappedFile = MappedFile.getMappedFile(topic, queue, startOffset);
+        } catch (IOException e) {
+            log.error("create mapped file got an error", e);
+            return putMessageResult.setStatus(PutMessageStatus.CREATE_MAPPED_FILE_FAILED);
+        }
+
+        mappedFile.writeLock();
+        try {
+            if (appendOffset == null) {
+                appendOffset = mappedFile.getWritePos();
+            }
+
+            if (body == null && message != null) {
+                body = BrokerUtil.messageTurnBrokerSaveBytes(message, appendOffset);
+            }
+
+            AppendMessageResult result = mappedFile.append(body, appendOffset);
+
+            switch (result.getStatus()) {
+                case PUT_OK:
+                    //更新offset
+                    offsetManager.updateTopicQueueOffset(topic, queue, result.getWroteOffset());
+
+                    putMessageResult.setOffset(result.getWroteOffset());
+                    putMessageResult.setContent(body);
+                    return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
+                case END_OF_FILE:
+                    mappedFile.loadNextFile(result.getWroteOffset());
+
+                    result = mappedFile.append(body, appendOffset);
+                    if (AppendMessageStatus.PUT_OK.equals(result.getStatus())) {
+                        putMessageResult.setOffset(result.getWroteOffset());
+                        putMessageResult.setContent(body);
+                        return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
+                    }
+                    break;
+                case MESSAGE_SIZE_EXCEEDED:
+                case PROPERTIES_SIZE_EXCEEDED:
+                    return putMessageResult.setStatus(PutMessageStatus.PROPERTIES_SIZE_EXCEEDED);
+            }
+        }catch (Exception e) {
+            log.error("write message got unknown error", e);
+            return putMessageResult.setStatus(PutMessageStatus.UNKNOWN_ERROR);
+        }finally {
+            mappedFile.writeUnlock();
+        }
+        return putMessageResult.setStatus(PutMessageStatus.UNKNOWN_ERROR);
+    }
+
 
     @Override
     public PutMessageStatus persistentBytes(String fileName,
@@ -157,8 +169,11 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
         File dataFile = new File(saveDir, fileName);
         try {
             RandomAccessFile accessFile = new RandomAccessFile(dataFile, "rw");
-            accessFile.seek(startOffset);
-            accessFile.write(bytes);
+            FileChannel channel = accessFile.getChannel().position(startOffset);
+            channel.write(ByteBuffer.wrap(bytes));
+            channel.force(true);
+//            accessFile.seek(startOffset);
+//            accessFile.write(bytes);
         } catch (IOException e) {
             log.error("persistent [{}], topic [{}], queue [{}], startOffset [{}] error",
                     fileName, topic, queue, saveDir);

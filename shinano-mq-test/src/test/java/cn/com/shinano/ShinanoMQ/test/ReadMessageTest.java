@@ -29,7 +29,7 @@ public class ReadMessageTest {
         client.run();
 
 //        long p = 916685;
-//        long p = 910429;
+//        long p = 333680;
 //        long p = 1032500;
         long p = 0;
         int total = 0;
@@ -37,7 +37,7 @@ public class ReadMessageTest {
         int sleep = 0;
         Set<String> set = new HashSet<>();
         while (true) {
-            MessageListVO x = queryMessage(client, p, 333);
+            MessageListVO x = queryMessage(client, p, 200);
             List<SaveMessage> messages = x.getMessages();
             if(messages == null || messages.size() == 0) break;
             p = x.getNextOffset();
@@ -45,9 +45,9 @@ public class ReadMessageTest {
             sleep++;
 
             for (SaveMessage message : messages) {
-                System.out.println(ProtostuffUtils.deserialize(message.getBody(), RetryMessage.class));
+//                System.out.println(ProtostuffUtils.deserialize(message.getBody(), RetryMessage.class));
 //                System.out.println(message.getBody());
-//                if(set.contains(message.getTransactionId())) System.out.println("---!!!!---"+message.getTransactionId());
+                if(set.contains(message.getTransactionId())) System.out.println("---!!!!---"+message.getTransactionId());
                 set.add(message.getTransactionId());
             }
             System.out.println("total is "+total + ", cost time " + (System.currentTimeMillis() - start));
@@ -69,7 +69,7 @@ public class ReadMessageTest {
 
         request.setTransactionId(UUID.randomUUID().toString());
         request.addExtField(ExtFieldsConstants.TOPIC_KEY, "test-create1");
-        request.addExtField(ExtFieldsConstants.QUEUE_KEY, "%DLQ%queue1");
+        request.addExtField(ExtFieldsConstants.QUEUE_KEY, "queue1");
         request.addExtField(ExtFieldsConstants.OFFSET_KEY, String.valueOf(offset));
 
         final MessageListVO[] res = new MessageListVO[1];

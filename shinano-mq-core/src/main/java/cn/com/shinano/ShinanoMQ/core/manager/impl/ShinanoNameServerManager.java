@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.sql.Struct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -79,7 +80,7 @@ public class ShinanoNameServerManager implements NameServerManager {
         log.debug("service [{}] have instance list [{}]", serviceName, instance);
         return instance.stream().filter(registeredHost -> {
             if(registeredHost.getProps() != null) {
-                return "master".equals(registeredHost.getProps().get(ExtFieldsConstants.BROKER_TYPE));
+                return MASTER_KEY.equals(registeredHost.getProps().get(HOST_TYPE_KEY));
             }
             return false;
         }).limit(1).collect(Collectors.toList()).get(0).getHost();
@@ -96,7 +97,7 @@ public class ShinanoNameServerManager implements NameServerManager {
         //只拿从节点
         return instance.stream().filter(registeredHost -> {
             if(registeredHost.getProps() != null) {
-                return "slave".equals(registeredHost.getProps().get("host_type"));
+                return SLAVE_KEY.equals(registeredHost.getProps().get(HOST_TYPE_KEY));
             }
             return true;
         }).map(RegisteredHost::getHost).collect(Collectors.toList());

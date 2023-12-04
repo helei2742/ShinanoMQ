@@ -1,6 +1,7 @@
 package cn.com.shinano.ShinanoMQ.base;
 
 import cn.com.shinano.ShinanoMQ.base.VO.BatchAckVO;
+import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import lombok.extern.slf4j.Slf4j;

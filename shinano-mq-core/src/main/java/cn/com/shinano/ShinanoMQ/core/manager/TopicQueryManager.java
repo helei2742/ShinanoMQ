@@ -25,8 +25,9 @@ public interface TopicQueryManager {
     /**
      * 直接获取offset之后的byte
      * @param offset
+     * @param transactionId
      * @param channel
      * @return
      */
-    CompletableFuture<RemotingCommand> queryTopicQueueBytesAfterOffset(String topic, String queue, Long offset, Channel channel);
+    CompletableFuture<RemotingCommand> queryTopicQueueBytesAfterOffset(String topic, String queue, Long offset, String transactionId, Channel channel);
 }

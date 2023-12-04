@@ -92,7 +92,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
     }
 
     @Override
-    public CompletableFuture<RemotingCommand> queryTopicQueueBytesAfterOffset(String topic, String queue, Long offset, Channel channel) {
+    public CompletableFuture<RemotingCommand> queryTopicQueueBytesAfterOffset(String topic, String queue, Long offset, String transactionId, Channel channel) {
         return CompletableFuture.supplyAsync(()->{
             try {
                 File dataFile = StoreFileUtil.getDataFileOfLogicOffset(topic, queue, offset);
@@ -107,6 +107,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
 
                 RemotingCommand response = new RemotingCommand();
                 response.setFlag(RemotingCommandFlagConstants.BROKER_SYNC_PULL_MESSAGE_RESPONSE);
+                response.setTransactionId(transactionId);
                 response.addExtField(ExtFieldsConstants.SAVE_FILE_NAME, dataFile.getName());
                 response.addExtField(ExtFieldsConstants.OFFSET_KEY, String.valueOf(offset));
                 response.addExtField(ExtFieldsConstants.BODY_LENGTH, String.valueOf(read));
@@ -198,7 +199,11 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
             }
             indexList.sort((i1,i2)->i1.getLogicOffset().compareTo(i2.getLogicOffset()));
             //二分找在index的位置
-            if (indexList.size() == 0) throw new IllegalArgumentException("index file context is empty");
+            if (indexList.size() == 0) {
+                log.warn("index file [{}] context is empty", filename);
+                res = readDataFileAfterOffset(dataPath.toFile(), 0, logicOffset - startOffset, startOffset, offsetLimit, count);
+                return res;
+            }
             int i = Collections.binarySearch(indexList, new IndexNode(logicOffset, 0));
             if (i < 0) {
                 i = Math.abs(i) - 1;

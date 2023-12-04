@@ -122,12 +122,12 @@ public abstract class AbstractNettyClient {
      */
     public void sendMsg(RemotingCommand remotingCommand, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
         if(remotingCommand.getTransactionId() == null) {
-            remotingCommand.setTransactionId(DistributeIdMaker.DEFAULT.nextId());
+            remotingCommand.setTransactionId(DistributeIdMaker.DEFAULT.nextId(clientId));
         }
         remotingCommand.setClientId(this.clientId);
         resultCallBackInvoker.addAckListener(remotingCommand.getTransactionId(), success, fail);
-        NettyChannelSendSupporter.sendMessage(remotingCommand, channel);
         log.debug("send remotingCommand [{}]", remotingCommand);
+        NettyChannelSendSupporter.sendMessage(remotingCommand, channel);
     }
 
     /**

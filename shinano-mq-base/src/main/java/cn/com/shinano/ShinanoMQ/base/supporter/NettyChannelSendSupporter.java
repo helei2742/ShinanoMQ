@@ -14,7 +14,7 @@ public class NettyChannelSendSupporter {
 
 
     public static void sendMessage(RemotingCommand remotingCommand, Channel channel) {
-        channel.writeAndFlush(remotingCommand);
         log.debug("send remoting command [{}]", remotingCommand);
+        channel.writeAndFlush(remotingCommand);
     }
 }

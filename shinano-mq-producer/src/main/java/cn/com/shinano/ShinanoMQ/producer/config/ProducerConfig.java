@@ -5,10 +5,11 @@ import lombok.Data;
 @Data
 public class ProducerConfig {
 
+    public static final int SEND_MESSAGE_TIME_OUT_LIMIT = 60;
     /**
      * 发送消息重试次数
      */
-    public static final int SEND_MESSAGE_RETRY_TIMES = 3;
+    public static final int SEND_MESSAGE_RETRY_TIMES = 0;
     /**
      * 向服务端发送心跳的间隔
      */

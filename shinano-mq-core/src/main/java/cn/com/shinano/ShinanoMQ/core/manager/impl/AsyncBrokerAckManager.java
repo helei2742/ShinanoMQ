@@ -48,7 +48,7 @@ public class AsyncBrokerAckManager extends AbstractBrokerManager implements Brok
 
         this.flushThread = new Thread(this::flushExpireACK, "batch-ack-cache-flush");
         this.flushThread.setDaemon(true);
-        this.flushThread.start();
+//        this.flushThread.start();
     }
 
     @Override

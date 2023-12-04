@@ -6,7 +6,9 @@ import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.dto.ServiceRegistryDTO;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
+import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,4 +61,10 @@ public class NameServerClientProcessorAdaptor extends AbstractNettyProcessorAdap
                 context.channel().remoteAddress(), remotingCommand, super.heartbeatCount++));
     }
 
+    public void sendPingMsg(Channel channel) {
+        RemotingCommand remotingCommand = new RemotingCommand();
+        remotingCommand.setFlag(RemotingCommandFlagConstants.BROKER_PING);
+        remotingCommand.setBody(ProtostuffUtils.serialize(this.serviceRegistryDTO));
+        NettyChannelSendSupporter.sendMessage(remotingCommand, channel);
+    }
 }

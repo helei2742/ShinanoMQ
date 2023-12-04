@@ -38,7 +38,7 @@ public class NameServerClient extends AbstractNettyClient {
 
     private final String clientId;
 
-    private AbstractNettyProcessorAdaptor processorAdaptor;
+    private NameServerClientProcessorAdaptor processorAdaptor;
 
     private ServiceRegistryDTO serviceRegistryDTO;
 
@@ -82,12 +82,13 @@ public class NameServerClient extends AbstractNettyClient {
         RemotingCommand remotingCommand = new RemotingCommand();
         remotingCommand.setFlag(RemotingCommandFlagConstants.CLIENT_REGISTRY_SERVICE);
         remotingCommand.setBody(ProtostuffUtils.serialize(serviceRegistryDTO));
-        System.out.println(serviceRegistryDTO);
         sendMsg(remotingCommand, success->{
             log.info("service registry success, result command [{}]", success);
         }, fail->{
             log.error("service registry fail, request [{}]", remotingCommand);
         });
+
+        processorAdaptor.sendPingMsg(channel);
     }
 
 
@@ -98,10 +99,10 @@ public class NameServerClient extends AbstractNettyClient {
     public void discoverService(String serviceId) {
         if(serviceInstances.containsKey(serviceId)) return;
 
-        refreshInstances(serviceId);
+        refreshDiscoverInstances(serviceId);
     }
 
-    private void refreshInstances(String serviceId) {
+    private void refreshDiscoverInstances(String serviceId) {
         RemotingCommand remotingCommand = new RemotingCommand();
         remotingCommand.setFlag(RemotingCommandFlagConstants.CLIENT_DISCOVER_SERVICE);
         remotingCommand.addExtField(ExtFieldsConstants.NAMESERVER_LOAD_BALANCE_POLICY, LoadBalancePolicy.RANDOM.value);
@@ -116,7 +117,7 @@ public class NameServerClient extends AbstractNettyClient {
                 refreshInstancesTimer.newTimeout(new TimerTask() {
                     @Override
                     public void run(Timeout timeout) throws Exception {
-                        refreshInstances(serviceId);
+                        refreshDiscoverInstances(serviceId);
                     }
                 }, NameServerClientConfig.SERVICE_INSTANCE_REFRESH_INTERVAL, TimeUnit.SECONDS);
 

@@ -27,10 +27,10 @@ public class Test {
 
     @org.junit.Test
     public void testStart1() throws InterruptedException {
-//        NameServerService nameServerService1 = new NameServerService("server1", "localhost",
-//                10001, new String[]{"server2@localhost:10002", "server3@localhost:10003"});
         NameServerService nameServerService1 = new NameServerService("server1", "localhost",
-                10001, new String[]{});
+                10001, new String[]{"server2@localhost:10002", "server3@localhost:10003"});
+//        NameServerService nameServerService1 = new NameServerService("server1", "localhost",
+//                10001, new String[]{});
 
         while (true) {
 //            System.out.println(nameServerService1.getMaster());

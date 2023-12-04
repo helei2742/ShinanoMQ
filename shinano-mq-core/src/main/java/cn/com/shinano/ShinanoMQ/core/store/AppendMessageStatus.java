@@ -8,5 +8,6 @@ public enum AppendMessageStatus {
     END_OF_FILE,
     MESSAGE_SIZE_EXCEEDED,
     PROPERTIES_SIZE_EXCEEDED,
+    WRITE_POSITION_ERROR,
     UNKNOWN_ERROR,
 }

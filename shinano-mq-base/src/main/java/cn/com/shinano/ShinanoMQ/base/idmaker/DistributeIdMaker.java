@@ -1,7 +1,6 @@
 package cn.com.shinano.ShinanoMQ.base.idmaker;
 
 
-import cn.com.shinano.ShinanoMQ.base.config.BaseConfig;
 import cn.hutool.core.net.NetUtil;
 
 import java.nio.ByteBuffer;
@@ -10,16 +9,16 @@ import java.util.UUID;
 public interface DistributeIdMaker {
     Algorithm DEFAULT = Algorithm.SnowFlake;
 
-    String nextId();
+    String nextId(String serviceName);
 
     enum Algorithm implements DistributeIdMaker {
         SnowFlake{
             private volatile SnowFlakeShortUrl snowFlakeShortUrl;
             @Override
-            public String nextId() {
+            public String nextId(String serviceName) {
                 if(snowFlakeShortUrl == null) {
                     synchronized (this) {
-                        long c = ByteBuffer.wrap(BaseConfig.serviceId.getBytes()).getLong()%100000;
+                        long c = serviceName.hashCode()%100000;
                         long m = ByteBuffer.wrap(NetUtil.getLocalMacAddress().getBytes()).getLong()%100000;
                         snowFlakeShortUrl = new SnowFlakeShortUrl(Math.abs(c), Math.abs(m));
                     }
@@ -29,7 +28,7 @@ public interface DistributeIdMaker {
         },
         RandomUUID {
             @Override
-            public String nextId() {
+            public String nextId(String serviceName) {
                 return UUID.randomUUID().toString();
             }
         }

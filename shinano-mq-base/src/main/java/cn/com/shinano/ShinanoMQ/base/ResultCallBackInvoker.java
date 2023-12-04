@@ -20,6 +20,8 @@ import java.util.function.Consumer;
 @Slf4j
 public abstract class ResultCallBackInvoker {
 
+    private long expireSeconds = ShinanoMQConstants.BROKER_RESPONSE_TIME_LIMIT;
+
     private ConcurrentMap<String, Consumer<RemotingCommand>> successCallbackMap;
     private ConcurrentMap<String, Consumer<RemotingCommand>> failCallbackMap;
     private ConcurrentMap<String, Long> expireMap;
@@ -49,6 +51,10 @@ public abstract class ResultCallBackInvoker {
         }, ShinanoMQConstants.EXPIRE_CLIENT_HANDLER_CLEAR_INTERVAL, ShinanoMQConstants.EXPIRE_CLIENT_HANDLER_CLEAR_INTERVAL);
     }
 
+    public void setExpireSeconds(int seconds) {
+        this.expireSeconds = seconds * 1000L;
+    }
+
     /**
      * 添加消息的回调
      * @param transactionId 消息的事务id
@@ -68,7 +74,7 @@ public abstract class ResultCallBackInvoker {
         if(success != null) this.successCallbackMap.put(transactionId, success);
         if(fail != null) this.failCallbackMap.put(transactionId, fail);
         if(success !=null || fail != null)
-            expireMap.put(transactionId, System.currentTimeMillis() + ShinanoMQConstants.BROKER_RESPONSE_TIME_LIMIT);
+            expireMap.put(transactionId, System.currentTimeMillis() + expireSeconds);
     }
 
     /**
