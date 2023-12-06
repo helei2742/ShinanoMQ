@@ -16,7 +16,6 @@ import cn.com.shinano.ShinanoMQ.core.manager.topic.TopicInfo;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 import com.alibaba.fastjson.JSON;
 import io.netty.channel.Channel;
-import io.netty.util.HashedWheelTimer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,12 +23,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * @author lhe.shinano
@@ -38,11 +36,16 @@ import java.util.concurrent.*;
 @Slf4j
 @Component
 public class MessageInstanceSyncSupport implements InitializingBean {
+
+    private static final int SLAVE_TOPIC_EMPTY_SYNC_COUNT_LIMIT = 16;
+
     private ExecutorService syncMsgToCLusterExecutor;
 
     private ConcurrentMap<String, SyncMessageTask> syncingQueueMap;
 
     private ExecutorService syncTopicInfoToMasterExecutor;
+
+    private Thread syncTopicInfoToMasterThread;
 
     @Autowired
     @Qualifier("selfHost")
@@ -74,7 +77,7 @@ public class MessageInstanceSyncSupport implements InitializingBean {
     private BrokerClusterTopicOffsetManager clusterTopicOffsetManager;
 
 
-    public void trySyncMsgToSlave(RemotingCommand request, Channel channel) {
+    public void commitSlaveTopicInfoAndSendNeedSyncMsg(RemotingCommand request, Channel channel) {
         //更新记录消息
         CompletableFuture<List<String>> updateSlaveTopicInfo = clusterTopicOffsetManager.updateSlaveTopicInfo(request);
 
@@ -131,7 +134,7 @@ public class MessageInstanceSyncSupport implements InitializingBean {
         }, syncMsgToCLusterExecutor);
     }
 
-
+    @Deprecated
     public void saveSyncMsgInSlaveLocal(RemotingCommand request, Channel channel) {
         String tsId = request.getTransactionId();
 
@@ -216,69 +219,117 @@ public class MessageInstanceSyncSupport implements InitializingBean {
     }
 
 
+    /**
+     * 开启定时任务，向master发送topic的offset信息，master收到后会将
+     * 需要同步的topic返回，得到返回后开启新的线程任务，进行同步
+     */
     public void slaveSyncTopicInfoToMasterStart() {
-        CompletableFuture.runAsync(()->{
-            log.debug("start sync slave topic info to master");
-            long start = System.currentTimeMillis();
-
-            ClusterHost master = nameServerManager.getMaster(springConfig.getServiceId());
-            BrokerClusterConnector masterConnect = clusterConnectorManager.getConnector(master);
-
-            if (masterConnect == null) {
-                log.error("can not connect to broker master");
-            } else if (!NameServerManager.SLAVE_KEY.equals(springConfig.getType())) {
-                log.error("broker is not slave, can't sync message from master [{}]", master);
-            } else {
-                List<String> topicList = topicManager.getTopicList();
-                List<String> list = new ArrayList<>();
-                for (String topic : topicList) {
-                    TopicInfo topicInfo = topicManager.getTopicInfo(topic);
-                    Map<String, OffsetAndCount> queueInfo = topicInfo.getQueueInfo();
-                    for (Map.Entry<String, OffsetAndCount> entry : queueInfo.entrySet()) {
-                        String TQ = BrokerUtil.makeTopicQueueKey(topic, entry.getKey());
-                        String s = TQ + BrokerUtil.KEY_SEPARATOR + entry.getValue().getOffset() + BrokerUtil.KEY_SEPARATOR + entry.getValue().getOffset();
-                        list.add(s);
-                    }
+        if (syncTopicInfoToMasterThread == null) {
+            synchronized (this) {
+                if (syncTopicInfoToMasterThread == null) {
+                    syncTopicInfoToMasterThread = new SyncTopicInfoTask("syncTopicInfoToMasterThread");
+                    syncTopicInfoToMasterThread.start();
                 }
+            }
+        }
+    }
 
-                RemotingCommand request = new RemotingCommand();
-                request.setFlag(RemotingCommandFlagConstants.BROKER_SLAVE_COMMIT_TOPIC_INFO);
-                request.addExtField(ExtFieldsConstants.HOST_JSON, JSON.toJSONString(selfHost));
-                request.setBody(Serializer.Algorithm.JSON.serialize(list));
 
-                /*
-                 * master 会返回需要同步数据的queue，放在body里
-                 */
-                masterConnect.sendMsg(request, response -> {
-                    CompletableFuture.runAsync(()->{
-                        List<String> lines = Serializer.Algorithm.JSON.deserializeList(response.getBody(), String.class);
-                        for (String line : lines) {
-                            log.debug("lave[{}] sync topic info to master[{}] success, need sync topic data [{}]", selfHost, master, line);
-                            String[] split = line.split(BrokerUtil.KEY_SEPARATOR);
+    /**
+     *
+     */
+    class SyncTopicInfoTask extends Thread {
 
-                            String topic = split[0];
-                            String queue = split[1];
-                            long offset = Long.parseLong(split[2]);
-                            long masterOffset = Long.parseLong(split[3]);
-                            int masterCount = Integer.parseInt(split[4]);
-                            topicManager.updateCount(topic, queue, masterCount);
-                            trySyncMsgFromInstance(topic, queue, null, offset, masterOffset, null);
+        private volatile boolean interrupted = false;
+
+        private int emptySyncCount = 0;
+
+        SyncTopicInfoTask(String name) {
+            super(name);
+        }
+
+        @Override
+        public void run() {
+            while (!interrupted) {
+                try {
+                    log.debug("start sync slave topic info to master");
+
+                    ClusterHost master = nameServerManager.getMaster(springConfig.getServiceId());
+                    BrokerClusterConnector masterConnect = clusterConnectorManager.getConnector(master);
+
+                    boolean haveResponse = false;
+                    if (masterConnect == null) {
+                        log.error("can not connect to broker master");
+                    } else if (!NameServerManager.SLAVE_KEY.equals(springConfig.getType())) {
+                        log.error("broker is not slave, can't sync message from master [{}]", master);
+                        break;
+                    } else {
+                        List<String> topicList = topicManager.getTopicList();
+                        List<String> list = new ArrayList<>();
+                        for (String topic : topicList) {
+                            TopicInfo topicInfo = topicManager.getTopicInfo(topic);
+                            Map<String, OffsetAndCount> queueInfo = topicInfo.getQueueInfo();
+                            for (Map.Entry<String, OffsetAndCount> entry : queueInfo.entrySet()) {
+                                String TQ = BrokerUtil.makeTopicQueueKey(topic, entry.getKey());
+                                String s = TQ + BrokerUtil.KEY_SEPARATOR + entry.getValue().getOffset() + BrokerUtil.KEY_SEPARATOR + entry.getValue().getOffset();
+                                list.add(s);
+                            }
                         }
-                    }, syncMsgToCLusterExecutor);
-                }, fail -> {
-                    log.error("slave[{}] sync topic info to master[{}] error", selfHost, master);
-                });
+
+                        RemotingCommand request = new RemotingCommand();
+                        request.setFlag(RemotingCommandFlagConstants.BROKER_SLAVE_COMMIT_TOPIC_INFO);
+                        request.addExtField(ExtFieldsConstants.HOST_JSON, JSON.toJSONString(selfHost));
+                        request.setBody(Serializer.Algorithm.JSON.serialize(list));
+
+                        /*
+                         * master 会返回需要同步数据的queue，放在body里
+                         */
+                        SendCommandFuture future = masterConnect.sendMsgFuture(request);
+                        Object result = future.getResult();
+                        RemotingCommand response;
+                        if (result != null && (response = (RemotingCommand) result).getCode().equals(RemotingCommandCodeConstants.SUCCESS)) {
+                            //lines 就为master返回的需要同步的topic信息
+                            List<String> lines = Serializer.Algorithm.JSON.deserializeList(response.getBody(), String.class);
+
+                            if (lines.size() > 0) haveResponse = true;
+
+                            for (String line : lines) {
+                                log.debug("slave[{}] sync topic info to master[{}] success, need sync topic data [{}]", selfHost, master, line);
+                                String[] split = line.split(BrokerUtil.KEY_SEPARATOR);
+
+                                String topic = split[0];
+                                String queue = split[1];
+                                long offset = Long.parseLong(split[2]);
+                                long masterOffset = Long.parseLong(split[3]);
+                                int masterCount = Integer.parseInt(split[4]);
+                                topicManager.updateCount(topic, queue, masterCount);
+                                trySyncMsgFromInstance(topic, queue, null, offset, masterOffset, null);
+                            }
+                        }
+                    }
+
+                    if (haveResponse) {
+                        emptySyncCount = 0;
+                    } else {
+                        emptySyncCount++;
+                    }
+
+                    if (emptySyncCount >= SLAVE_TOPIC_EMPTY_SYNC_COUNT_LIMIT) {
+                        log.warn("slave broker sync topic info to master got empty response times than [{}]. sync after [{}] millis",
+                                SLAVE_TOPIC_EMPTY_SYNC_COUNT_LIMIT, 300000);
+                        LockSupport.parkUntil(this, System.currentTimeMillis() + 300000);
+                    } else {
+                        LockSupport.parkUntil(this, System.currentTimeMillis() + BrokerConfig.SLAVE_BROKER_SYNC_TOPIC_INFO_TO_MASTER_INTERVAL);
+                    }
+
+                } catch (InterruptedException e) {
+                    log.warn("slave broker sync topic info to master thread interrupted, shut it now");
+                    this.interrupted = true;
+                } catch (Exception e) {
+                    log.error("slave broker sync topic info to master got an unknown error", e);
+                }
             }
-
-            try {
-                TimeUnit.MILLISECONDS.sleep(BrokerConfig.SLAVE_BROKER_SYNC_TOPIC_INFO_TO_MASTER_INTERVAL-System.currentTimeMillis()+start);
-
-                slaveSyncTopicInfoToMasterStart();
-            } catch (InterruptedException e) {
-                log.error("wait for slave broker sync topic info to master error", e);
-            }
-
-        }, syncTopicInfoToMasterExecutor);
+        }
     }
 
 

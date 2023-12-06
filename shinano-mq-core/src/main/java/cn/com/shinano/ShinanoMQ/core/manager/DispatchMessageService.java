@@ -106,6 +106,7 @@ public class DispatchMessageService {
         }
     }
 
+    @Deprecated
     public void saveMessage(String topic, String queue, String tsId, Long offset, byte[] body, Channel channel) {
         PutMessageResult result = persistentSupport.doPutMessage(topic, queue, tsId, offset, body, null);
         RemotingCommand response = result.handlePutMessageResult(false);

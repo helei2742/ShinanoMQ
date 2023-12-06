@@ -11,6 +11,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.config.TopicConfig;
+import cn.com.shinano.ShinanoMQ.core.dto.MessageHeader;
 import cn.com.shinano.ShinanoMQ.core.store.IndexNode;
 import cn.com.shinano.ShinanoMQ.core.manager.AbstractBrokerManager;
 import cn.com.shinano.ShinanoMQ.core.manager.OffsetManager;
@@ -247,11 +248,12 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
         System.out.printf("fileOffset %d, targetOffset %d, fileLogicOffset %d\n", fileOffset, targetOffset, fileLogicStart);
         FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
 
-        long size = Math.min(file.length() - fileOffset, TopicConfig.SINGLE_MESSAGE_LENGTH*count);
+        long size = Math.min(file.length() - fileOffset, (long) TopicConfig.SINGLE_MESSAGE_LENGTH * count);
         MappedByteBuffer map = channel.map(FileChannel.MapMode.READ_ONLY, fileOffset, size);
 
-        byte[] lengthBytes = new byte[8];
+        int headerLength = BrokerConfig.MESSAGE_HEADER_LENGTH;
 
+        byte[] headerBytes = new byte[headerLength];
 
         List<SaveMessage> messages = new ArrayList<>();
 
@@ -259,7 +261,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
 
         long next = 0;
         while (map.position() < map.capacity()) {
-            if(map.remaining() < 8){
+            if(map.remaining() < headerLength){
                 break;
             }
 
@@ -268,11 +270,15 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
                 next = fileLogicStart + map.position()+fileOffset;
             }
 
-            map.get(lengthBytes);
+            map.get(headerBytes);
 
-            int length = ByteBuffer.wrap(lengthBytes).getInt();
-            //读到文件末尾
-            if (Arrays.equals(lengthBytes, BrokerConfig.PERSISTENT_FILE_END_MAGIC)) {
+            MessageHeader messageHeader = MessageHeader.generateMessageHeader(headerBytes);
+
+            int length = messageHeader.getLength();
+
+            //读到文件末尾,或者魔数不对不是消息
+            if (Arrays.equals(headerBytes, BrokerConfig.PERSISTENT_FILE_END_MAGIC)
+                    || !Arrays.equals(BrokerConfig.MESSAGE_HEADER_MAGIC, messageHeader.getMagic())) {
                 break;
             }
             if (next >= offsetLimit) break;
@@ -281,9 +287,9 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
             map.get(msgBytes);
 
             if(readable) {
-                next = next + msgBytes.length + 8;
+                next = next + msgBytes.length + headerLength;
                 SaveMessage e = BrokerUtil.brokerSaveBytesTurnMessage(msgBytes);
-                e.setLength(length + 8);
+                e.setLength(length + headerLength);
                 messages.add(e);
                 if(messages.size() >= count) break;
             }

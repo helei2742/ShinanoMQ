@@ -13,6 +13,7 @@ import cn.com.shinano.ShinanoMQ.core.dto.PutMessageResult;
 import cn.com.shinano.ShinanoMQ.core.dto.PutMessageStatus;
 import cn.com.shinano.ShinanoMQ.core.manager.topic.BrokerTopicInfo;
 import cn.com.shinano.ShinanoMQ.core.manager.*;
+import cn.com.shinano.ShinanoMQ.core.store.MappedFileManager;
 import cn.com.shinano.ShinanoMQ.core.support.IndexLogBuildSupport;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 import cn.com.shinano.ShinanoMQ.core.utils.StoreFileUtil;
@@ -64,6 +65,9 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
     @Autowired
     private IndexLogBuildSupport indexLogBuildSupport;
 
+    @Autowired
+    private MappedFileManager mappedFileManager;
+
     /**
      * 持久化消息，以topic-queue 为标识创建任务加入到线程池中执行。
      * 消息从dispatchMessageService.getTopicMessageBlockingQueue(topic)的阻塞队列里获取
@@ -105,12 +109,13 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
 
         PutMessageResult putMessageResult = new PutMessageResult();
         putMessageResult.setTransactionId(tsId);
-        Long startOffset = brokerTopicInfo.queryTopicQueueOffset(topic, queue);
 
         MappedFile mappedFile = null;
         try {
-            mappedFile = MappedFile.getMappedFile(topic, queue, startOffset);
-        } catch (IOException e) {
+//            mappedFile = MappedFile.getMappedFile(topic, queue, startOffset);
+            Long startOffset = appendOffset == null ? brokerTopicInfo.queryTopicQueueOffset(topic, queue) : appendOffset;
+            mappedFile = mappedFileManager.getMappedFile(topic, queue, startOffset);
+        } catch (Exception e) {
             log.error("create mapped file got an error", e);
             return putMessageResult.setStatus(PutMessageStatus.CREATE_MAPPED_FILE_FAILED);
         }
@@ -136,15 +141,17 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                     putMessageResult.setContent(body);
                     return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
                 case END_OF_FILE:
-                    mappedFile.loadNextFile(result.getWroteOffset());
-
-                    result = mappedFile.append(body, appendOffset);
-                    if (AppendMessageStatus.PUT_OK.equals(result.getStatus())) {
-                        putMessageResult.setOffset(result.getWroteOffset());
-                        putMessageResult.setContent(body);
-                        return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
-                    }
-                    break;
+//                    mappedFile.loadNextFile();
+                    appendOffset = result.getWroteOffset();
+//                    mappedFile = mappedFileManager.getMappedFile(topic, queue, appendOffset);
+//                    result = mappedFile.append(body, appendOffset);
+//                    if (AppendMessageStatus.PUT_OK.equals(result.getStatus())) {
+//                        putMessageResult.setOffset(result.getWroteOffset());
+//                        putMessageResult.setContent(body);
+//                        return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
+//                    }
+                    PutMessageResult result1 = doPutMessage(topic, queue, tsId, appendOffset, body, null);
+                    return result1;
                 case MESSAGE_SIZE_EXCEEDED:
                 case PROPERTIES_SIZE_EXCEEDED:
                     return putMessageResult.setStatus(PutMessageStatus.PROPERTIES_SIZE_EXCEEDED);
@@ -165,25 +172,27 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                                             String queue,
                                             long startOffset,
                                             byte[] bytes) {
-        String saveDir = StoreFileUtil.getTopicQueueSaveDir(topic, queue);
-        File dataFile = new File(saveDir, fileName);
-        try {
-            if(!dataFile.getParentFile().exists() && !dataFile.getParentFile().mkdirs()) {
-                return PutMessageStatus.CREATE_MAPPED_FILE_FAILED;
-            }
-
-            RandomAccessFile accessFile = new RandomAccessFile(dataFile, "rw");
-            FileChannel channel = accessFile.getChannel().position(startOffset);
-            channel.write(ByteBuffer.wrap(bytes));
-            channel.force(true);
+//        String saveDir = StoreFileUtil.getTopicQueueSaveDir(topic, queue);
+//        File dataFile = new File(saveDir, fileName);
+//        try {
+//            if(!dataFile.getParentFile().exists() && !dataFile.getParentFile().mkdirs()) {
+//                return PutMessageStatus.CREATE_MAPPED_FILE_FAILED;
+//            }
+//
+//            RandomAccessFile accessFile = new RandomAccessFile(dataFile, "rw");
+//            FileChannel channel = accessFile.getChannel().position(startOffset);
+//            channel.write(ByteBuffer.wrap(bytes));
+//            channel.force(true);
 //            accessFile.seek(startOffset);
 //            accessFile.write(bytes);
-        } catch (IOException e) {
-            log.error("persistent [{}], topic [{}], queue [{}], startOffset [{}] error",
-                    fileName, topic, queue, saveDir);
-            return PutMessageStatus.UNKNOWN_ERROR;
-        }
-        return PutMessageStatus.APPEND_LOCAL;
+//        } catch (IOException e) {
+//            log.error("persistent [{}], topic [{}], queue [{}], startOffset [{}] error",
+//                    fileName, topic, queue, saveDir);
+//            return PutMessageStatus.UNKNOWN_ERROR;
+//        }
+//        return PutMessageStatus.APPEND_LOCAL;
+
+        return doPutMessage(topic, queue, null, startOffset, bytes, null).getStatus();
     }
 
     @Override

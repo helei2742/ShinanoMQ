@@ -24,7 +24,7 @@ public class ReadMessageTest {
     @Test
     public void getMessageTest() throws InterruptedException {
         ShinanoProducerClient client
-                = new ShinanoProducerClient("127.0.0.1", 10023, "client-query" );
+                = new ShinanoProducerClient("127.0.0.1", 10022, "client-query" );
 
         client.run();
 

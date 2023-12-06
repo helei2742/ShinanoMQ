@@ -39,6 +39,9 @@ public class MappedFile {
     private final String fileDir;
 
     private long lastFlushTime = -1L;
+
+    private int mappedFileNumber;
+
     /**
      * 当前MappedFile文件的索引
      */
@@ -60,7 +63,7 @@ public class MappedFile {
      * @param file          传入文件时，在该文件里写；传入文件夹时新建writePosition名字的文件
      * @throws IOException
      */
-    protected MappedFile(long writePosition,
+    public MappedFile(long writePosition,
                          int filePosition,
                          long fileLimit,
                          File file) throws IOException {
@@ -71,7 +74,6 @@ public class MappedFile {
             this.file = file;
             this.fileDir = file.getParentFile().getAbsolutePath();
         }
-
         this.fileSize = BrokerConfig.PERSISTENT_FILE_SIZE;
         WRITE_POSITION_UPDATER.set(this, writePosition);
         FILE_POSITION_UPDATER.set(this, filePosition);
@@ -146,8 +148,9 @@ public class MappedFile {
 
         if (filePos + bytes.length >
                 mappedByteBuffer.capacity() - BrokerConfig.PERSISTENT_FILE_END_MAGIC.length) {
+            long nextOffset = ((writePos  / fileSize) + 1) * fileSize;
             return new AppendMessageResult(AppendMessageStatus.END_OF_FILE,
-                    writePos,
+                    nextOffset,
                     bytes.length,
                     bytes,
                     null,
@@ -185,6 +188,7 @@ public class MappedFile {
      * @return
      * @throws IOException
      */
+    @Deprecated
     public static MappedFile getMappedFile(String topic, String queue, long logicOffset) throws IOException {
         String mappedFileKey = BrokerUtil.makeTopicQueueKey(topic, queue);
 

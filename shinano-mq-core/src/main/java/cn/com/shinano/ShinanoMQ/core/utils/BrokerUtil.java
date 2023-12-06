@@ -6,6 +6,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.base.protocol.Serializer;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
+import cn.com.shinano.ShinanoMQ.core.dto.MessageHeader;
 import cn.hutool.core.util.RandomUtil;
 
 import java.nio.ByteBuffer;
@@ -44,7 +45,6 @@ public class BrokerUtil {
         SaveMessage saveMessage = new SaveMessage();
         saveMessage.setTransactionId(message.getTransactionId());
         saveMessage.setBody(message.getBody());
-        saveMessage.setReconsumeTimes(0);
         saveMessage.setTimestamp(System.currentTimeMillis());
         saveMessage.setStoreHost(BrokerConfig.BROKER_HOST);
         saveMessage.setOffset(offset);
@@ -52,12 +52,14 @@ public class BrokerUtil {
         saveMessage.setProps(message.getProperties());
 //        byte[] bytes = JSONObject.toJSONBytes(saveMessage);
         byte[] bytes = Serializer.Algorithm.Protostuff.serialize(saveMessage);
-        byte[] length = ByteBuffer.allocate(8).putInt(bytes.length).array();
-        byte[] res = new byte[bytes.length + length.length];
-        System.arraycopy(length, 0, res, 0, length.length);
-        System.arraycopy(bytes, 0, res, length.length, bytes.length);
+        byte[] header = MessageHeader.generateMessageHeader(bytes.length);
+
+        byte[] res = new byte[bytes.length + header.length];
+        System.arraycopy(header, 0, res, 0, header.length);
+        System.arraycopy(bytes, 0, res, header.length, bytes.length);
         return res;
     }
+
 
     public static SaveMessage brokerSaveBytesTurnMessage(byte[] msgBytes) {
         return Serializer.Algorithm.Protostuff.deserialize(msgBytes, SaveMessage.class);

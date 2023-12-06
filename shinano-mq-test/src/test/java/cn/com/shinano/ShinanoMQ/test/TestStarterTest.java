@@ -5,6 +5,7 @@ import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.TopicQueryConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.producer.ShinanoProducerClient;
+import cn.hutool.json.JSONArray;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,6 +89,8 @@ class TestStarterTest {
         long sendCost = System.currentTimeMillis() - start;
 
         TimeUnit.SECONDS.sleep(10);
+
+
 
         System.out.println(String.format("send msg over, total send [%d]",
                 putThreadCount * threadPutMessageCount));

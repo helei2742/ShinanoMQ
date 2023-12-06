@@ -3,6 +3,7 @@ package cn.com.shinano.ShinanoMQ.core.config;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 public class BrokerConfig {
@@ -20,7 +21,14 @@ public class BrokerConfig {
     public static String RETRY_LOG_SAVE_DIR = System.getProperty("user.dir") + File.separator + "retrylog";
     public static final String RETRY_LOG_SAVE_FILE_PATTERN = "%s@%s~%s.dat";
 
+
+
     public static final byte[] PERSISTENT_FILE_END_MAGIC = ByteBuffer.allocate(8).putLong(1111111111111111111L).array();
+
+    public static final byte[] MESSAGE_HEADER_MAGIC = ByteBuffer.wrap("shinano".getBytes(StandardCharsets.UTF_8)).array();
+
+    public static final int MESSAGE_HEADER_LENGTH = PERSISTENT_FILE_END_MAGIC.length + MESSAGE_HEADER_MAGIC.length;
+
 
     /**
      * broker刷新consumer 消费进度的间隔时间
@@ -48,7 +56,7 @@ public class BrokerConfig {
     /**
      * 单个数据文件大小，单位byte
      */
-    public static final long PERSISTENT_FILE_SIZE = 1024 * 1024L;
+    public static final long PERSISTENT_FILE_SIZE = 1024;
 
     /**
      * 同步拉取消息时一次最大长度
@@ -59,7 +67,7 @@ public class BrokerConfig {
     /**
      * 持久化时生成的索引文件等级， 4代表写入一条数据时1/2^3次方概率生成索引
      */
-    public static final int PERSISTENT_INDEX_LEVEL = 5;
+    public static final int PERSISTENT_INDEX_LEVEL = 6;
 
     /**
      * 操作系统一页的大小

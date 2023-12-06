@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -82,12 +83,13 @@ public class ShinanoNameServerManager implements NameServerManager {
            return null;
         }
         log.debug("service [{}] have instance list [{}]", serviceName, instance);
-        return instance.stream().filter(registeredHost -> {
-            if(registeredHost.getProps() != null) {
+        Optional<RegisteredHost> first = instance.stream().filter(registeredHost -> {
+            if (registeredHost.getProps() != null) {
                 return MASTER_KEY.equals(registeredHost.getProps().get(HOST_TYPE_KEY));
             }
             return false;
-        }).limit(1).collect(Collectors.toList()).get(0).getHost();
+        }).findFirst();
+        return first.map(RegisteredHost::getHost).orElse(null);
     }
 
     /**

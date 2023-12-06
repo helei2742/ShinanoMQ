@@ -72,10 +72,12 @@ public class StoreFileUtil {
      * @param offset
      * @return
      */
-    public static File getDataFileOfLogicOffset(String topic, String queue, long offset) throws IOException {
+    public static File getDataFileOfLogicOffset(String topic, String queue, long offset){
+        long index = (offset / BrokerConfig.PERSISTENT_FILE_SIZE);
         Path path = Paths.get(StoreFileUtil.getTopicQueueSaveDir(topic, queue));
-        String fix = getIndexFileNameWithoutFix(path, offset);
-        return new File(path.toString() +File.separator+ fix + ".dat");
+        long filename = BrokerConfig.PERSISTENT_FILE_SIZE * index;
+
+        return new File(path.toString() + File.separator + getSaveFileName(filename) + ".dat");
     }
 
     /**

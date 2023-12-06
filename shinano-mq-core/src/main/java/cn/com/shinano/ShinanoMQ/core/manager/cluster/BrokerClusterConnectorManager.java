@@ -32,8 +32,11 @@ public class BrokerClusterConnectorManager {
     }
 
     public BrokerClusterConnector getConnector(ClusterHost host) {
-        if(selfHost.equals(host)) return null;
-
+        if (selfHost.equals(host)) return null;
+        if (host == null) {
+            log.debug("param host is null");
+            return null;
+        }
         return connectMap.compute(host, (k, v) -> {
             if (v == null) {
                 try {
