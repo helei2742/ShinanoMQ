@@ -45,6 +45,7 @@ public abstract class ResultCallBackInvoker {
                             log.debug("handler expire, invoke fail handler, tsId[{}]", tsId);
                             fail.accept(RemotingCommand.TIME_OUT_COMMAND);
                         }
+                        expireMap.remove(tsId);
                     }
                 }
             }
@@ -53,6 +54,10 @@ public abstract class ResultCallBackInvoker {
 
     public void setExpireSeconds(int seconds) {
         this.expireSeconds = seconds * 1000L;
+    }
+
+    public void updateExpireTime(String tsId, long addTime) {
+        expireMap.put(tsId, System.currentTimeMillis() + addTime);
     }
 
     /**

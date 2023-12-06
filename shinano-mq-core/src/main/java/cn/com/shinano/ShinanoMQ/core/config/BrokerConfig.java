@@ -38,7 +38,7 @@ public class BrokerConfig {
     /**
      * 处理BoostrapHandler的线程数
      */
-    public static final int BOOTSTRAP_HANDLER_THREAD = 3;
+    public static final int BOOTSTRAP_HANDLER_THREAD = 10;
 
     /**
      * 查询topic的消息时的线程数
@@ -84,6 +84,8 @@ public class BrokerConfig {
      */
     public static final int LOCAL_PERSISTENT_WAIT_TIME_OUT_RETRY = 3;
 
+
+    public static final long SLAVE_BROKER_SYNC_TOPIC_INFO_TO_MASTER_INTERVAL = 5000;
 //    static {
 //        try {
 //            Field f = Unsafe.class.getDeclaredField("theUnsafe");

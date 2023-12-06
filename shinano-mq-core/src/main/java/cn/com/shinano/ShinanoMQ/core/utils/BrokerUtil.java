@@ -14,7 +14,7 @@ import java.util.UUID;
 
 public class BrokerUtil {
 
-    private static final String KEY_SEPARATOR = "!@!";
+    public static final String KEY_SEPARATOR = "!@!";
 
     public static String makeTopicQueueKey(String topic, String queue) {
         return topic + KEY_SEPARATOR + queue;

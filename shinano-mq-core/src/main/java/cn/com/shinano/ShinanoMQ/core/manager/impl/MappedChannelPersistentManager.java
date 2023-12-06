@@ -168,6 +168,10 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
         String saveDir = StoreFileUtil.getTopicQueueSaveDir(topic, queue);
         File dataFile = new File(saveDir, fileName);
         try {
+            if(!dataFile.getParentFile().exists() && !dataFile.getParentFile().mkdirs()) {
+                return PutMessageStatus.CREATE_MAPPED_FILE_FAILED;
+            }
+
             RandomAccessFile accessFile = new RandomAccessFile(dataFile, "rw");
             FileChannel channel = accessFile.getChannel().position(startOffset);
             channel.write(ByteBuffer.wrap(bytes));

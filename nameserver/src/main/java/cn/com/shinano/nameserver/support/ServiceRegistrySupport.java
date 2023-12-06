@@ -138,8 +138,10 @@ public class ServiceRegistrySupport {
         //如果当前不是master转发给master
         if (nameServerService.getMaster().equals(nameServerService.getServerHost())) {
             registryDTO.setRegistryState(RegistryState.BROADCAST_SLAVE);
+            log.debug("this server is master, broadcast it to slave");
         } else {
             registryDTO.setRegistryState(RegistryState.FORWARD_MASTER);
+            log.debug("this server is slave, forward it to master");
         }
 
 

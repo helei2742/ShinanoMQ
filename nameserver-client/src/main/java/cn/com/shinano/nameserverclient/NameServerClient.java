@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * @author lhe.shinano
@@ -46,11 +47,15 @@ public class NameServerClient extends AbstractNettyClient {
 
     private HashedWheelTimer refreshInstancesTimer;
 
-    public NameServerClient(String clientId, String remoteHost, int remotePort) {
+    private Consumer<List<RegisteredHost>> whenDiscoverService;
+
+    public NameServerClient(String clientId, String remoteHost, int remotePort, Consumer<List<RegisteredHost>> whenDiscoverService) {
         super(remoteHost, remotePort);
         this.clientId = clientId;
         this.serviceInstances = new ConcurrentHashMap<>();
         this.refreshInstancesTimer = new HashedWheelTimer(Executors.defaultThreadFactory(), 1L, TimeUnit.SECONDS, 512, true,-1L,Executors.newFixedThreadPool(1));
+
+        this.whenDiscoverService = whenDiscoverService;
     }
 
     public void init(String serviceId, String type, String clientId, String address, int port) {
@@ -78,11 +83,12 @@ public class NameServerClient extends AbstractNettyClient {
     /**
      * 服务注册
      */
-    public void registryService() {
+    public void registryService(Consumer<RemotingCommand> successCallBack) {
         RemotingCommand remotingCommand = new RemotingCommand();
         remotingCommand.setFlag(RemotingCommandFlagConstants.CLIENT_REGISTRY_SERVICE);
         remotingCommand.setBody(ProtostuffUtils.serialize(serviceRegistryDTO));
         sendMsg(remotingCommand, success->{
+            successCallBack.accept(success);
             log.info("service registry success, result command [{}]", success);
         }, fail->{
             log.error("service registry fail, request [{}]", remotingCommand);
@@ -121,6 +127,7 @@ public class NameServerClient extends AbstractNettyClient {
                     }
                 }, NameServerClientConfig.SERVICE_INSTANCE_REFRESH_INTERVAL, TimeUnit.SECONDS);
 
+                whenDiscoverService.accept(instanceVO.getInstances());
                 return instanceVO.getInstances();
             });
 

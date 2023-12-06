@@ -57,7 +57,7 @@ public class SaveMessageRequestProcessor implements RequestProcessor {
 //        brokerAckManager.setAckFlag(messageId, channel);
 //        交给下游处理
 //        dispatchMessageService.addMessageIntoQueue(brokerMessage);
-        RemotingCommand response = dispatchMessageService.saveMessage(message, channel, true);
+        RemotingCommand response = dispatchMessageService.saveMessage(message, channel, false);
         if(response != null) {
             channel.writeAndFlush(response);
         }

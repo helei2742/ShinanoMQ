@@ -5,7 +5,6 @@ import cn.com.shinano.ShinanoMQ.base.RemotingCommandDecoder;
 import cn.com.shinano.ShinanoMQ.base.RemotingCommandEncoder;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
-import cn.com.shinano.ShinanoMQ.base.idmaker.DistributeIdMaker;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.nameserver.config.NameServerConfig;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
@@ -15,7 +14,6 @@ import cn.com.shinano.nameserver.dto.VoteInfo;
 import cn.com.shinano.nameserver.processor.NameServerProcessorAdaptor;
 import cn.com.shinano.nameserver.support.MasterManagerSupport;
 import cn.com.shinano.nameserver.support.ServiceRegistrySupport;
-import cn.hutool.core.net.NetUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -132,7 +130,7 @@ public class NameServerService {
                         ch.pipeline().addLast(new RemotingCommandDecoder());
                         ch.pipeline().addLast(new RemotingCommandEncoder());
 
-                        ch.pipeline().addLast(adaptor);
+                        ch.pipeline().addLast(new NioEventLoopGroup(5), adaptor);
                     }
                 });
         nameserverChannelFuture = serverBootstrap.bind(this.host, this.port);
@@ -178,9 +176,10 @@ public class NameServerService {
     public Integer broadcastCommand(RemotingCommand command) {
         List<SendCommandFuture> results = new ArrayList<>();
         for (ClusterHost clusterHost : clusterConnectMap.keySet()) {
+            RemotingCommand request = command.clone();
+            request.setTransactionId(null);
             NameServerClusterService slave = clusterConnectMap.get(clusterHost);
-            command.setTransactionId(DistributeIdMaker.DEFAULT.nextId(clientId));
-            SendCommandFuture e = slave.sendCommand(command);
+            SendCommandFuture e = slave.sendCommand(request);
             if(e != null) results.add(e);
         }
 

@@ -1,20 +1,17 @@
-package cn.com.shinano.ShinanoMQ.core.manager.impl;
+package cn.com.shinano.ShinanoMQ.core.manager.cluster;
 
-import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
-import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.ShinanoMQ.base.dto.RegisteredHost;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerSpringConfig;
 import cn.com.shinano.ShinanoMQ.core.manager.NameServerManager;
 import cn.com.shinano.nameserverclient.NameServerClient;
-import cn.hutool.core.util.RandomUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.sql.Struct;
-import java.util.ArrayList;
+
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -29,9 +26,11 @@ public class ShinanoNameServerManager implements NameServerManager {
     @Autowired
     private BrokerSpringConfig brokerSpringConfig;
 
+    @Autowired
+    private BrokerClusterConnectorManager clusterConnectorManager;
 
     @Override
-    public void init() {
+    public void init(Consumer<NameServerClient> registerCallBack) {
         log.info("shinano mq broker start connect name server");
         String[] nameservers = brokerSpringConfig.getNameserver();
         nameServerClients = new NameServerClient[nameservers.length];
@@ -40,7 +39,7 @@ public class ShinanoNameServerManager implements NameServerManager {
             String nameserver = nameservers[i];
 
             String[] split = nameserver.split(":");
-            NameServerClient nameServerClient = new NameServerClient(brokerSpringConfig.getClientId(), split[0], Integer.parseInt(split[1]));
+            NameServerClient nameServerClient = new NameServerClient(brokerSpringConfig.getClientId(), split[0], Integer.parseInt(split[1]), this::whenServiceDiscover);
             nameServerClient.init(brokerSpringConfig.getServiceId(), brokerSpringConfig.getType(), brokerSpringConfig.getClientId(),
                     brokerSpringConfig.getAddress(), brokerSpringConfig.getPort());
             try {
@@ -52,24 +51,29 @@ public class ShinanoNameServerManager implements NameServerManager {
 
             // 只向一个nameserver注册
             if (i == 0) {
-                nameServerClient.registryService();
+                nameServerClient.registryService(remotingCommand -> {
+                    registerCallBack.accept( nameServerClients[0]);
+                });
             }
             nameServerClients[i] = nameServerClient;
         }
-
     }
 
     @Override
-    public void serviceDiscover(String serviceName) {
+    public void startServiceDiscover(String serviceName) {
         nameServerClients[0].discoverService(serviceName);
-
     }
 
+    public void whenServiceDiscover(List<RegisteredHost> instances) {
+        for (RegisteredHost instance : instances) {
+            clusterConnectorManager.getConnector(instance.getHost());
+        }
+    }
 
     /**
      * 拉取master
-     * @param serviceName
-     * @return
+     * @param serviceName serviceName
+     * @return master host
      */
     @Override
     public ClusterHost getMaster(String serviceName) {
@@ -88,8 +92,8 @@ public class ShinanoNameServerManager implements NameServerManager {
 
     /**
      * 获取slave节点们
-     * @param serviceName
-     * @return
+     * @param serviceName serviceName
+     * @return slave host list
      */
     @Override
     public List<ClusterHost> getSlaveList(String serviceName) {

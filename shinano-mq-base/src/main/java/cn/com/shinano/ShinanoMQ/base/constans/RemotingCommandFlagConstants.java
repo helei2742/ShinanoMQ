@@ -101,6 +101,9 @@ public class RemotingCommandFlagConstants {
     public static final int BROKER_SYNC_PULL_MESSAGE = 11;
     public static final int BROKER_SYNC_PULL_MESSAGE_RESPONSE = -11;
 
+    public static final int BROKER_SLAVE_COMMIT_TOPIC_INFO = 12;
+    public static final int BROKER_SLAVE_COMMIT_TOPIC_INFO_RESPONSE = -12;
+
 
     /**
      * nameserver 的投票选取master消息

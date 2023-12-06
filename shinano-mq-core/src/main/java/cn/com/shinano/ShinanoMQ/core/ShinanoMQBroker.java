@@ -6,9 +6,8 @@ import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerSpringConfig;
 import cn.com.shinano.ShinanoMQ.core.manager.NameServerManager;
+import cn.com.shinano.ShinanoMQ.core.manager.cluster.MessageInstanceSyncSupport;
 import cn.com.shinano.ShinanoMQ.core.processor.BrokerMessageProcessorAdaptor;
-import cn.com.shinano.nameserverclient.NameServerClient;
-import cn.hutool.core.util.RandomUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -22,7 +21,6 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -51,16 +49,22 @@ public class ShinanoMQBroker implements ApplicationRunner {
     @Autowired
     private NameServerManager nameServerManager;
 
+    @Autowired
+    private MessageInstanceSyncSupport instanceSyncSupport;
+
     public void init() {
+        nameServerManager.init(nameServerClient -> {
+            nameServerManager.startServiceDiscover(brokerSpringConfig.getServiceId());
 
-        nameServerManager.init();
-
-        wheelTimer.newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                nameServerManager.serviceDiscover(brokerSpringConfig.getServiceId());
+            if (nameServerManager.SLAVE_KEY.equals(brokerSpringConfig.getType())) {
+                wheelTimer.newTimeout(new TimerTask() {
+                    @Override
+                    public void run(Timeout timeout) throws Exception {
+                        instanceSyncSupport.slaveSyncTopicInfoToMasterStart();
+                    }
+                }, BrokerConfig.SLAVE_BROKER_SYNC_TOPIC_INFO_TO_MASTER_INTERVAL, TimeUnit.MILLISECONDS);
             }
-        }, 4000, TimeUnit.MILLISECONDS);
+        });
 
         resolveMessageGroup = new DefaultEventLoopGroup(BrokerConfig.BOOTSTRAP_HANDLER_THREAD);
 

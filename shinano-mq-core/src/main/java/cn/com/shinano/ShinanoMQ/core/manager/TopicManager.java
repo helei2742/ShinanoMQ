@@ -3,7 +3,6 @@ package cn.com.shinano.ShinanoMQ.core.manager;
 import cn.com.shinano.ShinanoMQ.core.manager.topic.TopicInfo;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 负责topic的创建修改删除操作。
@@ -70,4 +69,8 @@ public interface TopicManager {
      * @return
      */
     boolean recoverTopic(String topic);
+
+    Long getOffset(String topic, String queue);
+
+    void updateCount(String topic, String queue, int count);
 }

@@ -1,22 +1,16 @@
 package cn.com.shinano.ShinanoMQ.core.processor.msgprocessor;
 
 import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
-import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
-import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
-import cn.com.shinano.ShinanoMQ.core.manager.DispatchMessageService;
-import cn.com.shinano.ShinanoMQ.core.manager.PersistentSupport;
-import cn.com.shinano.ShinanoMQ.core.manager.TopicManager;
 import cn.com.shinano.ShinanoMQ.core.manager.TopicQueryManager;
+import cn.com.shinano.ShinanoMQ.core.manager.cluster.BrokerClusterTopicOffsetManager;
 import cn.com.shinano.ShinanoMQ.core.manager.cluster.MessageInstanceSyncSupport;
-import cn.com.shinano.ShinanoMQ.core.manager.topic.TopicInfo;
 import cn.com.shinano.ShinanoMQ.core.processor.RequestProcessor;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author lhe.shinano
@@ -29,11 +23,14 @@ public class ClusterSyncProcessor implements RequestProcessor {
 
     private final MessageInstanceSyncSupport messageInstanceSyncSupport;
 
+    private final BrokerClusterTopicOffsetManager clusterTopicOffsetManager;
 
     public ClusterSyncProcessor(TopicQueryManager topicQueryManager,
-                                MessageInstanceSyncSupport messageInstanceSyncSupport) {
+                                MessageInstanceSyncSupport messageInstanceSyncSupport,
+                                BrokerClusterTopicOffsetManager clusterTopicOffsetManager) {
         this.topicQueryManager = topicQueryManager;
         this.messageInstanceSyncSupport = messageInstanceSyncSupport;
+        this.clusterTopicOffsetManager = clusterTopicOffsetManager;
     }
 
     @Override
@@ -50,6 +47,10 @@ public class ClusterSyncProcessor implements RequestProcessor {
                     return;
                 }
                 topicQueryManager.queryTopicQueueBytesAfterOffset(request.getTopic(), request.getQueue(), offset, request.getTransactionId(), channel);
+                break;
+            case RemotingCommandFlagConstants.BROKER_SLAVE_COMMIT_TOPIC_INFO:
+
+                messageInstanceSyncSupport.trySyncMsgToSlave(request, channel);
                 break;
             default:
                 break;

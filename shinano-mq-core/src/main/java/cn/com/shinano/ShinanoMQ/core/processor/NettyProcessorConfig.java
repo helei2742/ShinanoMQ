@@ -1,6 +1,9 @@
 package cn.com.shinano.ShinanoMQ.core.processor;
 
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
+import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
+import cn.com.shinano.ShinanoMQ.core.config.BrokerSpringConfig;
+import cn.com.shinano.ShinanoMQ.core.manager.cluster.BrokerClusterTopicOffsetManager;
 import cn.com.shinano.ShinanoMQ.core.manager.cluster.MessageInstanceSyncSupport;
 import cn.com.shinano.ShinanoMQ.core.manager.topic.RetryTopicQueueManager;
 import cn.com.shinano.ShinanoMQ.core.processor.msgprocessor.*;
@@ -8,12 +11,16 @@ import cn.com.shinano.ShinanoMQ.core.manager.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
 public class NettyProcessorConfig {
+
+    @Autowired
+    private BrokerSpringConfig springConfig;
 
     @Autowired
     private BrokerQueryManager brokerQueryManager;
@@ -42,6 +49,9 @@ public class NettyProcessorConfig {
     @Autowired
     private MessageInstanceSyncSupport messageInstanceSyncSupport;
 
+    @Autowired
+    private BrokerClusterTopicOffsetManager brokerClusterTopicOffsetManager;
+
     @Bean("messageHandlerMap")
     public Map<Integer, RequestProcessor> messageHandlerMap() {
         Map<Integer, RequestProcessor> res = new HashMap<>();
@@ -50,9 +60,10 @@ public class NettyProcessorConfig {
         res.put(RemotingCommandFlagConstants.CLIENT_CONNECT, new ClientConnectProcessor(connectManager));
         res.put(RemotingCommandFlagConstants.TOPIC_INFO_QUERY, new TopicQueryProcessor(topicQueryManager, consumeOffsetManager));
 
-        ClusterSyncProcessor clusterSyncProcessor = new ClusterSyncProcessor(topicQueryManager, messageInstanceSyncSupport);
+        ClusterSyncProcessor clusterSyncProcessor = new ClusterSyncProcessor(topicQueryManager, messageInstanceSyncSupport, brokerClusterTopicOffsetManager);
         res.put(RemotingCommandFlagConstants.BROKER_SYNC_PULL_MESSAGE, clusterSyncProcessor);
         res.put(RemotingCommandFlagConstants.BROKER_SYNC_SAVE_MESSAGE, clusterSyncProcessor);
+        res.put(RemotingCommandFlagConstants.BROKER_SLAVE_COMMIT_TOPIC_INFO, clusterSyncProcessor);
 
         SaveMessageRequestProcessor saveMessageRequestProcessor = new SaveMessageRequestProcessor(topicManager,
                 dispatchMessageService, brokerAckManager);

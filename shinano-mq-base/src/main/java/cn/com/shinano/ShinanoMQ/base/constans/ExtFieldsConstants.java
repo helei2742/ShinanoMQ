@@ -97,4 +97,6 @@ public class ExtFieldsConstants {
     public static final String BROKER_TYPE = "broker_type";
     public static final String SAVE_FILE_NAME = "save_file_name";
     public static final String BODY_LENGTH = "body_length";
+
+    public static final String HOST_JSON = "host_json";
 }

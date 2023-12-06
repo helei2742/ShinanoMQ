@@ -45,6 +45,20 @@ public class RemotingCommand {
 
     private Object payLoad;
 
+    @Override
+    public RemotingCommand clone()  {
+        RemotingCommand remotingCommand = new RemotingCommand();
+        remotingCommand.setFlag(this.flag);
+        remotingCommand.setCode(this.code);
+        remotingCommand.setLanguage(this.language);
+        remotingCommand.setVersion(this.version);
+        remotingCommand.setRemark(this.remark);
+        remotingCommand.setExtFields(this.extFields);
+        remotingCommand.setBody(this.body);
+        remotingCommand.setPayLoad(this.payLoad);
+        return remotingCommand;
+    }
+
     public String getTopic() {
         return getExtFieldsValue(ExtFieldsConstants.TOPIC_KEY);
     }

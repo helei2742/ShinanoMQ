@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author lhe.shinano
@@ -74,5 +73,19 @@ public class LocalTopicManager implements TopicManager {
     @Override
     public boolean recoverTopic(String topic) {
         return brokerTopicInfo.recoverTopic(topic);
+    }
+
+    @Override
+    public Long getOffset(String topic, String queue) {
+        TopicInfo topicInfo = brokerTopicInfo.getTopicInfo(topic);
+        if(topicInfo == null) return null;
+        return topicInfo.getOffset(queue);
+    }
+
+    @Override
+    public void updateCount(String topic, String queue, int count) {
+        TopicInfo topicInfo = brokerTopicInfo.getTopicInfo(topic);
+        if(topicInfo == null) return;
+        topicInfo.getQueueInfo().get(queue).setCount(count);
     }
 }

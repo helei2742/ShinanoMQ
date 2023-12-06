@@ -1,8 +1,10 @@
 package cn.com.shinano.ShinanoMQ.core.manager;
 
 import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
+import cn.com.shinano.nameserverclient.NameServerClient;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * @author lhe.shinano
@@ -13,9 +15,9 @@ public interface NameServerManager {
     static final String SLAVE_KEY = "slave";
     static final String MASTER_KEY = "master";
 
-    void init();
+    void init(Consumer<NameServerClient> registerCallBack);
 
-    void serviceDiscover(String serviceName);
+    void startServiceDiscover(String serviceName);
 
     ClusterHost getMaster(String serviceName);
 

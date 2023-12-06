@@ -90,18 +90,19 @@ public class DispatchMessageService {
                     NettyChannelSendSupporter.sendMessage(response, channel);
                 }, executor);
             } else {
-                localFuture.whenComplete(((putMessageResult, throwable) -> {
+                localFuture.thenAcceptAsync((putMessageResult) -> {
+
                     RemotingCommand response = putMessageResult.handlePutMessageResult(false);
 
                     NettyChannelSendSupporter.sendMessage(response, channel);
-                }));
+                }, executor);
             }
 
             return null;
         } else {
             result = persistentSupport.syncPutMessage(message);
 
-           return result.handlePutMessageResult(isSyncMsgToCluster);
+            return result.handlePutMessageResult(isSyncMsgToCluster);
         }
     }
 

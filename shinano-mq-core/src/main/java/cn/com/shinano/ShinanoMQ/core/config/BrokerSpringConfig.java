@@ -1,7 +1,9 @@
 package cn.com.shinano.ShinanoMQ.core.config;
 
+import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Data
@@ -56,4 +58,10 @@ public class BrokerSpringConfig {
      * 是否允许异步发送
      */
     private Boolean asyncSendEnable;
+
+
+    @Bean(name = "selfHost")
+    public ClusterHost selfHost() {
+        return new ClusterHost(clientId, address, port);
+    }
 }
