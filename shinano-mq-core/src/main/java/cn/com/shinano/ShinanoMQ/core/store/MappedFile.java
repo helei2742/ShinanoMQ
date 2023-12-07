@@ -7,18 +7,19 @@ import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
 import cn.com.shinano.ShinanoMQ.core.utils.StoreFileUtil;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class MappedFile {
 
@@ -35,19 +36,21 @@ public class MappedFile {
     private volatile long writePosition; //逻辑上写的位置
     private volatile int filePosition; //物理上写的位置
 
+    private long startOffset;
+
     private final Long fileSize;
     private final String fileDir;
 
     private long lastFlushTime = -1L;
 
-    private int mappedFileNumber;
+    private AtomicBoolean appendable;
 
     /**
      * 当前MappedFile文件的索引
      */
     private final MappedFileIndex index;
 
-    private final ReentrantLock writeLock = new ReentrantLock();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     static {
         WRITE_POSITION_UPDATER = AtomicLongFieldUpdater.newUpdater(MappedFile.class, "writePosition");
@@ -64,9 +67,9 @@ public class MappedFile {
      * @throws IOException
      */
     public MappedFile(long writePosition,
-                         int filePosition,
-                         long fileLimit,
-                         File file) throws IOException {
+                      int filePosition,
+                      long fileLimit,
+                      File file) throws IOException {
         if (file.isDirectory()) {
             this.fileDir = file.getAbsolutePath();
             this.file = newFile(writePosition);
@@ -74,18 +77,23 @@ public class MappedFile {
             this.file = file;
             this.fileDir = file.getParentFile().getAbsolutePath();
         }
+
+        this.startOffset = writePosition;
         this.fileSize = BrokerConfig.PERSISTENT_FILE_SIZE;
         WRITE_POSITION_UPDATER.set(this, writePosition);
         FILE_POSITION_UPDATER.set(this, filePosition);
 
         this.index = new MappedFileIndex(fileDir, this.file.getName().replace(".dat", ""));
+        this.appendable = new AtomicBoolean(true);
 
         init(filePosition, fileLimit);
     }
 
     private void init(long filePosition, long limit) throws IOException {
         this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
-        this.mappedByteBuffer = this.fileChannel.map(FileChannel.MapMode.READ_WRITE, filePosition, limit);
+        this.mappedByteBuffer = this.fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, limit);
+        this.mappedByteBuffer.load();
+        this.mappedByteBuffer.position((int) filePosition);
         System.out.println("----" + mappedByteBuffer);
     }
 
@@ -106,7 +114,7 @@ public class MappedFile {
 
         byte[] bytes = BrokerUtil.messageTurnBrokerSaveBytes(message, writePos);
 
-        if(bytes.length > TopicConfig.SINGLE_MESSAGE_LENGTH) {
+        if (bytes.length > TopicConfig.SINGLE_MESSAGE_LENGTH) {
             return new AppendMessageResult(AppendMessageStatus.MESSAGE_SIZE_EXCEEDED, writePos,
                     bytes.length, null, message.getTransactionId(), System.currentTimeMillis());
         }
@@ -132,23 +140,31 @@ public class MappedFile {
                 bytes, message.getTransactionId(), System.currentTimeMillis());
     }
 
-    public AppendMessageResult append(byte[] bytes, long startOffset) {
+    public AppendMessageResult append(byte[] bytes, long startOffset, boolean normalAppend) {
         int filePos = FILE_POSITION_UPDATER.get(this);
         long writePos = WRITE_POSITION_UPDATER.get(this);
 
-        if(startOffset != writePos) {
+        if (startOffset != writePos) {
             return new AppendMessageResult(AppendMessageStatus.WRITE_POSITION_ERROR, writePos,
                     bytes.length, null, null, System.currentTimeMillis());
         }
 
-        if(bytes.length > TopicConfig.SINGLE_MESSAGE_LENGTH) {
+        if (bytes.length > TopicConfig.SINGLE_MESSAGE_LENGTH) {
             return new AppendMessageResult(AppendMessageStatus.MESSAGE_SIZE_EXCEEDED, writePos,
                     bytes.length, null, null, System.currentTimeMillis());
         }
 
         if (filePos + bytes.length >
-                mappedByteBuffer.capacity() - BrokerConfig.PERSISTENT_FILE_END_MAGIC.length) {
-            long nextOffset = ((writePos  / fileSize) + 1) * fileSize;
+                mappedByteBuffer.capacity() - BrokerConfig.PERSISTENT_FILE_END_MAGIC.length && normalAppend) {
+
+            if (mappedByteBuffer.remaining() >= BrokerConfig.PERSISTENT_FILE_END_MAGIC.length) {
+                //文件末尾写入魔数
+                mappedByteBuffer.put(BrokerConfig.PERSISTENT_FILE_END_MAGIC);
+            }
+
+            this.appendable.set(false);
+
+            long nextOffset = ((writePos / fileSize) + 1) * fileSize;
             return new AppendMessageResult(AppendMessageStatus.END_OF_FILE,
                     nextOffset,
                     bytes.length,
@@ -158,8 +174,11 @@ public class MappedFile {
         }
 
         this.mappedByteBuffer.put(bytes);
-        //更新内存中的索引
-        index.updateIndex(writePos, filePos);
+
+        if (normalAppend) {
+            //更新内存中的索引
+            index.updateIndex(writePos, filePos);
+        }
 
         writePos = WRITE_POSITION_UPDATER.addAndGet(this, bytes.length);
         filePos = FILE_POSITION_UPDATER.addAndGet(this, bytes.length);
@@ -167,6 +186,8 @@ public class MappedFile {
         return new AppendMessageResult(AppendMessageStatus.PUT_OK, writePos, bytes.length,
                 bytes, null, System.currentTimeMillis());
     }
+
+
     /**
      * 新创建一个File对象
      *
@@ -225,9 +246,11 @@ public class MappedFile {
         return existMappedFileMap.get(mappedFileKey);
     }
 
+
     private static String getLockStr(String key) {
-        return ("LOCK-"+MappedFile.class.getSimpleName() + "-" + key).intern();
+        return ("LOCK-" + MappedFile.class.getSimpleName() + "-" + key).intern();
     }
+
 
     public void flush() throws IOException {
         //原来的先刷盘
@@ -249,13 +272,14 @@ public class MappedFile {
         for (Map.Entry<String, MappedFile> entry : existMappedFileMap.entrySet()) {
             MappedFile mappedFile = entry.getValue();
 
-            if(mappedFile == null) continue;
+            if (mappedFile == null) continue;
 
-            if(System.currentTimeMillis() - mappedFile.getLastFlushTime() >= 10000) {
+            if (System.currentTimeMillis() - mappedFile.getLastFlushTime() >= 10000) {
                 mappedFile.flush();
             }
         }
     }
+
 
     public void loadNextFile(long writePos) {
         //装不下了，重新map一块装
@@ -278,14 +302,56 @@ public class MappedFile {
     }
 
     public void writeLock() {
-        writeLock.lock();
+        lock.writeLock().lock();
     }
 
     public void writeUnlock() {
-        writeLock.unlock();
+        lock.writeLock().unlock();
     }
 
     public long getWritePos() {
         return WRITE_POSITION_UPDATER.get(this);
+    }
+
+    public boolean appendAble() {
+        return this.appendable.get();
+    }
+
+    public String getFilename() {
+        return file.getName();
+    }
+
+    public byte[] readBytes(int offset, int length) {
+        lock.readLock().lock();
+        try {
+            byte[] bytes = new byte[length];
+            ByteBuffer slice = mappedByteBuffer.slice();
+            slice.position(offset);
+            slice.get(bytes);
+            return bytes;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public MappedByteBuffer getReadByteBuffer(int fileOffset) {
+        lock.writeLock().lock();
+        try {
+            int position = mappedByteBuffer.position();
+            mappedByteBuffer.position(fileOffset);
+            ByteBuffer slice = mappedByteBuffer.slice().asReadOnlyBuffer();
+            mappedByteBuffer.position(position);
+            return (MappedByteBuffer) slice;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public long getStartOffset() {
+        return startOffset;
+    }
+
+    public MappedFileIndex getIndex() {
+        return index;
     }
 }

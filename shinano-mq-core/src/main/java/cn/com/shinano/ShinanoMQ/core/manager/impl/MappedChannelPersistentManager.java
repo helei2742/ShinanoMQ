@@ -6,7 +6,6 @@ import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.store.AppendMessageResult;
-import cn.com.shinano.ShinanoMQ.core.store.AppendMessageStatus;
 import cn.com.shinano.ShinanoMQ.core.store.MappedFile;
 import cn.com.shinano.ShinanoMQ.core.dto.BrokerMessage;
 import cn.com.shinano.ShinanoMQ.core.dto.PutMessageResult;
@@ -27,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -77,6 +75,7 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
      * @param queue 消息的queue
      */
     @Override
+    @Deprecated
     public void persistentMessage(String id, String topic, String queue) {
         LinkedBlockingQueue<BrokerMessage> bq = dispatchMessageService.getTopicMessageBlockingQueue(topic);
 
@@ -97,15 +96,38 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
     }
 
 
+    /**
+     * 异步保存消息，
+     * @param message message
+     * @return CompletableFuture<PutMessageResult>
+     */
     @Override
     public CompletableFuture<PutMessageResult> asyncPutMessage(Message message) {
         return CompletableFuture.supplyAsync(() -> {
-            return doPutMessage(message.getTopic(), message.getQueue(), message.getTransactionId(), null, null, message);
+            return doPutMessage(message.getTopic(), message.getQueue(), message.getTransactionId(), true, null, null, message);
         }, executor);
     }
 
+    /**
+     * 写入消息，该方法有两种写入方式：
+     * 1。传入appendOffset以及body时，则会直接将body内容插入到appendOffset后面. 如果body太长导致一个MappedFile剩余可写入空间不足
+     *    则会抛出new IllegalArgumentException("put body length to big") 异常
+     *
+     * 2. 传入message， appendOffset以及body传入null，则将message写入到当前topic-queue的写入offset处
+     * @param topic topic
+     * @param queue queue
+     * @param tsId tsId
+     * @param insertMagic insertMagic时碰到了文件末尾，是否添加上文件末尾的魔数，选择写入方式2传入true，1传入false
+     * @param appendOffset appendOffset
+     * @param body body
+     * @param message message
+     * @IllegalArgumentException
+     * @return PutMessageResult
+     */
     @Override
-    public PutMessageResult doPutMessage(String topic, String queue, String tsId, Long appendOffset, byte[] body, Message message) {
+    public PutMessageResult doPutMessage(String topic, String queue, String tsId, boolean insertMagic, Long appendOffset, byte[] body, Message message)
+            throws IllegalArgumentException {
+        byte[] srcBody = body;
 
         PutMessageResult putMessageResult = new PutMessageResult();
         putMessageResult.setTransactionId(tsId);
@@ -122,6 +144,8 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
 
         mappedFile.writeLock();
         try {
+            if(!mappedFile.appendAble()) return doPutMessage(topic, queue, tsId, true, null, null, message);
+
             if (appendOffset == null) {
                 appendOffset = mappedFile.getWritePos();
             }
@@ -130,7 +154,7 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                 body = BrokerUtil.messageTurnBrokerSaveBytes(message, appendOffset);
             }
 
-            AppendMessageResult result = mappedFile.append(body, appendOffset);
+            AppendMessageResult result = mappedFile.append(body, appendOffset, insertMagic);
 
             switch (result.getStatus()) {
                 case PUT_OK:
@@ -141,6 +165,9 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                     putMessageResult.setContent(body);
                     return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
                 case END_OF_FILE:
+                    if (srcBody != null) {
+                        throw new IllegalArgumentException("put body length to big");
+                    }
 //                    mappedFile.loadNextFile();
                     appendOffset = result.getWroteOffset();
 //                    mappedFile = mappedFileManager.getMappedFile(topic, queue, appendOffset);
@@ -150,8 +177,7 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
 //                        putMessageResult.setContent(body);
 //                        return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
 //                    }
-                    PutMessageResult result1 = doPutMessage(topic, queue, tsId, appendOffset, body, null);
-                    return result1;
+                    return doPutMessage(topic, queue, tsId, true, appendOffset, body, null);
                 case MESSAGE_SIZE_EXCEEDED:
                 case PROPERTIES_SIZE_EXCEEDED:
                     return putMessageResult.setStatus(PutMessageStatus.PROPERTIES_SIZE_EXCEEDED);
@@ -166,33 +192,25 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
     }
 
 
+    /**
+     * 直接将bytes 内容保存到对应的数据文件中
+     * @param fileName fileName
+     * @param topic topic
+     * @param queue  queue
+     * @param startOffset startOffset
+     * @param bytes bytes
+     * @return PutMessageStatus
+     */
     @Override
     public PutMessageStatus persistentBytes(String fileName,
                                             String topic,
                                             String queue,
                                             long startOffset,
                                             byte[] bytes) {
-//        String saveDir = StoreFileUtil.getTopicQueueSaveDir(topic, queue);
-//        File dataFile = new File(saveDir, fileName);
-//        try {
-//            if(!dataFile.getParentFile().exists() && !dataFile.getParentFile().mkdirs()) {
-//                return PutMessageStatus.CREATE_MAPPED_FILE_FAILED;
-//            }
-//
-//            RandomAccessFile accessFile = new RandomAccessFile(dataFile, "rw");
-//            FileChannel channel = accessFile.getChannel().position(startOffset);
-//            channel.write(ByteBuffer.wrap(bytes));
-//            channel.force(true);
-//            accessFile.seek(startOffset);
-//            accessFile.write(bytes);
-//        } catch (IOException e) {
-//            log.error("persistent [{}], topic [{}], queue [{}], startOffset [{}] error",
-//                    fileName, topic, queue, saveDir);
-//            return PutMessageStatus.UNKNOWN_ERROR;
-//        }
-//        return PutMessageStatus.APPEND_LOCAL;
-
-        return doPutMessage(topic, queue, null, startOffset, bytes, null).getStatus();
+        if (startOffset%BrokerConfig.PERSISTENT_FILE_SIZE + bytes.length > BrokerConfig.PERSISTENT_FILE_SIZE) {
+            throw new IllegalArgumentException(String.format("start offset %d append bytes length %d over than file size", startOffset, bytes.length));
+        }
+        return doPutMessage(topic, queue, null, false, startOffset, bytes, null).getStatus();
     }
 
     @Override
@@ -272,7 +290,7 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
 
         @Override
         public void run() {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 BrokerMessage msg = null;
                 try {
                     msg = bq.take();

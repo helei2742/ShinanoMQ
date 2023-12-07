@@ -23,7 +23,7 @@ public interface PersistentSupport {
      */
     CompletableFuture<PutMessageResult> asyncPutMessage(Message message);
 
-    PutMessageResult doPutMessage(String topic, String queue, String tsId, Long slaveOffset, byte[] body, Message message);
+    PutMessageResult doPutMessage(String topic, String queue, String tsId, boolean insertMagic, Long slaveOffset, byte[] body, Message message);
 
     PutMessageStatus persistentBytes(String fileName, String topic, String queue, long startOffset, byte[] bytes);
 

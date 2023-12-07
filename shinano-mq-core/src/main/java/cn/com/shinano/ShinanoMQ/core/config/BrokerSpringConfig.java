@@ -60,6 +60,8 @@ public class BrokerSpringConfig {
     private Boolean asyncSendEnable;
 
 
+    private Long mappedFileFlushInterval;
+
     @Bean(name = "selfHost")
     public ClusterHost selfHost() {
         return new ClusterHost(clientId, address, port);

@@ -23,3 +23,5 @@ shinano:
       producer-commit-ack-ttl: 300
       producer-commit-ack-thread: 3
       asyncSendEnable: true
+
+      mappedFileFlushInterval: 10000

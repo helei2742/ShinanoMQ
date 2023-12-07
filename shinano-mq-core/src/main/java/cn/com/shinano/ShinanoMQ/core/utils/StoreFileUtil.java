@@ -87,6 +87,7 @@ public class StoreFileUtil {
      * @return              没有后缀的文件名
      * @throws IOException
      */
+    @Deprecated
     public static String getIndexFileNameWithoutFix(Path path, long logicOffset) throws IOException {
 
         List<Long> startOffsets = new ArrayList<>();
@@ -111,6 +112,10 @@ public class StoreFileUtil {
 
         return StoreFileUtil.getSaveFileName(startOffsets.get(index));
     }
+
+//    public static long getLogicOffsetSaveFileName(long logicOffset) {
+//
+//    }
 
     /**
      * 移动topic的数据文件，
