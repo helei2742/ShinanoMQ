@@ -129,4 +129,12 @@ public class MappedFileIndex {
             return indexNode;
         }
     }
+
+    public List<IndexNode> getIndexList() {
+        return new ArrayList<>(indexQueue);
+    }
+
+    public void addIndexNode(IndexNode indexNode) {
+        this.indexQueue.offer(indexNode);
+    }
 }

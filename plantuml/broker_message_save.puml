@@ -1,0 +1,59 @@
+@startuml
+'broker 收到保存消息的命令后的处理流程
+
+autonumber 1.0
+
+autonumber inc B
+BrokerMessageProcessorAdaptor -> SaveMessageRequestProcessor: Dispatch Request\n invoke handlerMessage()
+SaveMessageRequestProcessor -> DispatchMessageService : invoke saveMessage()
+
+autonumber inc A
+alt isSyncMsgToCluster==true
+    DispatchMessageService -> PersistentSupport :  invoke asyncPutMessage()
+else isSyncMsgToCluster==false
+    DispatchMessageService -> PersistentSupport : invoke syncPutMessage()
+    PersistentSupport -> PersistentSupport : invoke asyncPutMessage()
+end
+
+autonumber inc A
+PersistentSupport -> PersistentSupport : invoke doPutMessage()
+PersistentSupport -> MappedFileManager : invoke getMappedFile()
+
+alt request MappedFile didn't exist
+    MappedFileManager -> MappedFile : new MappedFile()
+end
+
+MappedFileManager -> PersistentSupport : return MappedFile Object
+PersistentSupport --> MappedFile : invoke MappedFile.append()
+
+
+autonumber inc A
+alt offset参数不合法 \n 消息超过单条插入大小 \n 插入失败
+    MappedFile -> PersistentSupport : 返回相应错误标识
+else 写到文件末尾
+    MappedFile -> PersistentSupport : 返回END_OF_FILE标识
+    PersistentSupport -> PersistentSupport : invoke doPutMessage()
+    note over PersistentSupport
+        4.3 再次调用doPutMessage时
+        用的会是下一个MappedFile
+    end note
+else 插入成功
+    MappedFile -> MappedFileIndex : 创建索引
+    MappedFile -> PersistentSupport : 返回PUT_OK标识
+end
+
+autonumber inc A
+PersistentSupport -> DispatchMessageService : return put message result
+
+alt isSyncMsgToCluster==true
+    DispatchMessageService -> SaveMessageRequestProcessor : return result
+    note over SaveMessageRequestProcessor
+           直接通过channel写入响应
+        end note
+else isSyncMsgToCluster==false
+    note over DispatchMessageService
+       直接通过channel写入响应
+    end note
+end
+
+@enduml

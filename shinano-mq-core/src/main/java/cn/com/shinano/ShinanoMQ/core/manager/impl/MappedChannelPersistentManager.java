@@ -160,23 +160,15 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
                 case PUT_OK:
                     //更新offset
                     offsetManager.updateTopicQueueOffset(topic, queue, result.getWroteOffset());
-
                     putMessageResult.setOffset(result.getWroteOffset());
                     putMessageResult.setContent(body);
+                    putMessageResult.setMappedFile(mappedFile);
                     return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
                 case END_OF_FILE:
                     if (srcBody != null) {
                         throw new IllegalArgumentException("put body length to big");
                     }
-//                    mappedFile.loadNextFile();
                     appendOffset = result.getWroteOffset();
-//                    mappedFile = mappedFileManager.getMappedFile(topic, queue, appendOffset);
-//                    result = mappedFile.append(body, appendOffset);
-//                    if (AppendMessageStatus.PUT_OK.equals(result.getStatus())) {
-//                        putMessageResult.setOffset(result.getWroteOffset());
-//                        putMessageResult.setContent(body);
-//                        return putMessageResult.setStatus(PutMessageStatus.APPEND_LOCAL);
-//                    }
                     return doPutMessage(topic, queue, tsId, true, appendOffset, body, null);
                 case MESSAGE_SIZE_EXCEEDED:
                 case PROPERTIES_SIZE_EXCEEDED:
@@ -210,7 +202,8 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
         if (startOffset%BrokerConfig.PERSISTENT_FILE_SIZE + bytes.length > BrokerConfig.PERSISTENT_FILE_SIZE) {
             throw new IllegalArgumentException(String.format("start offset %d append bytes length %d over than file size", startOffset, bytes.length));
         }
-        return doPutMessage(topic, queue, null, false, startOffset, bytes, null).getStatus();
+        PutMessageResult result = doPutMessage(topic, queue, null, false, startOffset, bytes, null);
+        return result.getStatus();
     }
 
     @Override

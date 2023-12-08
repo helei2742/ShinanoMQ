@@ -13,7 +13,12 @@ import cn.com.shinano.ShinanoMQ.core.dto.OffsetAndCount;
 import cn.com.shinano.ShinanoMQ.core.dto.PutMessageStatus;
 import cn.com.shinano.ShinanoMQ.core.manager.*;
 import cn.com.shinano.ShinanoMQ.core.manager.topic.TopicInfo;
+import cn.com.shinano.ShinanoMQ.core.store.IndexNode;
+import cn.com.shinano.ShinanoMQ.core.store.MappedFile;
+import cn.com.shinano.ShinanoMQ.core.store.MappedFileManager;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
+import cn.com.shinano.ShinanoMQ.core.utils.StoreFileUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +28,18 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Collectors;
 
 /**
  * @author lhe.shinano
@@ -75,6 +87,9 @@ public class MessageInstanceSyncSupport implements InitializingBean {
 
     @Autowired
     private BrokerClusterTopicOffsetManager clusterTopicOffsetManager;
+
+    @Autowired
+    private MappedFileManager mappedFileManager;
 
 
     public void commitSlaveTopicInfoAndSendNeedSyncMsg(RemotingCommand request, Channel channel) {
@@ -209,6 +224,47 @@ public class MessageInstanceSyncSupport implements InitializingBean {
         }, syncMsgToCLusterExecutor);
     }
 
+
+    /**
+     * 查询index file， 结果写入channel返回
+     *
+     * @param request request
+     * @param channel channel
+     */
+    public void queryIndexFile(RemotingCommand request, Channel channel) {
+        CompletableFuture.runAsync(() -> {
+            String topic = request.getTopic();
+            String queue = request.getQueue();
+            Long offset = request.getExtFieldsLong(ExtFieldsConstants.OFFSET_KEY);
+            String indexFileName = request.getExtFieldsValue(ExtFieldsConstants.INDEX_FILE_NAME_KEY);
+
+            MappedFile mappedFile = mappedFileManager.getMappedFileNoCreate(topic, queue, offset);
+
+            RemotingCommand response = RemotingCommandPool.getObject();
+            response.setFlag(RemotingCommandFlagConstants.BROKER_SYNC_PULL_INDEX_RESPONSE);
+            response.setCode(RemotingCommandCodeConstants.SUCCESS);
+            response.setTransactionId(request.getTransactionId());
+            try {
+                String indexString = "";
+                if (mappedFile != null) {
+                    indexString = mappedFile.getIndex().getIndexList().stream().map(IndexNode::toSaveString).collect(Collectors.joining());
+                } else {
+                    Path path = Paths.get(StoreFileUtil.getTopicQueueSaveDir(topic, queue) + File.separator + indexFileName);
+                    if (Files.exists(path)) {
+
+                        indexString = String.join("\n", Files.readAllLines(path));
+
+                    }
+                }
+                response.setBody(Serializer.Algorithm.Protostuff.serialize(indexString));
+            } catch (Exception e) {
+                log.error("read index file [{}] context error", indexFileName, e);
+                response.setCode(RemotingCommandCodeConstants.FAIL);
+            }
+
+            NettyChannelSendSupporter.sendMessage(response, channel);
+        }, syncMsgToCLusterExecutor);
+    }
 
     @Override
     public void afterPropertiesSet() {
@@ -346,6 +402,8 @@ public class MessageInstanceSyncSupport implements InitializingBean {
 
         private int retry;
 
+        private Set<String> syncIndexNameSet;
+
         public SyncMessageTask(String key, ClusterHost target, long startOffset, long endOffset) {
             this.key = key;
             Pair<String, String> pair = BrokerUtil.getTopicQueueFromKey(key);
@@ -357,6 +415,8 @@ public class MessageInstanceSyncSupport implements InitializingBean {
             this.currentOffset = startOffset;
 
             this.retry = 0;
+
+            this.syncIndexNameSet = new HashSet<>();
         }
 
         @Override
@@ -373,22 +433,30 @@ public class MessageInstanceSyncSupport implements InitializingBean {
                     }
                     RemotingCommand response;
 
-                    if (obj != null && !(response = (RemotingCommand) obj).equals(RemotingCommand.TIME_OUT_COMMAND)) {
+                    if (obj != null && !(response = (RemotingCommand) obj).equals(RemotingCommand.TIME_OUT_COMMAND)
+                            && response.getCode() != RemotingCommandCodeConstants.FAIL) {
+
                         Long offset = response.getExtFieldsLong(ExtFieldsConstants.OFFSET_KEY);
                         String fileName = response.getExtFieldsValue(ExtFieldsConstants.SAVE_FILE_NAME);
                         Integer length = response.getExtFieldsInt(ExtFieldsConstants.BODY_LENGTH);
+
                         if (offset == null) {
                             log.error("response of sync msg from [{}] didn't have offset field", target);
                             break;
                         }
                         if (length == 0) break;
 
-                        if (offset == currentOffset) {
-                            persistentSupport.persistentBytes(fileName, topic, queue, offset, response.getBody());
+                        if (offset == currentOffset &&
+                                PutMessageStatus.APPEND_LOCAL == persistentSupport.persistentBytes(fileName, topic, queue, offset, response.getBody())) {
                             currentOffset += length;
                             offsetManager.updateTopicQueueOffset(topic, queue, currentOffset);
+                            if (!syncIndexNameSet.contains(fileName)) {
+                                syncIndexFromInstance(target, topic, queue, offset, fileName);
+                            }
                         } else if (currentOffset == endOffset) {
                             break;
+                        } else {
+                            log.error("persistent bytes in local error, fileName[{}], offset[{}],length[{}] error, retry[{}]", fileName, offset, length, retry++);
                         }
                     } else {
                         log.warn("request sync msg retry [{}], topic-queue[{}], remote[{}], current offset[{}], end offset[{}]",
@@ -411,6 +479,50 @@ public class MessageInstanceSyncSupport implements InitializingBean {
             command.addExtField(ExtFieldsConstants.QUEUE_KEY, queue);
             command.addExtField(ExtFieldsConstants.OFFSET_KEY, String.valueOf(offset));
             return connector.sendMsgFuture(command);
+        }
+
+        private void syncIndexFromInstance(ClusterHost target, String topic, String queue, long offset, String indexFileName) {
+            syncIndexNameSet.add(indexFileName);
+
+            BrokerClusterConnector connector = clusterConnectorManager.getConnector(target);
+
+            RemotingCommand request = RemotingCommandPool.getObject();
+            request.setFlag(RemotingCommandFlagConstants.BROKER_SYNC_PULL_INDEX);
+            request.addExtField(ExtFieldsConstants.TOPIC_KEY, topic);
+            request.addExtField(ExtFieldsConstants.QUEUE_KEY, queue);
+            request.addExtField(ExtFieldsConstants.OFFSET_KEY, String.valueOf(offset));
+            String fileName = indexFileName.replace(".dat", ".idx");
+            request.addExtField(ExtFieldsConstants.INDEX_FILE_NAME_KEY, fileName);
+
+            SendCommandFuture future = connector.sendMsgFuture(request);
+
+            if (future != null) {
+                Object obj = null;
+                try {
+                    obj = future.getResult();
+                    RemotingCommand response;
+                    if (obj != null
+                            && !(response = (RemotingCommand) obj).equals(RemotingCommand.TIME_OUT_COMMAND)
+                            && response.getCode() != RemotingCommandCodeConstants.FAIL) {
+
+                        String deserialize = Serializer.Algorithm.Protostuff.deserialize(response.getBody(), String.class);
+//                        String[] indexContent = deserialize.split("\n");
+//                        MappedFile mappedFile = mappedFileManager.getMappedFile(topic, queue, offset);
+//                        for (String nodeStr : indexContent) {
+//                            if (StrUtil.isBlank(nodeStr)) continue;
+//                            mappedFile.getIndex().addIndexNode(IndexNode.toIndexNode(nodeStr));
+//                        }
+                        Path path = Paths.get(StoreFileUtil.getTopicQueueSaveDir(topic, queue) + File.separator + fileName);
+                        Files.write(path, deserialize.getBytes(StandardCharsets.UTF_8));
+
+                        log.info("sync file topic[{}]-queue[{}]-[{}] index file success",
+                                topic, queue, indexFileName);
+                    }
+                } catch (Exception e) {
+                    log.error("request sync index file [{}] from [{}] error", indexFileName, target);
+                    syncIndexNameSet.remove(indexFileName);
+                }
+            }
         }
     }
 }

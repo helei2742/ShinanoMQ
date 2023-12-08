@@ -25,9 +25,13 @@ public class BrokerConfig {
 
     public static final byte[] PERSISTENT_FILE_END_MAGIC = ByteBuffer.allocate(8).putLong(1111111111111111111L).array();
 
+    public static final int MESSAGE_HEADER_LENGTH_LENGTH = 4;
     public static final byte[] MESSAGE_HEADER_MAGIC = ByteBuffer.wrap("shinano".getBytes(StandardCharsets.UTF_8)).array();
+    public static final int MESSAGE_HEADER_LOG_OFFSET_LENGTH = 8;
+    public static final int MESSAGE_HEADER_LOGIC_OFFSET_LENGTH = 8;
+    public static final int MESSAGE_HEADER_LENGTH = MESSAGE_HEADER_LENGTH_LENGTH + MESSAGE_HEADER_MAGIC.length
+            + MESSAGE_HEADER_LOG_OFFSET_LENGTH + MESSAGE_HEADER_LOGIC_OFFSET_LENGTH;
 
-    public static final int MESSAGE_HEADER_LENGTH = PERSISTENT_FILE_END_MAGIC.length + MESSAGE_HEADER_MAGIC.length;
 
 
     /**

@@ -52,6 +52,11 @@ public class ClusterSyncProcessor implements RequestProcessor {
 
                 messageInstanceSyncSupport.commitSlaveTopicInfoAndSendNeedSyncMsg(request, channel);
                 break;
+
+            case RemotingCommandFlagConstants.BROKER_SYNC_PULL_INDEX:
+
+                messageInstanceSyncSupport.queryIndexFile(request, channel);
+                break;
             default:
                 break;
         }

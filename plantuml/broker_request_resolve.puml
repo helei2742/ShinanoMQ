@@ -1,0 +1,37 @@
+@startuml
+
+participant SimpleChannelInboundHandler
+
+participant AbstractNettyProcessorAdaptor
+note over AbstractNettyProcessorAdaptor
+继承SimpleChannelInboundHandler
+end note
+
+participant BrokerMessageProcessorAdaptor
+note over BrokerMessageProcessorAdaptor
+继承AbstractNettyProcessorAdaptor
+end note
+
+entity messageHandlerMap
+note over messageHandlerMap
+    启动时，注册相应的Processor
+    到该Map对象里
+end note
+
+
+autonumber
+SimpleChannelInboundHandler -> AbstractNettyProcessorAdaptor : 由netty框架调用channelRead0方法
+
+alt 心跳消息
+    AbstractNettyProcessorAdaptor -> AbstractNettyProcessorAdaptor : handlePing
+else 其它消息
+    AbstractNettyProcessorAdaptor -> BrokerMessageProcessorAdaptor : handlerMessage
+    messageHandlerMap -> BrokerMessageProcessorAdaptor: 通过消息的Flag属性获取对应Processor
+    BrokerMessageProcessorAdaptor -> RequestProcessor : 调用handlerMessage(RemoteCommand, Channel)方法处理请求
+end
+
+note over RequestProcessor
+处理完成后，通过传入的channel
+返回响应
+end note
+@enduml

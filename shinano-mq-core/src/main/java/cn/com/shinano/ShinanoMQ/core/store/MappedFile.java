@@ -45,6 +45,8 @@ public class MappedFile {
 
     private AtomicBoolean appendable;
 
+    private final int HERDER_OFFSET_POSITION = BrokerConfig.MESSAGE_HEADER_LENGTH_LENGTH + BrokerConfig.MESSAGE_HEADER_MAGIC.length;
+
     /**
      * 当前MappedFile文件的索引
      */
@@ -173,12 +175,20 @@ public class MappedFile {
                     System.currentTimeMillis());
         }
 
-        this.mappedByteBuffer.put(bytes);
 
-        if (normalAppend) {
+        if (normalAppend) { //是普通的的插入单条消息
             //更新内存中的索引
             index.updateIndex(writePos, filePos);
+
+            //更新消息头字段
+            System.arraycopy(ByteBuffer.allocate(BrokerConfig.MESSAGE_HEADER_LOG_OFFSET_LENGTH).putLong(filePos).array(),
+                    0, bytes, HERDER_OFFSET_POSITION, BrokerConfig.MESSAGE_HEADER_LOG_OFFSET_LENGTH);
+            System.arraycopy(ByteBuffer.allocate(BrokerConfig.MESSAGE_HEADER_LOGIC_OFFSET_LENGTH).putLong(writePos).array(),
+                    0, bytes, HERDER_OFFSET_POSITION + BrokerConfig.MESSAGE_HEADER_LOG_OFFSET_LENGTH,
+                    BrokerConfig.MESSAGE_HEADER_LOGIC_OFFSET_LENGTH);
         }
+
+        this.mappedByteBuffer.put(bytes);
 
         writePos = WRITE_POSITION_UPDATER.addAndGet(this, bytes.length);
         filePos = FILE_POSITION_UPDATER.addAndGet(this, bytes.length);

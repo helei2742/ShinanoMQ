@@ -46,6 +46,7 @@ public class BrokerClusterConnector extends AbstractNettyClient {
                         switch (remotingCommand.getFlag()) {
                             case RemotingCommandFlagConstants.BROKER_SYNC_SAVE_MESSAGE_RESPONSE:
                             case RemotingCommandFlagConstants.BROKER_SYNC_PULL_MESSAGE_RESPONSE:
+                            case RemotingCommandFlagConstants.BROKER_SYNC_PULL_INDEX_RESPONSE:
                                 resultCallBackInvoker.invokeCallBack(remotingCommand.getTransactionId(), remotingCommand);
                                 break;
                             case RemotingCommandFlagConstants.BROKER_SLAVE_COMMIT_TOPIC_INFO_RESPONSE:

@@ -1,13 +1,11 @@
 package cn.com.shinano.ShinanoMQ.core.dto;
 
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
-import com.alibaba.fastjson.JSONArray;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 /**
  * @author lhe.shinano
@@ -17,8 +15,14 @@ import java.nio.charset.StandardCharsets;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MessageHeader {
+    //消息长度
     private int length;
+    //消息魔数
     private byte[] magic;
+    //在数据文件的offset
+    private long logOffset;
+    //逻辑offset
+    private long logicOffset;
 
     public static MessageHeader generateMessageHeader(byte[] bytes) {
         if (bytes.length != BrokerConfig.MESSAGE_HEADER_LENGTH) {
@@ -31,11 +35,16 @@ public class MessageHeader {
         header.get(magicByte);
         messageHeader.setMagic(magicByte);
 
+        messageHeader.setLogOffset(header.getLong());
+        messageHeader.setLogicOffset(header.getLong());
         return messageHeader;
     }
 
 
     public static byte[] generateMessageHeader(int length) {
-        return ByteBuffer.allocate(BrokerConfig.MESSAGE_HEADER_LENGTH).putInt(length).put(BrokerConfig.MESSAGE_HEADER_MAGIC).array();
+        return ByteBuffer.allocate(BrokerConfig.MESSAGE_HEADER_LENGTH)
+                .putInt(length)
+                .put(BrokerConfig.MESSAGE_HEADER_MAGIC)
+                .array();
     }
 }

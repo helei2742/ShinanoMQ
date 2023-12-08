@@ -4,6 +4,7 @@ import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
+import cn.com.shinano.ShinanoMQ.core.store.MappedFile;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ public class PutMessageResult {
     private long offset;
     private byte[] content;
     private PutMessageStatus status;
+    private MappedFile mappedFile;
 
     public PutMessageResult(String tsId, PutMessageStatus status) {
         this.transactionId = tsId;

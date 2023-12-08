@@ -38,19 +38,19 @@ public class BrokerUtil {
     /**
      * 消息转换为存储的字节
      * @param message
-     * @param offset
+     * @param logicOffset
      * @return
      */
-    public static byte[] messageTurnBrokerSaveBytes(Message message, long offset) {
+    public static byte[] messageTurnBrokerSaveBytes(Message message, long logicOffset) {
         SaveMessage saveMessage = new SaveMessage();
         saveMessage.setTransactionId(message.getTransactionId());
         saveMessage.setBody(message.getBody());
         saveMessage.setTimestamp(System.currentTimeMillis());
         saveMessage.setStoreHost(BrokerConfig.BROKER_HOST);
-        saveMessage.setOffset(offset);
+//        saveMessage.setOffset(logicOffset);
         saveMessage.setReconsumeTimes(message.getRetryTimes());
         saveMessage.setProps(message.getProperties());
-//        byte[] bytes = JSONObject.toJSONBytes(saveMessage);
+
         byte[] bytes = Serializer.Algorithm.Protostuff.serialize(saveMessage);
         byte[] header = MessageHeader.generateMessageHeader(bytes.length);
 

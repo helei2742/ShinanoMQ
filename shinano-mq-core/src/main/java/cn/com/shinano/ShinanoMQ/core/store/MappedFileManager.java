@@ -58,6 +58,19 @@ public class MappedFileManager {
     }
 
     /**
+     * 获取MappedFile， 如果不存在，返回null
+     * @param topic topic
+     * @param queue queue
+     * @param offset offset 该文件的offset，会安装BrokerConfig.PERSISTENT_FILE_SIZE 也就是数据文件大小的整数倍来取
+     * @return MappedFile
+     */
+    public MappedFile getMappedFileNoCreate(String topic, String queue, long offset) {
+        int index = (int) (offset / BrokerConfig.PERSISTENT_FILE_SIZE);
+        String key = generateKey(topic, queue, index);
+        return mappedFileCache.get(key);
+    }
+
+    /**
      * 新建一个MappedFile
      * @param topic topic
      * @param queue queue

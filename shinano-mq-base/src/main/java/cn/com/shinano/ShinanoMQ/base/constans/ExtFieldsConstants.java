@@ -53,6 +53,11 @@ public class ExtFieldsConstants {
     public static final String OFFSET_KEY = "offset";
 
     /**
+     * 索引文件名
+     */
+    public static final String INDEX_FILE_NAME_KEY = "index_file_name";
+
+    /**
      * 客户端类型
      */
     public static final String CLIENT_TYPE_KEY = "client_type";

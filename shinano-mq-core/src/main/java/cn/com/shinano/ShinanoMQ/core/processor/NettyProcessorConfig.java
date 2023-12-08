@@ -64,6 +64,7 @@ public class NettyProcessorConfig {
         res.put(RemotingCommandFlagConstants.BROKER_SYNC_PULL_MESSAGE, clusterSyncProcessor);
         res.put(RemotingCommandFlagConstants.BROKER_SYNC_SAVE_MESSAGE, clusterSyncProcessor);
         res.put(RemotingCommandFlagConstants.BROKER_SLAVE_COMMIT_TOPIC_INFO, clusterSyncProcessor);
+        res.put(RemotingCommandFlagConstants.BROKER_SYNC_PULL_INDEX, clusterSyncProcessor);
 
         SaveMessageRequestProcessor saveMessageRequestProcessor = new SaveMessageRequestProcessor(topicManager,
                 dispatchMessageService, brokerAckManager);
