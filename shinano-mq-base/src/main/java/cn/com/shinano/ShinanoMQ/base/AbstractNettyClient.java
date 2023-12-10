@@ -20,6 +20,7 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -50,6 +51,7 @@ public abstract class AbstractNettyClient {
 
     public Channel channel;
 
+    private Bootstrap bootstrap;
 
     public AbstractNettyClient(String host, int port) {
         this.host = host;
@@ -78,7 +80,7 @@ public abstract class AbstractNettyClient {
     public void run() throws InterruptedException {
         NioEventLoopGroup group = new NioEventLoopGroup();
 
-        ChannelFuture channelFuture = new Bootstrap()
+        Bootstrap bootstrap = new Bootstrap()
                 .group(group)
                 .channel(NioSocketChannel.class)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
@@ -95,8 +97,16 @@ public abstract class AbstractNettyClient {
 
                         ch.pipeline().addLast(nettyProcessorAdaptor);
                     }
-                })
-                .connect(new InetSocketAddress(host, port));
+                });
+        ChannelFuture channelFuture = bootstrap
+                .connect(new InetSocketAddress(host, port)).addListener(f->{
+                    if (!f.isSuccess() && f.cause() instanceof ConnectException) {
+                        log.error("client init fail");
+                        throw new RuntimeException("client init fail", f.cause());
+                    } else {
+                        log.info("client init success");
+                    }
+                });
 
 
         this.channel = channelFuture.sync().channel();

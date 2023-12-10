@@ -17,6 +17,8 @@
         <module>shinano-mq-consumer</module>
         <module>nameserver</module>
         <module>nameserver-client</module>
+        <module>shinano-mq-producer-starter</module>
+        <module>shinano-mq-consumer-starter</module>
     </modules>
 
     <properties>

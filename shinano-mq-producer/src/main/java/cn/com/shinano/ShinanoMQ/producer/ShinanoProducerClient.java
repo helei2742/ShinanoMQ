@@ -8,6 +8,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
+import cn.com.shinano.ShinanoMQ.base.protocol.Serializer;
 import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
 import cn.com.shinano.ShinanoMQ.producer.config.ProducerConfig;
 import cn.com.shinano.ShinanoMQ.producer.processor.ProducerBootstrapProcessorAdaptor;
@@ -85,11 +86,16 @@ public class ShinanoProducerClient extends AbstractNettyClient {
     }
 
 
-    public void sendMessage(String topic, String queue, String value, Consumer<RemotingCommand> success) {
-        sendMessage(UUID.randomUUID().toString(), topic, queue, value.getBytes(StandardCharsets.UTF_8), success);
+    public void sendMessage(String topic, String queue, Object value, Consumer<RemotingCommand> success) {
+        sendMessage(UUID.randomUUID().toString(), topic, queue, Serializer.Algorithm.Protostuff.serialize(value), success, null);
     }
 
-    public void sendMessage(String transactionId, String topic, String queue, byte[] value, Consumer<RemotingCommand> success) {
+    public void sendMessage(String topic, String queue, Object value, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
+        sendMessage(UUID.randomUUID().toString(), topic, queue, Serializer.Algorithm.Protostuff.serialize(value), success, fail);
+    }
+
+
+    private void sendMessage(String transactionId, String topic, String queue, byte[] value, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
 
         RemotingCommand remotingCommand = new RemotingCommand();
         remotingCommand.setFlag(RemotingCommandFlagConstants.PRODUCER_MESSAGE);
@@ -97,23 +103,26 @@ public class ShinanoProducerClient extends AbstractNettyClient {
         remotingCommand.addExtField(ExtFieldsConstants.TOPIC_KEY, topic);
         remotingCommand.addExtField(ExtFieldsConstants.QUEUE_KEY, queue);
         remotingCommand.setBody(value);
-        sendMessage(remotingCommand, success);
+        sendMessage(remotingCommand, success, fail);
     }
 
-    public void sendMessage(RemotingCommand remotingCommand, Consumer<RemotingCommand> success) {
-
-        super.sendMsg(remotingCommand, success, remotingCommand1 -> {
-            if (remotingCommand1 != null) {
-                String transactionId = remotingCommand1.getTransactionId();
-                int count = retryTimesMap.getOrDefault(transactionId, 0) + 1;
-                if (count > ProducerConfig.SEND_MESSAGE_RETRY_TIMES) {
-                    retryTimesMap.remove(transactionId);
-                    log.error("message [{}] retry times out of limit", remotingCommand);
-                } else {
-                    retryTimesMap.put(transactionId, count);
-                    sendMessage(remotingCommand, success);
+    public void sendMessage(RemotingCommand remotingCommand, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
+        if (fail != null) {
+            super.sendMsg(remotingCommand, success, fail);
+        } else {
+            super.sendMsg(remotingCommand, success, remotingCommand1 -> {
+                if (remotingCommand1 != null) {
+                    String transactionId = remotingCommand1.getTransactionId();
+                    int count = retryTimesMap.getOrDefault(transactionId, 0) + 1;
+                    if (count > ProducerConfig.SEND_MESSAGE_RETRY_TIMES) {
+                        retryTimesMap.remove(transactionId);
+                        log.error("message [{}] retry times out of limit", remotingCommand);
+                    } else {
+                        retryTimesMap.put(transactionId, count);
+                        sendMessage(remotingCommand, success, fail);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 }

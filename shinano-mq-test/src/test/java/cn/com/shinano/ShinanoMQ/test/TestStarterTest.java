@@ -62,7 +62,7 @@ class TestStarterTest {
             Long aLong = remotingCommand.getExtFieldsLong(TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET);
             System.out.println("--offset--" + aLong);
             latch.countDown();
-        });
+        }, null);
 
         latch.await();
         return res.get();

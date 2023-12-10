@@ -83,7 +83,7 @@ public class ReadMessageTest {
             res[0] = ProtostuffUtils.deserialize(array, MessageListVO.class);
             System.out.println("-------------");
             latch.countDown();
-        });
+        }, null);
 
         latch.await();
         return res[0];
