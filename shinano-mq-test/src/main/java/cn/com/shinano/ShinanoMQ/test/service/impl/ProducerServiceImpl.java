@@ -13,14 +13,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class ProducerServiceImpl implements ProducerService {
 
-    @ShinanoProducer(host = "localhost", port=10022, topic="test-create1", queue = "queue1")
+    @ShinanoProducer(topic="test-create1", queue = "queue1")
     public Object send() {
         JSONObject jsonObject = new JSONObject();
         jsonObject.set("123", "");
         return jsonObject;
     }
 
-    @ShinanoConsumer(host = "localhost", port=10022, topic="test-create1", queue = "queue1")
+//    @ShinanoConsumer(host = "localhost", port=10022, topic="test-create1", queue = "queue1")
     public ConsumeResultState getMessage(ConsumeMessage message) {
         log.info("got response [{}]", message);
         return ConsumeResultState.SUCCESS;

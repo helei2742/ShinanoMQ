@@ -113,7 +113,8 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
                 File dataFile = StoreFileUtil.getDataFileOfLogicOffset(topic, queue, offset);
 
                 long currentOffset = offsetManager.queryTopicQueueOffset(topic, queue);
-                if (currentOffset < offset) return RemotingCommand.PARAMS_ERROR;
+                if (currentOffset < offset) return RemotingCommand.PARAMS_ERROR.clone();
+
 
                 int fileOffset = (int) (offset % BrokerConfig.PERSISTENT_FILE_SIZE);
 
@@ -195,7 +196,7 @@ public class TopicQueryManagerImpl extends AbstractBrokerManager implements Topi
             curNeed -= temp.getMessages().size();
             curLogicNeed = temp.getNextOffset();
 
-            if (curNeed == 0) break; //获取完
+            if (curNeed == 0 || curLogicNeed == offsetLimit) break; //获取完
 
             mappedFile = mappedFileManager.getMappedFile(topic, queue, curLogicNeed);
         }

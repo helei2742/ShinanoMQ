@@ -91,7 +91,7 @@ public abstract class ResultCallBackInvoker {
         log.debug("invoke call back, transactionId[{}]", transactionId);
         Consumer<RemotingCommand> success = successCallbackMap.remove(transactionId);
         Consumer<RemotingCommand> fail = failCallbackMap.remove(transactionId);
-        if(!(RemotingCommandCodeConstants.FAIL == remotingCommand.getCode())) {
+        if(RemotingCommandCodeConstants.SUCCESS == remotingCommand.getCode()) {
             if (success != null) {
                 success.accept(remotingCommand);
             }

@@ -43,7 +43,7 @@ public class ClusterSyncProcessor implements RequestProcessor {
             case RemotingCommandFlagConstants.BROKER_SYNC_PULL_MESSAGE:
                 Long offset = request.getExtFieldsLong(ExtFieldsConstants.OFFSET_KEY);
                 if (offset == null) {
-                    channel.writeAndFlush(RemotingCommand.PARAMS_ERROR);
+                    channel.writeAndFlush(RemotingCommand.PARAMS_ERROR.clone());
                     return;
                 }
                 topicQueryManager.queryTopicQueueBytesAfterOffset(request.getTopic(), request.getQueue(), offset, request.getTransactionId(), channel);

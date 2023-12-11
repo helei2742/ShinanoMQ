@@ -1,4 +1,12 @@
 shinano:
   mq:
-    broker:
+    producer:
+      nameserver:
+        - localhost:10001
+        - localhost:10002
+        - localhost:10003
       serviceId: producer-1
+      address: localhost
+      type: master
+      clientId: broker-1
+      port: 10022

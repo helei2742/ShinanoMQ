@@ -32,7 +32,7 @@ public class PutMessageResult {
     public RemotingCommand handlePutMessageResult(boolean isSyncMsgToCluster) {
         String tsId = this.getTransactionId();
         RemotingCommand response = RemotingCommandPool.getObject();
-        if(isSyncMsgToCluster) {
+        if(!isSyncMsgToCluster) {
             response.setFlag(RemotingCommandFlagConstants.PRODUCER_MESSAGE_RESULT);
         }else {
             response.setFlag(RemotingCommandFlagConstants.BROKER_SYNC_SAVE_MESSAGE_RESPONSE);

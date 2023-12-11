@@ -40,11 +40,12 @@ public class ShinanoNameServerManager implements NameServerManager {
             String nameserver = nameservers[i];
 
             String[] split = nameserver.split(":");
-            NameServerClient nameServerClient = new NameServerClient(brokerSpringConfig.getClientId(), split[0], Integer.parseInt(split[1]), this::whenServiceDiscover);
-            nameServerClient.init(brokerSpringConfig.getServiceId(), brokerSpringConfig.getType(), brokerSpringConfig.getClientId(),
-                    brokerSpringConfig.getAddress(), brokerSpringConfig.getPort());
+            NameServerClient nameServerClient = new NameServerClient(brokerSpringConfig.getClientId(), split[0], Integer.parseInt(split[1]));
+
             try {
-                nameServerClient.run();
+                nameServerClient.whenDiscoverService(brokerSpringConfig.getServiceId(), this::whenServiceDiscover)
+                        .init(brokerSpringConfig.getServiceId(), brokerSpringConfig.getType(), brokerSpringConfig.getClientId(), brokerSpringConfig.getAddress(), brokerSpringConfig.getPort())
+                        .run();
             } catch (InterruptedException e) {
                 log.error("run nameserver client error", e);
                 System.exit(-1);

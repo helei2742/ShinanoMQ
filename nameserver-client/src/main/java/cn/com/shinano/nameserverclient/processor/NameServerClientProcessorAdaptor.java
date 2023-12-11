@@ -30,7 +30,7 @@ public class NameServerClientProcessorAdaptor extends AbstractNettyProcessorAdap
 
     @Override
     protected void handlerMessage(ChannelHandlerContext context, RemotingCommand remotingCommand) {
-        log.info("name server client get command [{}] ", remotingCommand);
+        log.debug("name server client get command [{}] ", remotingCommand);
         String tsId = remotingCommand.getTransactionId();
 
         switch (remotingCommand.getFlag()) {

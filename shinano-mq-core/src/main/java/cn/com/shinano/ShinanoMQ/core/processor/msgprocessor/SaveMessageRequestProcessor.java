@@ -1,13 +1,10 @@
 package cn.com.shinano.ShinanoMQ.core.processor.msgprocessor;
 
-import cn.com.shinano.ShinanoMQ.base.constans.AckStatus;
-import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.Message;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.pool.MessagePool;
-import cn.com.shinano.ShinanoMQ.core.manager.cluster.MessageInstanceSyncSupport;
-import cn.com.shinano.ShinanoMQ.core.manager.topic.TopicInfo;
+import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
 import cn.com.shinano.ShinanoMQ.core.processor.RequestProcessor;
 import cn.com.shinano.ShinanoMQ.core.manager.BrokerAckManager;
 import cn.com.shinano.ShinanoMQ.core.manager.DispatchMessageService;
@@ -27,16 +24,12 @@ public class SaveMessageRequestProcessor implements RequestProcessor {
 
     private final DispatchMessageService dispatchMessageService;
 
-    private final BrokerAckManager brokerAckManager;
 
 
     public SaveMessageRequestProcessor(TopicManager topicManager,
-                                       DispatchMessageService dispatchMessageService,
-                                       BrokerAckManager brokerAckManager) {
+                                       DispatchMessageService dispatchMessageService) {
         this.topicManager = topicManager;
         this.dispatchMessageService = dispatchMessageService;
-
-        this.brokerAckManager = brokerAckManager;
     }
 
     @Override
@@ -49,7 +42,10 @@ public class SaveMessageRequestProcessor implements RequestProcessor {
 
         //topic不存在，返回失败
         if (!topicManager.isTopicExist(message.getTopic(), message.getQueue())) {
-            brokerAckManager.sendAck(message.getTransactionId(), AckStatus.FAIL.getValue(), channel);
+            RemotingCommand clone = RemotingCommand.PARAMS_ERROR.clone();
+            clone.setFlag(-remotingCommand.getFlag());
+            clone.setTransactionId(remotingCommand.getTransactionId());
+            NettyChannelSendSupporter.sendMessage(clone, channel);
             return;
         }
 

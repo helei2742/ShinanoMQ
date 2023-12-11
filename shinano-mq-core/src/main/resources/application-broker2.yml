@@ -13,7 +13,7 @@ shinano:
         - localhost:10002
         - localhost:10003
       serviceId: shinano-mq-broker
-      type: slave
+      type: master
       address: localhost
       clientId: broker-2
       port: 10023

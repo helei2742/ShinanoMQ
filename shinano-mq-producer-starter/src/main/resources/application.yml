@@ -5,7 +5,11 @@ shinano:
         - localhost:10001
         - localhost:10002
         - localhost:10003
+
       serviceId: shinano-mq-producer
       clientId: producer-1
+      localHost: localhost
+      localPort: 20001
+
       broker-address: 127.0.0.1
       broker-port: 10022

@@ -3,11 +3,11 @@ package cn.com.shinano.ShinanoMQ.producer;
 import cn.com.shinano.ShinanoMQ.base.AbstractNettyClient;
 import cn.com.shinano.ShinanoMQ.base.ReceiveMessageProcessor;
 import cn.com.shinano.ShinanoMQ.base.constans.ExtFieldsConstants;
+import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandCodeConstants;
 import cn.com.shinano.ShinanoMQ.base.constant.ClientStatus;
-import cn.com.shinano.ShinanoMQ.base.dto.Message;
+import cn.com.shinano.ShinanoMQ.base.dto.ClusterHost;
 import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
-import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.ShinanoMQ.base.protocol.Serializer;
 import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
 import cn.com.shinano.ShinanoMQ.producer.config.ProducerConfig;
@@ -16,7 +16,6 @@ import cn.com.shinano.ShinanoMQ.producer.processor.msgprocessor.ProducerClientIn
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -27,16 +26,15 @@ public class ShinanoProducerClient extends AbstractNettyClient {
 
     private ClientStatus status;
 
-    private final String clientId;
+    private final ClusterHost clientHost;
 
     private final ConcurrentMap<String, Integer> retryTimesMap;
 
-
-    public ShinanoProducerClient(String host, int port, String clientId) {
-        super(host, port);
+    public ShinanoProducerClient(String remoteHost, int remotePort, String localHost, int localPort, String clientId) {
+        super(remoteHost, remotePort, localHost, localPort);
 
         this.status = ClientStatus.CREATE_JUST;
-        this.clientId = clientId;
+        this.clientHost = new ClusterHost(clientId, localHost, localPort);
 
         this.retryTimesMap = new ConcurrentHashMap<>();
 
@@ -64,10 +62,11 @@ public class ShinanoProducerClient extends AbstractNettyClient {
     }
 
     public void init() {
+        //返回结果处理器
         ReceiveMessageProcessor resultCallBackInvoker = new ReceiveMessageProcessor();
         resultCallBackInvoker.setExpireSeconds(ProducerConfig.SEND_MESSAGE_TIME_OUT_LIMIT);
 
-        super.init(clientId,
+        super.init(clientHost.getClientId(),
                 ProducerConfig.IDLE_TIME_SECONDS,
                 resultCallBackInvoker,
                 new ProducerClientInitProcessor(),
@@ -77,7 +76,7 @@ public class ShinanoProducerClient extends AbstractNettyClient {
                     protected void sendInitMessage(ChannelHandlerContext ctx) {
                         RemotingCommand remotingCommand = new RemotingCommand();
                         remotingCommand.setFlag(RemotingCommandFlagConstants.CLIENT_CONNECT);
-                        remotingCommand.addExtField(ExtFieldsConstants.CLIENT_ID_KEY, clientId);
+                        remotingCommand.addExtField(ExtFieldsConstants.CLIENT_ID_KEY, clientHost.getClientId());
                         remotingCommand.addExtField(ExtFieldsConstants.CLIENT_TYPE_KEY, ExtFieldsConstants.CLIENT_TYPE_PRODUCER);
 
                         NettyChannelSendSupporter.sendMessage(remotingCommand, ctx.channel());
@@ -110,9 +109,14 @@ public class ShinanoProducerClient extends AbstractNettyClient {
         if (fail != null) {
             super.sendMsg(remotingCommand, success, fail);
         } else {
-            super.sendMsg(remotingCommand, success, remotingCommand1 -> {
-                if (remotingCommand1 != null) {
-                    String transactionId = remotingCommand1.getTransactionId();
+            super.sendMsg(remotingCommand, success, response -> {
+                if (response != null) {
+                    if(response.getCode() == RemotingCommandCodeConstants.PARAMS_ERROR) {
+                        log.debug("param error");
+                        return;
+                    }
+
+                    String transactionId = response.getTransactionId();
                     int count = retryTimesMap.getOrDefault(transactionId, 0) + 1;
                     if (count > ProducerConfig.SEND_MESSAGE_RETRY_TIMES) {
                         retryTimesMap.remove(transactionId);

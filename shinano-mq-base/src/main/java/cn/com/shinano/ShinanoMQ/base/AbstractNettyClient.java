@@ -6,11 +6,11 @@ import cn.com.shinano.ShinanoMQ.base.constant.ClientStatus;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.dto.SendCommandFuture;
 import cn.com.shinano.ShinanoMQ.base.idmaker.DistributeIdMaker;
-import cn.com.shinano.ShinanoMQ.base.idmaker.SnowFlakeShortUrl;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.ClientInitMsgProcessor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
+import cn.hutool.core.util.StrUtil;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -22,18 +22,20 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.util.UUID;
 import java.util.function.Consumer;
 
-import static cn.com.shinano.ShinanoMQ.base.constant.ClientStatus.CREATE_JUST;
-import static cn.com.shinano.ShinanoMQ.base.constant.ClientStatus.RUNNING;
+import static cn.com.shinano.ShinanoMQ.base.constant.ClientStatus.*;
 
 
 @Slf4j
 public abstract class AbstractNettyClient {
-    private final String host;
+    private String remoteHost;
 
-    private final int port;
+    private int remotePort;
+
+    private final String localHost;
+
+    private final int localPort;
 
     private String clientId;
 
@@ -53,9 +55,20 @@ public abstract class AbstractNettyClient {
 
     private Bootstrap bootstrap;
 
-    public AbstractNettyClient(String host, int port) {
-        this.host = host;
-        this.port = port;
+    public AbstractNettyClient(String remoteHost, int remotePort) {
+        this.remoteHost = remoteHost;
+        this.remotePort = remotePort;
+        this.localHost = null;
+        this.localPort = -1;
+        this.status = CREATE_JUST;
+    }
+
+    public AbstractNettyClient(String remoteHost, int remotePort, String localHost, int localPort) {
+        this.remoteHost = remoteHost;
+        this.remotePort = remotePort;
+        this.localHost = localHost;
+        this.localPort = localPort;
+
         this.status = CREATE_JUST;
     }
 
@@ -86,7 +99,7 @@ public abstract class AbstractNettyClient {
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
                 .handler(new ChannelInitializer<NioSocketChannel>() {
                     @Override//链接建立后被调用，进行初始化
-                    protected void initChannel(NioSocketChannel ch) throws Exception {
+                    protected void initChannel(NioSocketChannel ch) {
                         ch.pipeline().addLast(new IdleStateHandler(0, 0, idleTimeSeconds));
 
                         ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(ShinanoMQConstants.MAX_FRAME_LENGTH, 0, 4, 0, 4));
@@ -98,71 +111,89 @@ public abstract class AbstractNettyClient {
                         ch.pipeline().addLast(nettyProcessorAdaptor);
                     }
                 });
-        ChannelFuture channelFuture = bootstrap
-                .connect(new InetSocketAddress(host, port)).addListener(f->{
-                    if (!f.isSuccess() && f.cause() instanceof ConnectException) {
-                        log.error("client init fail");
-                        throw new RuntimeException("client init fail", f.cause());
-                    } else {
-                        log.info("client init success");
-                    }
-                });
 
+        ChannelFuture channelFuture;
+        if (StrUtil.isBlank(localHost)) {
+            channelFuture = bootstrap.connect(new InetSocketAddress(remoteHost, remotePort));
+        } else {
+            channelFuture = bootstrap.connect(new InetSocketAddress(remoteHost, remotePort), new InetSocketAddress(localHost, localPort));
+        }
+
+        channelFuture.addListener(f -> {
+            if (!f.isSuccess() && f.cause() instanceof ConnectException) {
+                log.error("client init fail");
+                status = START_FAILED;
+            } else {
+                log.info("client init success");
+            }
+        });
 
         this.channel = channelFuture.sync().channel();
-        ChannelFuture closeFuture =  channel.closeFuture();
+        ChannelFuture closeFuture = channel.closeFuture();
 
-        closeFuture.addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                group.shutdownGracefully();
-                closeFuture.channel().flush();
-
-                eventHandler.closeHandler(channelFuture.channel());
-            }
+        closeFuture.addListener((ChannelFutureListener) f -> {
+            group.shutdownGracefully();
+            closeFuture.channel().flush();
+            eventHandler.closeHandler(f.channel());
         });
     }
 
+    protected void reConnect(String remoteHost, int remotePort) throws InterruptedException {
+        switch (status) {
+            case START_FAILED:
+            case SHUTDOWN_ALREADY:
+                status = CREATE_JUST;
+                this.remoteHost = remoteHost;
+                this.remotePort = remotePort;
+                run();
+                log.info("reconnect to [{}]-[{}]", remoteHost, remotePort);
+                break;
+            default:
+                log.warn("client [{}] in [{}] state, can not recount [{}]:[{}]", clientId, status, remoteHost, remotePort);
+        }
+    }
 
     /**
      * 非阻塞发送消息
-     * @param remotingCommand
-     * @param success
-     * @param fail
+     *
+     * @param request  request
+     * @param success success callback
+     * @param fail fail callback
      */
-    public void sendMsg(RemotingCommand remotingCommand, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
-        if(remotingCommand.getTransactionId() == null) {
-            remotingCommand.setTransactionId(DistributeIdMaker.DEFAULT.nextId(clientId));
+    public void sendMsg(RemotingCommand request, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
+        if (request.getTransactionId() == null) {
+            request.setTransactionId(DistributeIdMaker.DEFAULT.nextId(clientId));
         }
-        remotingCommand.setClientId(this.clientId);
-        resultCallBackInvoker.addAckListener(remotingCommand.getTransactionId(), success, fail);
-        log.debug("send remotingCommand [{}]", remotingCommand);
-        NettyChannelSendSupporter.sendMessage(remotingCommand, channel);
+        request.setClientId(this.clientId);
+        resultCallBackInvoker.addAckListener(request.getTransactionId(), success, fail);
+        log.debug("send remotingCommand [{}]", request);
+        NettyChannelSendSupporter.sendMessage(request, channel);
     }
 
     /**
      * 阻塞发送消息
-     * @param remotingCommand
-     * @return
-     * @throws InterruptedException
+     *
+     * @param request request
+     * @return boolean
+     * @throws InterruptedException 阻塞过程中可能出现打断异常
      */
-    public boolean sendMsg(RemotingCommand remotingCommand) throws InterruptedException {
+    public boolean sendMsg(RemotingCommand request) throws InterruptedException {
         SendCommandFuture result = new SendCommandFuture();
 
-        sendMsg(remotingCommand, result::setResult, result::setResult);
+        sendMsg(request, result::setResult, result::setResult);
         Object o = result.getResult();
         return o != null && ((RemotingCommand) o).getCode() != RemotingCommandCodeConstants.FAIL;
     }
 
     /**
      * 发送消息，返回Future
-     * @param remotingCommand
-     * @return
+     * @param request request
+     * @return SendCommandFuture
      */
-    public SendCommandFuture sendMsgFuture(RemotingCommand remotingCommand) {
+    public SendCommandFuture sendMsgFuture(RemotingCommand request) {
         SendCommandFuture result = new SendCommandFuture();
 
-        sendMsg(remotingCommand, result::setResult, result::setResult);
+        sendMsg(request, result::setResult, result::setResult);
         return result;
     }
 
@@ -176,7 +207,7 @@ public abstract class AbstractNettyClient {
                     sendInitMessage(ctx);
                     break;
                 default:
-                    log.warn("client [{}] in [{}] state, can not turn to active state", clientId, status);
+                    log.warn("client [{}] in [{}] state, remote[{}]:[{}], can not turn to active state", clientId, status, remoteHost, remotePort);
             }
         }
 

@@ -38,7 +38,7 @@ class TestStarterTest {
 
     @Test
     public void testQueryOffset() throws InterruptedException {
-        ShinanoProducerClient client = new ShinanoProducerClient("localhost", 10022, "test-query-offset");
+        ShinanoProducerClient client = new ShinanoProducerClient("localhost", 10022, "127.0.0.1", 20001,"test-query-offset");
         client.run();
         System.out.println(queryOffset(client));
     }
@@ -121,7 +121,7 @@ class TestStarterTest {
             int finalI = i;
             new Thread(() -> {
                 ShinanoProducerClient client
-                        = new ShinanoProducerClient("127.0.0.1", 10022, "client-" );
+                        = new ShinanoProducerClient("127.0.0.1", 10022,"127.0.0.1", 20001, "client-" );
 
                 client.run();
 

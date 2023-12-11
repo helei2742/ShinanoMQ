@@ -30,8 +30,7 @@ public class RemotingCommand {
         TIME_OUT_COMMAND.setCode(RemotingCommandCodeConstants.FAIL);
 
         PARAMS_ERROR = new RemotingCommand();
-        PARAMS_ERROR.setFlag(RemotingCommandFlagConstants.PARAMS_ERROR);
-        PARAMS_ERROR.setCode(RemotingCommandCodeConstants.FAIL);
+        PARAMS_ERROR.setCode(RemotingCommandCodeConstants.PARAMS_ERROR);
     }
 
     private Integer flag;

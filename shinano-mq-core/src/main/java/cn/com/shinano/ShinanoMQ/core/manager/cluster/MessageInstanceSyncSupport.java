@@ -372,8 +372,8 @@ public class MessageInstanceSyncSupport implements InitializingBean {
 
                     if (emptySyncCount >= SLAVE_TOPIC_EMPTY_SYNC_COUNT_LIMIT) {
                         log.warn("slave broker sync topic info to master got empty response times than [{}]. sync after [{}] millis",
-                                SLAVE_TOPIC_EMPTY_SYNC_COUNT_LIMIT, 300000);
-                        LockSupport.parkUntil(this, System.currentTimeMillis() + 300000);
+                                SLAVE_TOPIC_EMPTY_SYNC_COUNT_LIMIT, 30000);
+                        LockSupport.parkUntil(this, System.currentTimeMillis() + 30000);
                     } else {
                         LockSupport.parkUntil(this, System.currentTimeMillis() + BrokerConfig.SLAVE_BROKER_SYNC_TOPIC_INFO_TO_MASTER_INTERVAL);
                     }

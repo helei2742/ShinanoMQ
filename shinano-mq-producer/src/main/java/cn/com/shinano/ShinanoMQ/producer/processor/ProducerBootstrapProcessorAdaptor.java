@@ -7,6 +7,7 @@ import cn.com.shinano.ShinanoMQ.base.nettyhandler.AbstractNettyProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.base.nettyhandler.NettyClientEventHandler;
 import cn.com.shinano.ShinanoMQ.base.ReceiveMessageProcessor;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
  * 处理生产者收到的消息
  */
 @Slf4j
+@ChannelHandler.Sharable
 public class ProducerBootstrapProcessorAdaptor extends AbstractNettyProcessorAdaptor {
 
     @Override

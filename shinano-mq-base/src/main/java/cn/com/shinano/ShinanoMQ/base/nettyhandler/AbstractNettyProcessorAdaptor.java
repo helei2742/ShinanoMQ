@@ -7,6 +7,7 @@ import cn.com.shinano.ShinanoMQ.base.constans.RemotingCommandFlagConstants;
 import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
@@ -15,6 +16,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 /**
  * 处理broker与client之间的心跳
  */
+@ChannelHandler.Sharable
 public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInboundHandler<RemotingCommand> implements NettyBaseHandler {
 
     protected boolean useRemotingCommandPool = true;
@@ -128,7 +130,7 @@ public abstract class AbstractNettyProcessorAdaptor extends SimpleChannelInbound
      */
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) {
-        eventHandler.closeHandler(ctx.channel());
+        if(eventHandler != null) eventHandler.closeHandler(ctx.channel());
     }
 
     /**

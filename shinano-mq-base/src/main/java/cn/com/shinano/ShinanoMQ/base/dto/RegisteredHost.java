@@ -15,6 +15,10 @@ import java.util.Objects;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RegisteredHost {
+    public static final String HOST_TYPE_KEY = "host_type";
+    public static final String SLAVE_KEY = "slave";
+    public static final String MASTER_KEY = "master";
+
     private ClusterHost host;
     private Map<String, String> props;
 
