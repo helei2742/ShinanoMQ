@@ -43,7 +43,9 @@ public abstract class ResultCallBackInvoker {
                         Consumer<RemotingCommand> fail = failCallbackMap.remove(tsId);
                         if(fail != null) {
                             log.debug("handler expire, invoke fail handler, tsId[{}]", tsId);
-                            fail.accept(RemotingCommand.TIME_OUT_COMMAND);
+                            RemotingCommand clone = RemotingCommand.TIME_OUT_COMMAND.clone();
+                            clone.setTransactionId(tsId);
+                            fail.accept(clone);
                         }
                         expireMap.remove(tsId);
                     }

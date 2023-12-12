@@ -9,6 +9,7 @@ import cn.com.shinano.ShinanoMQ.base.pool.RemotingCommandPool;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.dto.OffsetBufferEntity;
 import cn.com.shinano.ShinanoMQ.core.manager.ConsumeOffsetManager;
+import cn.com.shinano.ShinanoMQ.core.manager.ExecutorManager;
 import cn.com.shinano.ShinanoMQ.core.manager.TopicManager;
 import cn.com.shinano.ShinanoMQ.core.manager.client.BrokerConsumerInfo;
 import cn.com.shinano.ShinanoMQ.core.utils.BrokerUtil;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 @Component
 public class LocalConsumeOffsetManager implements ConsumeOffsetManager {
 
-    private static final ExecutorService executor = Executors.newFixedThreadPool(1);
+    private static final ExecutorService executor = ExecutorManager.consumeOffsetExecutor;
 
     private final ConcurrentMap<String, PriorityQueue<OffsetBufferEntity>> offsetBufferSeqMap = new ConcurrentHashMap<>();
 

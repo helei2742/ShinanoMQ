@@ -42,6 +42,7 @@ public class ProducerNameServerManager {
             nameServerClient.run();
             nameServerClient.registryService(response->log.info("registry service[{}]-client[{}] success", serviceId, registryHost));
             nameServerClient.discoverService(brokerServiceId);
+            nameServerClient.discoverService(serviceId);
         } catch (Exception e) {
             log.error("nameserver client [{}] run error, {}", nameserverHosts.get(0), e.getMessage());
         }

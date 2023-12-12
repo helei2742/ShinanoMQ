@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.test;
 
+import cn.com.shinano.ShinanoMQ.base.protocol.Serializer;
 import cn.com.shinano.ShinanoMQ.consmer.ShinanoConsumerClient;
 import cn.com.shinano.ShinanoMQ.consmer.dto.ConsumeMessage;
 import cn.com.shinano.ShinanoMQ.consmer.dto.ConsumeResultState;
@@ -40,13 +41,13 @@ public class ConsumerTest {
             @Override
             public ConsumeResultState successHandler(ConsumeMessage message) {
 
-                System.out.println(total.incrementAndGet() + "----" + message);
+                System.out.println(total.incrementAndGet() + "----" + Serializer.Algorithm.Protostuff.deserialize(message.getBody(), String.class));
 //                try {
 //                    TimeUnit.SECONDS.sleep(1);
 //                } catch (InterruptedException e) {
 //                    e.printStackTrace();
 //                }
-                return ConsumeResultState.FAIL;
+                return ConsumeResultState.SUCCESS;
             }
 
             @Override

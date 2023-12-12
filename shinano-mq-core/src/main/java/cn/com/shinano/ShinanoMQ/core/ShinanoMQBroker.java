@@ -5,7 +5,9 @@ import cn.com.shinano.ShinanoMQ.base.RemotingCommandEncoder;
 import cn.com.shinano.ShinanoMQ.base.constans.ShinanoMQConstants;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerSpringConfig;
+import cn.com.shinano.ShinanoMQ.core.manager.ExecutorManager;
 import cn.com.shinano.ShinanoMQ.core.manager.NameServerManager;
+import cn.com.shinano.ShinanoMQ.core.manager.ThreadFactoryManager;
 import cn.com.shinano.ShinanoMQ.core.manager.cluster.MessageInstanceSyncSupport;
 import cn.com.shinano.ShinanoMQ.core.processor.BrokerMessageProcessorAdaptor;
 import io.netty.bootstrap.ServerBootstrap;
@@ -38,7 +40,8 @@ public class ShinanoMQBroker implements ApplicationRunner {
     private ChannelFuture channelFuture;
 
     private HashedWheelTimer wheelTimer =
-            new HashedWheelTimer(Executors.defaultThreadFactory(), 1000L, TimeUnit.MILLISECONDS, 600, true,-1L,Executors.newFixedThreadPool(1));
+            new HashedWheelTimer(ThreadFactoryManager.slaveSyncTopicInfoToMaster, 1000L, TimeUnit.MILLISECONDS,
+                    600, true,-1L, ExecutorManager.slaveSyncTopicInfoToMaster);
 
     @Autowired
     private BrokerSpringConfig brokerSpringConfig;

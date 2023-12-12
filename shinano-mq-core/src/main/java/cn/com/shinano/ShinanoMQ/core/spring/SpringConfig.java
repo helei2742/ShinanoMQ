@@ -1,5 +1,6 @@
 package cn.com.shinano.ShinanoMQ.core.spring;
 
+import cn.com.shinano.ShinanoMQ.core.manager.ExecutorManager;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -17,15 +18,15 @@ public class SpringConfig implements ApplicationContextAware {
 
     /**
      * 异步监听
-     * @param applicationContext
-     * @throws BeansException
+     * @param applicationContext applicationContext
+     * @throws BeansException BeansException
      */
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         SimpleApplicationEventMulticaster applicationEventMulticaster =
                 applicationContext.getBean(AbstractApplicationContext.APPLICATION_EVENT_MULTICASTER_BEAN_NAME, SimpleApplicationEventMulticaster.class);
 
-        Executor taskExecutor = Executors.newFixedThreadPool(1);
+        Executor taskExecutor = ExecutorManager.springListenerExecutor;
 
         applicationEventMulticaster.setTaskExecutor(taskExecutor);
     }

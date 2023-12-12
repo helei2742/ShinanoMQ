@@ -11,6 +11,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.RemotingCommand;
 import cn.com.shinano.ShinanoMQ.base.protocol.Serializer;
 import cn.com.shinano.ShinanoMQ.base.supporter.NettyChannelSendSupporter;
 import cn.com.shinano.ShinanoMQ.producer.config.ProducerConfig;
+import cn.com.shinano.ShinanoMQ.producer.manager.FinalRetryFailMessageSaveSupport;
 import cn.com.shinano.ShinanoMQ.producer.processor.ProducerBootstrapProcessorAdaptor;
 import cn.com.shinano.ShinanoMQ.producer.processor.msgprocessor.ProducerClientInitProcessor;
 import io.netty.channel.ChannelHandlerContext;
@@ -105,25 +106,26 @@ public class ShinanoProducerClient extends AbstractNettyClient {
         sendMessage(remotingCommand, success, fail);
     }
 
-    public void sendMessage(RemotingCommand remotingCommand, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
+    public void sendMessage(RemotingCommand request, Consumer<RemotingCommand> success, Consumer<RemotingCommand> fail) {
         if (fail != null) {
-            super.sendMsg(remotingCommand, success, fail);
+            super.sendMsg(request, success, fail);
         } else {
-            super.sendMsg(remotingCommand, success, response -> {
+            super.sendMsg(request, success, response -> {
                 if (response != null) {
                     if(response.getCode() == RemotingCommandCodeConstants.PARAMS_ERROR) {
                         log.debug("param error");
                         return;
                     }
-
+                    //重试
                     String transactionId = response.getTransactionId();
                     int count = retryTimesMap.getOrDefault(transactionId, 0) + 1;
                     if (count > ProducerConfig.SEND_MESSAGE_RETRY_TIMES) {
                         retryTimesMap.remove(transactionId);
-                        log.error("message [{}] retry times out of limit", remotingCommand);
+                        FinalRetryFailMessageSaveSupport.appendFinalRetryFailMessage(request, clientHost.toString());
+                        log.error("message [{}] retry times out of limit", request);
                     } else {
                         retryTimesMap.put(transactionId, count);
-                        sendMessage(remotingCommand, success, fail);
+                        sendMessage(request, success, fail);
                     }
                 }
             });

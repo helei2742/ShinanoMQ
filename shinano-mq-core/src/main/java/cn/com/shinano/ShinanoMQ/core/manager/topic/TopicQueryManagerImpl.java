@@ -11,6 +11,7 @@ import cn.com.shinano.ShinanoMQ.base.dto.SaveMessage;
 import cn.com.shinano.ShinanoMQ.base.util.ProtostuffUtils;
 import cn.com.shinano.ShinanoMQ.core.config.BrokerConfig;
 import cn.com.shinano.ShinanoMQ.core.dto.MessageHeader;
+import cn.com.shinano.ShinanoMQ.core.manager.ExecutorManager;
 import cn.com.shinano.ShinanoMQ.core.store.IndexNode;
 import cn.com.shinano.ShinanoMQ.core.manager.AbstractBrokerManager;
 import cn.com.shinano.ShinanoMQ.core.manager.OffsetManager;
@@ -28,18 +29,16 @@ import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.nio.MappedByteBuffer;
-import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 
 @Slf4j
 @Service
 public class TopicQueryManagerImpl extends AbstractBrokerManager implements TopicQueryManager {
 
-    private static final ExecutorService executor = Executors.newFixedThreadPool(4);
+    private static final ExecutorService executor = ExecutorManager.topicQueryExecutor;
 
     @Autowired
     private OffsetManager offsetManager;

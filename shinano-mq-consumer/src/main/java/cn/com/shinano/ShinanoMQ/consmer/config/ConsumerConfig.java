@@ -16,7 +16,7 @@ public class ConsumerConfig {
     /**
      * 提前拉消息的间隔
      */
-    public static final long PRE_PULL_MESSAGE_INTERVAL = 1000;
+    public static final long PRE_PULL_MESSAGE_INTERVAL = 200;
 
     /**
      * consumer发成功ack的批大小

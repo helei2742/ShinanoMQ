@@ -55,8 +55,6 @@ public class MessageInstanceSyncSupport implements InitializingBean {
 
     private ConcurrentMap<String, SyncMessageTask> syncingQueueMap;
 
-    private ExecutorService syncTopicInfoToMasterExecutor;
-
     private Thread syncTopicInfoToMasterThread;
 
     @Autowired
@@ -269,9 +267,7 @@ public class MessageInstanceSyncSupport implements InitializingBean {
     @Override
     public void afterPropertiesSet() {
         this.syncingQueueMap = new ConcurrentHashMap<>();
-        this.syncMsgToCLusterExecutor = Executors.newFixedThreadPool(3);
-        this.syncTopicInfoToMasterExecutor = Executors.newFixedThreadPool(1);
-
+        this.syncMsgToCLusterExecutor = ExecutorManager.syncMsgToCLusterExecutor;
     }
 
 

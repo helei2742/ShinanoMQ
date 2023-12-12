@@ -35,10 +35,9 @@ class TestStarterTest {
     }
 
 
-
     @Test
     public void testQueryOffset() throws InterruptedException {
-        ShinanoProducerClient client = new ShinanoProducerClient("localhost", 10022, "127.0.0.1", 20001,"test-query-offset");
+        ShinanoProducerClient client = new ShinanoProducerClient("localhost", 10022, "127.0.0.1", 20001, "test-query-offset");
         client.run();
         System.out.println(queryOffset(client));
     }
@@ -57,7 +56,7 @@ class TestStarterTest {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicLong res = new AtomicLong();
 
-        shinanoProducerClient.sendMessage(request, remotingCommand->{
+        shinanoProducerClient.sendMessage(request, remotingCommand -> {
             System.out.println(remotingCommand);
             Long aLong = remotingCommand.getExtFieldsLong(TopicQueryConstants.QUERY_TOPIC_QUEUE_OFFSET);
             System.out.println("--offset--" + aLong);
@@ -73,7 +72,7 @@ class TestStarterTest {
     @Test
     public void brokerTPTest() throws IOException, InterruptedException {
         int putThreadCount = 1;
-        int threadPutMessageCount = 1000;
+        int threadPutMessageCount = 1;
 
         Map<Integer, Integer> success = new HashMap<>();
         Map<Integer, Integer> fail = new HashMap<>();
@@ -89,7 +88,6 @@ class TestStarterTest {
         long sendCost = System.currentTimeMillis() - start;
 
         TimeUnit.SECONDS.sleep(10);
-
 
 
         System.out.println(String.format("send msg over, total send [%d]",
@@ -121,7 +119,7 @@ class TestStarterTest {
             int finalI = i;
             new Thread(() -> {
                 ShinanoProducerClient client
-                        = new ShinanoProducerClient("127.0.0.1", 10022,"127.0.0.1", 20001, "client-" );
+                        = new ShinanoProducerClient("127.0.0.1", 10022, "127.0.0.1", 20001+ finalI, "client-");
 
                 client.run();
 
@@ -130,10 +128,16 @@ class TestStarterTest {
                     client.sendMessage(
                             "test-create1",
                             "queue1",
-                            "thread-" + finalI + "-data-" + sendCount.incrementAndGet(),
+//                            "thread-" + finalI + "-data-" + sendCount.incrementAndGet(),
+                            "123456789",
                             remotingCommand -> {
                                 lastGetTime.set(System.currentTimeMillis());
                                 successCounter.compute(finalI, (k, v) -> {
+                                    if (v == null) return 1;
+                                    else return v + 1;
+                                });
+                            }, remotingCommand -> {
+                                failCounter.compute(finalI, (k, v) -> {
                                     if (v == null) return 1;
                                     else return v + 1;
                                 });

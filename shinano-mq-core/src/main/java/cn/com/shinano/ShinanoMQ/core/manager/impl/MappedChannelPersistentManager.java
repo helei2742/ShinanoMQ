@@ -44,7 +44,7 @@ public class MappedChannelPersistentManager extends AbstractBrokerManager implem
     /**
      * 执行持久化任务的线程池
      */
-    private final ExecutorService executor = Executors.newFixedThreadPool(10);
+    private final ExecutorService executor = ExecutorManager.persistentMessageExecutor;
 
     @Autowired
     @Lazy

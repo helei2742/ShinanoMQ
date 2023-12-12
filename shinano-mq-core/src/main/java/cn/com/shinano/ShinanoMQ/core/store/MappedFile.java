@@ -80,8 +80,8 @@ public class MappedFile {
             this.fileDir = file.getParentFile().getAbsolutePath();
         }
 
-        this.startOffset = writePosition;
         this.fileSize = BrokerConfig.PERSISTENT_FILE_SIZE;
+        this.startOffset = (writePosition/fileSize) * fileSize;
         WRITE_POSITION_UPDATER.set(this, writePosition);
         FILE_POSITION_UPDATER.set(this, filePosition);
 
@@ -347,10 +347,9 @@ public class MappedFile {
     public MappedByteBuffer getReadByteBuffer(int fileOffset) {
         lock.writeLock().lock();
         try {
-            int position = mappedByteBuffer.position();
             mappedByteBuffer.position(fileOffset);
             ByteBuffer slice = mappedByteBuffer.slice().asReadOnlyBuffer();
-            mappedByteBuffer.position(position);
+            mappedByteBuffer.position(this.filePosition);
             return (MappedByteBuffer) slice;
         } finally {
             lock.writeLock().unlock();

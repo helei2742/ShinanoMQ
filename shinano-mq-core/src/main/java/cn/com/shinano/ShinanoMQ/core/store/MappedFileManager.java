@@ -41,7 +41,7 @@ public class MappedFileManager {
      * 获取MappedFile， 如果不存在，会创建一个
      * @param topic topic
      * @param queue queue
-     * @param offset offset 该文件的offset，会安装BrokerConfig.PERSISTENT_FILE_SIZE 也就是数据文件大小的整数倍来取
+     * @param offset offset 该文件的逻辑offset，
      * @return MappedFile
      */
     public MappedFile getMappedFile(String topic, String queue, long offset) {
@@ -49,7 +49,7 @@ public class MappedFileManager {
         String key = generateKey(topic, queue, index);
         mappedFileCache.compute(key, (k, v) -> {
             if (v == null) {
-                v = createNewMappedFile(topic, queue, BrokerConfig.PERSISTENT_FILE_SIZE * index, index);
+                v = createNewMappedFile(topic, queue, offset, index);
             }
             mappedFileExpireMap.put(k, System.currentTimeMillis() + MAPPED_FILE_EXPIRE_TIME);
             return v;
@@ -93,7 +93,7 @@ public class MappedFileManager {
             if (dataFile.exists()
                     && (currentWrite = offsetManager.queryTopicQueueOffset(topic, queue)) != -1
                     && currentWrite / BrokerConfig.PERSISTENT_FILE_SIZE == index) {
-                mappedFile = new MappedFile(offset, (int) (currentWrite - BrokerConfig.PERSISTENT_FILE_SIZE * index),
+                mappedFile = new MappedFile(currentWrite, (int) (currentWrite - BrokerConfig.PERSISTENT_FILE_SIZE * index),
                         BrokerConfig.PERSISTENT_FILE_SIZE, dataFile);
             } else {
                 mappedFile = new MappedFile(offset, 0, BrokerConfig.PERSISTENT_FILE_SIZE, dataFile);

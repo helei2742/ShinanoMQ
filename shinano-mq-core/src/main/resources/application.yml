@@ -14,7 +14,7 @@ shinano:
         - localhost:10003
       serviceId: shinano-mq-broker
       address: localhost
-      type: slave
+      type: master
       clientId: broker-1
       port: 10022
       producer-commit-ack-type: async

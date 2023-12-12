@@ -2,6 +2,7 @@ package cn.com.shinano.ShinanoMQ.core.spring.factorybean;
 
 import cn.com.shinano.ShinanoMQ.core.config.BrokerSpringConfig;
 import cn.com.shinano.ShinanoMQ.core.manager.BrokerAckManager;
+import cn.com.shinano.ShinanoMQ.core.manager.ExecutorManager;
 import cn.com.shinano.ShinanoMQ.core.manager.impl.AsyncBrokerAckManager;
 import cn.com.shinano.ShinanoMQ.core.manager.impl.SyncBrokerAckManager;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +43,7 @@ public class BrokerAckManagerFactoryBean extends AbstractFactoryBean<BrokerAckMa
             ttl = Math.max(ttl, 200);
             thread = Math.max(thread, 1);
 
-            bean = new AsyncBrokerAckManager(batchSize, ttl, Executors.newFixedThreadPool(thread));
+            bean = new AsyncBrokerAckManager(batchSize, ttl, ExecutorManager.asyncBrokerAckExecutor);
 
             log.info("ShinanoMq ack type is async, batchSize[{}], ttl [{}], thread count [{}]", batchSize, ttl, thread);
         } else {

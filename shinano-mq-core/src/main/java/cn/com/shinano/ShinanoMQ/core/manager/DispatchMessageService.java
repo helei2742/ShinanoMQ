@@ -25,7 +25,7 @@ import java.util.concurrent.*;
 public class DispatchMessageService {
     private final Map<String, LinkedBlockingQueue<BrokerMessage>> dispatchMap = new ConcurrentHashMap<>();
 
-    private static final ExecutorService executor = Executors.newFixedThreadPool(10);
+    private static final ExecutorService executor = ExecutorManager.dispatchMessageExecutor;
 
     @Autowired
     private PersistentSupport persistentSupport;
@@ -58,9 +58,9 @@ public class DispatchMessageService {
 
     /**
      * 直接保存
-     * @param message
-     * @param channel
-     * @param isSyncMsgToCluster
+     * @param message message
+     * @param channel channel
+     * @param isSyncMsgToCluster isSyncMsgToCluster
      */
     public RemotingCommand saveMessage(Message message, Channel channel, boolean isSyncMsgToCluster) {
         PutMessageResult result;
@@ -119,6 +119,7 @@ public class DispatchMessageService {
      * @param topic topic
      * @return topic对应的阻塞队列
      */
+    @Deprecated
     public LinkedBlockingQueue<BrokerMessage> getTopicMessageBlockingQueue(String topic) {
         return dispatchMap.get(topic);
     }
